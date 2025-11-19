@@ -1,0 +1,26 @@
+{
+    "sourceFile": "app/Models/PengajuanDetail.php",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 2,
+            "patches": [
+                {
+                    "date": 1763021390517,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1763368166824,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -28,8 +28,9 @@\n         'id_program',\n         'id_akun',\n         'id_pajak',\n         'id_vendor',\n+        'attachment_path',\n     ];\n \n     /**\n      * Relasi kembali ke Header.\n"
+                },
+                {
+                    "date": 1763449348283,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -27,9 +27,8 @@\n         'nominal_item',\n         'id_program',\n         'id_akun',\n         'id_pajak',\n-        'id_vendor',\n         'attachment_path',\n     ];\n \n     /**\n"
+                }
+            ],
+            "date": 1763021390517,
+            "name": "Commit-0",
+            "content": "<?php\n\nnamespace App\\Models;\n\nuse Illuminate\\Database\\Eloquent\\Factories\\HasFactory;\nuse Illuminate\\Database\\Eloquent\\Model;\n\nclass PengajuanDetail extends Model\n{\n    use HasFactory;\n\n    /**\n     * Nama tabel yang terkait dengan model.\n     *\n     * @var string\n     */\n    protected $table = 'tbl_pengajuan_detail';\n\n    /**\n     * Kolom yang dapat diisi secara massal.\n     *\n     * @var array<int, string>\n     */\n    protected $fillable = [\n        'id_pengajuan',\n        'deskripsi_item',\n        'nominal_item',\n        'id_program',\n        'id_akun',\n        'id_pajak',\n        'id_vendor',\n    ];\n\n    /**\n     * Relasi kembali ke Header.\n     */\n    public function pengajuanHeader()\n    {\n        return $this->belongsTo(PengajuanHeader::class, 'id_pengajuan');\n    }\n\n    /**\n     * Relasi ke Program Kerja.\n     */\n    public function programKerja()\n    {\n        return $this->belongsTo(ProgramKerja::class, 'id_program');\n    }\n\n    /**\n     * Relasi ke Akun GL.\n     */\n    public function akunGl()\n    {\n        return $this->belongsTo(AkunGl::class, 'id_akun');\n    }\n\n    /**\n     * Relasi ke Pajak.\n     */\n    public function pajak()\n    {\n        return $this->belongsTo(Pajak::class, 'id_pajak');\n    }\n\n    /**\n     * Relasi ke Vendor.\n     */\n    public function vendor()\n    {\n        return $this->belongsTo(Vendor::class, 'id_vendor');\n    }\n}"
+        }
+    ]
+}

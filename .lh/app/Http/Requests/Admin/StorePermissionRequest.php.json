@@ -1,0 +1,22 @@
+{
+    "sourceFile": "app/Http/Requests/Admin/StorePermissionRequest.php",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 1,
+            "patches": [
+                {
+                    "date": 1763026374025,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1763026490919,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -21,9 +21,9 @@\n      * @return array<string, \\Illuminate\\Contracts\\Validation\\ValidationRule|array<mixed>|string>\n      */\n     public function rules(): array\n     {\n-        $guardName = $this->input('guard_name', 'web'); // Default ke 'web' jika tidak diisi\n+        $guardName = $this->input('guard_name', 'web'); \n         return [\n             'name' => [\n                 'required',\n                 'string',\n"
+                }
+            ],
+            "date": 1763026374025,
+            "name": "Commit-0",
+            "content": "<?php\n\nnamespace App\\Http\\Requests\\Admin;\n\nuse Illuminate\\Foundation\\Http\\FormRequest;\nuse Illuminate\\Validation\\Rule;\n\nclass StorePermissionRequest extends FormRequest\n{\n    /**\n     * Determine if the user is authorized to make this request.\n     */\n    public function authorize(): bool\n    {\n        return $this->user()->can('permissions.manage');\n    }\n\n    /**\n     * Get the validation rules that apply to the request.\n     *\n     * @return array<string, \\Illuminate\\Contracts\\Validation\\ValidationRule|array<mixed>|string>\n     */\n    public function rules(): array\n    {\n        $guardName = $this->input('guard_name', 'web'); // Default ke 'web' jika tidak diisi\n        return [\n            'name' => [\n                'required',\n                'string',\n                'max:255',\n                Rule::unique('permissions')->where(function ($query) use ($guardName) {\n                    return $query->where('guard_name', $guardName);\n                }),\n            ],\n            'guard_name' => 'nullable|string|max:255',\n        ];\n    }\n\n    public function messages(): array\n    {\n        return [\n            'name.unique' => 'Permission name already exists for this guard.',\n        ];\n    }\n}\n"
+        }
+    ]
+}

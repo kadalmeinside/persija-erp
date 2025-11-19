@@ -1,0 +1,26 @@
+{
+    "sourceFile": "app/Models/PengajuanHeader.php",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 2,
+            "patches": [
+                {
+                    "date": 1763015651824,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1763448994004,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -29,8 +29,12 @@\n         'tipe_pengajuan',\n         'total_nominal_diajukan',\n         'status_global',\n         'catatan_header',\n+        'judul_pengajuan',\n+        'attachment_path',\n+        'metode_pembayaran'\n+        'id_vendor_penerima',\n     ];\n \n     /**\n      * Relasi ke Karyawan (Pengaju).\n@@ -48,8 +52,16 @@\n         return $this->belongsTo(Departemen::class, 'id_departemen');\n     }\n \n     /**\n+     * Relasi ke Vendor (Penerima Pembayaran).\n+     */\n+    public function vendorPenerima()\n+    {\n+        return $this->belongsTo(Vendor::class, 'id_vendor_penerima');\n+    }\n+\n+    /**\n      * Relasi ke Detail Pengajuan (satu Header memiliki banyak Detail).\n      */\n     public function detail()\n     {\n"
+                },
+                {
+                    "date": 1763449028036,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -31,9 +31,9 @@\n         'status_global',\n         'catatan_header',\n         'judul_pengajuan',\n         'attachment_path',\n-        'metode_pembayaran'\n+        'metode_pembayaran',\n         'id_vendor_penerima',\n     ];\n \n     /**\n"
+                }
+            ],
+            "date": 1763015651824,
+            "name": "Commit-0",
+            "content": "<?php\n\nnamespace App\\Models;\n\nuse Illuminate\\Database\\Eloquent\\Factories\\HasFactory;\nuse Illuminate\\Database\\Eloquent\\Model;\n\nclass PengajuanHeader extends Model\n{\n    use HasFactory;\n\n    /**\n     * Nama tabel yang terkait dengan model.\n     *\n     * @var string\n     */\n    protected $table = 'tbl_pengajuan_header';\n\n    /**\n     * Kolom yang dapat diisi secara massal.\n     *\n     * @var array<int, string>\n     */\n    protected $fillable = [\n        'nomor_pengajuan',\n        'id_pengaju',\n        'id_departemen',\n        'tgl_pengajuan',\n        'tipe_pengajuan',\n        'total_nominal_diajukan',\n        'status_global',\n        'catatan_header',\n    ];\n\n    /**\n     * Relasi ke Karyawan (Pengaju).\n     */\n    public function pengaju()\n    {\n        return $this->belongsTo(Karyawan::class, 'id_pengaju');\n    }\n\n    /**\n     * Relasi ke Departemen.\n     */\n    public function departemen()\n    {\n        return $this->belongsTo(Departemen::class, 'id_departemen');\n    }\n\n    /**\n     * Relasi ke Detail Pengajuan (satu Header memiliki banyak Detail).\n     */\n    public function detail()\n    {\n        return $this->hasMany(PengajuanDetail::class, 'id_pengajuan');\n    }\n\n    /**\n     * Relasi ke Log Persetujuan.\n     */\n    public function logPersetujuan()\n    {\n        return $this->hasMany(LogPersetujuan::class, 'id_pengajuan');\n    }\n\n    /**\n     * Relasi ke Laporan Penggunaan (jika ini adalah Uang Muka).\n     */\n    public function laporanPenggunaan()\n    {\n        return $this->hasOne(LaporanPenggunaan::class, 'id_pengajuan_uam');\n    }\n}\n"
+        }
+    ]
+}

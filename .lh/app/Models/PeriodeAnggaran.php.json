@@ -1,0 +1,22 @@
+{
+    "sourceFile": "app/Models/PeriodeAnggaran.php",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 1,
+            "patches": [
+                {
+                    "date": 1763534740633,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                },
+                {
+                    "date": 1763534780954,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n@@ -1,8 +1,9 @@\n <?php\n \n namespace App\\Models;\n \n+use Illuminate\\Database\\Eloquent\\Factories\\HasFactory;\n use Illuminate\\Database\\Eloquent\\Model;\n \n class PeriodeAnggaran extends Model\n {\n"
+                }
+            ],
+            "date": 1763534740633,
+            "name": "Commit-0",
+            "content": "<?php\n\nnamespace App\\Models;\n\nuse Illuminate\\Database\\Eloquent\\Model;\n\nclass PeriodeAnggaran extends Model\n{\n    use HasFactory;\n    protected $table = 'tbl_periode_anggaran';\n    protected $fillable = ['nama_periode', 'tanggal_mulai', 'tanggal_selesai', 'is_active'];\n    \n    protected $casts = [\n        'tanggal_mulai' => 'date',\n        'tanggal_selesai' => 'date',\n        'is_active' => 'boolean',\n    ];\n}\n"
+        }
+    ]
+}

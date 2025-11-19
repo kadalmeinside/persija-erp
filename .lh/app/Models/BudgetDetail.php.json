@@ -1,0 +1,18 @@
+{
+    "sourceFile": "app/Models/BudgetDetail.php",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1763534776501,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1763534776501,
+            "name": "Commit-0",
+            "content": "<?php\n\nnamespace App\\Models;\n\nuse Illuminate\\Database\\Eloquent\\Factories\\HasFactory;\nuse Illuminate\\Database\\Eloquent\\Model;\n\nclass BudgetDetail extends Model\n{\n    use HasFactory;\n    protected $table = 'tbl_budget_detail';\n    protected $fillable = ['id_budget_master', 'bulan', 'tahun', 'nominal_pacing'];\n\n    public function header()\n    {\n        return $this->belongsTo(BudgetMaster::class, 'id_budget_master');\n    }\n}\n"
+        }
+    ]
+}

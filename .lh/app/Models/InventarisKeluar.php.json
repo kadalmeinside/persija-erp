@@ -1,0 +1,18 @@
+{
+    "sourceFile": "app/Models/InventarisKeluar.php",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1763016769618,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1763016769618,
+            "name": "Commit-0",
+            "content": "<?php\n\nnamespace App\\Models;\n\nuse Illuminate\\Database\\Eloquent\\Factories\\HasFactory;\nuse Illuminate\\Database\\Eloquent\\Model;\n\nclass InventarisKeluar extends Model\n{\n    use HasFactory;\n\n    protected $table = 'tbl_inventaris_keluar';\n\n    protected $fillable = [\n        'id_item',\n        'id_gudang',\n        'id_departemen_pemakai',\n        'kuantitas_keluar',\n        'tgl_keluar',\n    ];\n\n    /**\n     * Relasi ke Departemen (Pemakai).\n     */\n    public function departemenPemakai()\n    {\n        return $this->belongsTo(Departemen::class, 'id_departemen_pemakai');\n    }\n\n    /**\n     * Relasi ke Item.\n     */\n    public function item()\n    {\n        return $this->belongsTo(Item::class, 'id_item');\n    }\n}"
+        }
+    ]
+}

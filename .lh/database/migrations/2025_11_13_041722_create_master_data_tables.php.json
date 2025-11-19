@@ -1,0 +1,18 @@
+{
+    "sourceFile": "database/migrations/2025_11_13_041722_create_master_data_tables.php",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1763009545698,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1763009545698,
+            "name": "Commit-0",
+            "content": "<?php\n\nuse Illuminate\\Database\\Migrations\\Migration;\nuse Illuminate\\Database\\Schema\\Blueprint;\nuse Illuminate\\Support\\Facades\\Schema;\n\nreturn new class extends Migration\n{\n    /**\n     * Run the migrations.\n     */\n    public function up(): void\n    {\n        Schema::create('tbl_akun_gl', function (Blueprint $table) {\n            $table->id('id_akun');\n            $table->string('kode_akun', 50)->unique();\n            $table->string('nama_akun', 255);\n            $table->enum('tipe_akun', ['Aset', 'Utang', 'Modal', 'Pendapatan', 'Biaya', 'Biaya Modal']);\n            $table->timestamps();\n        });\n\n        // tbl_Departemen (Cost Center)\n        Schema::create('tbl_departemen', function (Blueprint $table) {\n            $table->id('id_departemen');\n            $table->string('nama_departemen', 255);\n            $table->timestamps();\n        });\n\n        // tbl_Program_Kerja (Dimensi Analisis)\n        Schema::create('tbl_program_kerja', function (Blueprint $table) {\n            $table->id('id_program');\n            $table->string('nama_program', 255);\n            $table->timestamps();\n        });\n\n        // tbl_Vendor\n        Schema::create('tbl_vendor', function (Blueprint $table) {\n            $table->id('id_vendor');\n            $table->string('nama_vendor', 255);\n            $table->timestamps();\n        });\n\n        // tbl_Customer\n        Schema::create('tbl_customer', function (Blueprint $table) {\n            $table->id('id_customer');\n            $table->string('nama_customer', 255);\n            $table->timestamps();\n        });\n\n        // tbl_Pajak\n        Schema::create('tbl_pajak', function (Blueprint $table) {\n            $table->id('id_pajak');\n            $table->string('kode_pajak', 50);\n            $table->decimal('persentase', 5, 2);\n            $table->foreignId('id_akun_pajak')->constrained('tbl_akun_gl');\n            $table->timestamps();\n        });\n\n        // tbl_Item\n        Schema::create('tbl_item', function (Blueprint $table) {\n            $table->id('id_item');\n            $table->string('kode_item', 100)->unique();\n            $table->string('nama_item', 255);\n            $table->enum('tipe_item', ['Stok', 'Non-Stok', 'Jasa', 'Aset']);\n            $table->timestamps();\n        });\n\n        // tbl_Gudang\n        Schema::create('tbl_gudang', function (Blueprint $table) {\n            $table->id('id_gudang');\n            $table->string('nama_gudang', 255);\n            $table->string('lokasi', 255)->nullable();\n            $table->timestamps();\n        });\n    }\n\n    /**\n     * Reverse the migrations.\n     */\n    public function down(): void\n    {\n        Schema::dropIfExists('tbl_gudang');\n        Schema::dropIfExists('tbl_item');\n        Schema::dropIfExists('tbl_pajak');\n        Schema::dropIfExists('tbl_customer');\n        Schema::dropIfExists('tbl_vendor');\n        Schema::dropIfExists('tbl_program_kerja');\n        Schema::dropIfExists('tbl_departemen');\n        Schema::dropIfExists('tbl_akun_gl');\n    }\n};\n"
+        }
+    ]
+}

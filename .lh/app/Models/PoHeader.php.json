@@ -1,0 +1,18 @@
+{
+    "sourceFile": "app/Models/PoHeader.php",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1763016725870,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1763016725870,
+            "name": "Commit-0",
+            "content": "<?php\n\nnamespace App\\Models;\n\nuse Illuminate\\Database\\Eloquent\\Factories\\HasFactory;\nuse Illuminate\\Database\\Eloquent\\Model;\n\nclass PoHeader extends Model\n{\n    use HasFactory;\n\n    protected $table = 'tbl_po_header';\n\n    protected $fillable = [\n        'id_vendor',\n        'nomor_po',\n        'tgl_po',\n        'total_po',\n        'status_po',\n    ];\n\n    /**\n     * Relasi ke Vendor.\n     */\n    public function vendor()\n    {\n        return $this->belongsTo(Vendor::class, 'id_vendor');\n    }\n\n    /**\n     * Relasi ke PO Detail (banyak item).\n     */\n    public function detail()\n    {\n        return $this->hasMany(PoDetail::class, 'id_po');\n    }\n\n    /**\n     * Relasi ke GRN (satu PO bisa punya banyak GRN).\n     */\n    public function grn()\n    {\n        return $this->hasMany(GrnHeader::class, 'id_po');\n    }\n}"
+        }
+    ]
+}

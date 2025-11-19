@@ -1,0 +1,18 @@
+{
+    "sourceFile": "app/Models/GrnDetail.php",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1763016751589,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1763016751589,
+            "name": "Commit-0",
+            "content": "<?php\n\nnamespace App\\Models;\n\nuse Illuminate\\Database\\Eloquent\\Factories\\HasFactory;\nuse Illuminate\\Database\\Eloquent\\Model;\n\nclass GrnDetail extends Model\n{\n    use HasFactory;\n\n    protected $table = 'tbl_grn_detail';\n\n    protected $fillable = [\n        'id_grn',\n        'id_item',\n        'kuantitas_diterima',\n    ];\n\n    /**\n     * Relasi kembali ke GRN Header.\n     */\n    public function grnHeader()\n    {\n        return $this->belongsTo(GrnHeader::class, 'id_grn');\n    }\n\n    /**\n     * Relasi ke Item.\n     */\n    public function item()\n    {\n        return $this->belongsTo(Item::class, 'id_item');\n    }\n}"
+        }
+    ]
+}

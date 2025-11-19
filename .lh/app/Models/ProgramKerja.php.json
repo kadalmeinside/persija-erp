@@ -1,0 +1,18 @@
+{
+    "sourceFile": "app/Models/ProgramKerja.php",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1763012886493,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1763012886493,
+            "name": "Commit-0",
+            "content": "<?php\n\nnamespace App\\Models;\n\nuse Illuminate\\Database\\Eloquent\\Factories\\HasFactory;\nuse Illuminate\\Database\\Eloquent\\Model;\n\nclass ProgramKerja extends Model\n{\n    use HasFactory;\n\n    /**\n     * Nama tabel yang terkait dengan model.\n     *\n     * @var string\n     */\n    protected $table = 'tbl_program_kerja';\n\n    /**\n     * Relasi ke Budget (satu Program memiliki banyak baris Budget).\n     */\n    public function budgetMaster()\n    {\n        return $this->hasMany(BudgetMaster::class, 'id_program');\n    }\n}\n"
+        }
+    ]
+}

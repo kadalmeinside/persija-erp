@@ -1,0 +1,18 @@
+{
+    "sourceFile": "app/Models/InventarisStok.php",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1763016761340,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1763016761340,
+            "name": "Commit-0",
+            "content": "<?php\n\nnamespace App\\Models;\n\nuse Illuminate\\Database\\Eloquent\\Factories\\HasFactory;\nuse Illuminate\\Database\\Eloquent\\Model;\n\nclass InventarisStok extends Model\n{\n    use HasFactory;\n\n    protected $table = 'tbl_inventaris_stok';\n\n    protected $fillable = [\n        'id_item',\n        'id_gudang',\n        'stok_qty_on_hand',\n    ];\n\n    /**\n     * Relasi ke Item.\n     */\n    public function item()\n    {\n        return $this->belongsTo(Item::class, 'id_item');\n    }\n\n    /**\n     * Relasi ke Gudang.\n     */\n    public function gudang()\n    {\n        return $this->belongsTo(Gudang::class, 'id_gudang');\n    }\n}"
+        }
+    ]
+}

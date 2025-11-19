@@ -1,0 +1,18 @@
+{
+    "sourceFile": "app/Models/Karyawan.php",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1763016719215,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1763016719215,
+            "name": "Commit-0",
+            "content": "<?php\n\nnamespace App\\Models;\n\nuse Illuminate\\Database\\Eloquent\\Factories\\HasFactory;\nuse Illuminate\\Database\\Eloquent\\Model;\n\nclass Karyawan extends Model\n{\n    use HasFactory;\n\n    protected $table = 'tbl_karyawan';\n\n    protected $fillable = [\n        'user_id',\n        'id_departemen',\n        'nomor_induk_karyawan',\n        'nama_lengkap',\n        'jabatan',\n        'gaji_pokok',\n        'status_ptkp',\n        'info_bank',\n    ];\n\n    /**\n     * Relasi ke User (Login).\n     */\n    public function user()\n    {\n        return $this->belongsTo(\\App\\Models\\User::class, 'user_id');\n    }\n\n    /**\n     * Relasi ke Departemen.\n     */\n    public function departemen()\n    {\n        return $this->belongsTo(Departemen::class, 'id_departemen');\n    }\n\n    /**\n     * Relasi ke Pengajuan (sebagai Pengaju).\n     */\n    public function pengajuan()\n    {\n        return $this->hasMany(PengajuanHeader::class, 'id_pengaju');\n    }\n}"
+        }
+    ]
+}

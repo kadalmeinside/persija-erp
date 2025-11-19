@@ -1,0 +1,18 @@
+{
+    "sourceFile": "app/Http/Requests/Admin/StoreRoleRequest.php",
+    "activeCommit": 0,
+    "commits": [
+        {
+            "activePatchIndex": 0,
+            "patches": [
+                {
+                    "date": 1763026385610,
+                    "content": "Index: \n===================================================================\n--- \n+++ \n"
+                }
+            ],
+            "date": 1763026385610,
+            "name": "Commit-0",
+            "content": "<?php\n\nnamespace App\\Http\\Requests\\Admin;\n\nuse Illuminate\\Foundation\\Http\\FormRequest;\nuse Illuminate\\Support\\Facades\\Gate;\n\nclass StoreRoleRequest extends FormRequest\n{\n    /**\n     * Determine if the user is authorized to make this request.\n     */\n    public function authorize(): bool\n    {\n        return $this->user()->can('role.manage');\n    }\n\n    /**\n     * Get the validation rules that apply to the request.\n     *\n     * @return array<string, \\Illuminate\\Contracts\\Validation\\ValidationRule|array<mixed>|string>\n     */\n    public function rules(): array\n    {\n        return [\n            'name' => 'required|string|max:255|unique:roles,name',\n            'guard_name' => 'nullable|string|max:255',\n            'permissions' => 'nullable|array',\n            'permissions.*' => 'string|exists:permissions,name',\n        ];\n    }\n\n    public function messages(): array\n    {\n        return [\n            'name.unique' => 'Role name already exists.',\n        ];\n    }\n}\n"
+        }
+    ]
+}
