@@ -16,7 +16,6 @@ class DatabaseSeeder extends Seeder
             DepartemenSeeder::class, // Seed base departments
             AdminUserSeeder::class, // Create Admin with Karyawan Profile
             SettingSeeder::class,   // Base App Settings
-            MasterDataBudgetSeeder::class, // Base Budget Accounts
             MasterDataFinanceSeeder::class, // Base GL Accounts
             MasterDataTaxSeeder::class, // Base Taxes
             MasterDataCutiSeeder::class, // Base Cuti Types

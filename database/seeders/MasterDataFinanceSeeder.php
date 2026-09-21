@@ -40,7 +40,18 @@ class MasterDataFinanceSeeder extends Seeder
             ['nama_akun' => 'Modal Awal (Opening Balance Equity)', 'tipe_akun' => 'Modal']
         );
 
-        // 3. Buat Data Kas/Bank dengan Saldo Awal + Jurnal
+        // 3. Akun Penting Sistem (Pinjaman & Payroll)
+        AkunGl::firstOrCreate(
+            ['kode_akun' => '1-1200'],
+            ['nama_akun' => 'Piutang Pinjaman Karyawan', 'tipe_akun' => 'Aset']
+        );
+
+        AkunGl::firstOrCreate(
+            ['kode_akun' => '6-1000'],
+            ['nama_akun' => 'Beban Gaji & Upah', 'tipe_akun' => 'Biaya']
+        );
+
+        // 4. Buat Data Kas/Bank dengan Saldo Awal + Jurnal
         
         $this->createBankWithJournal('Bank Masuk', '000-111-222', 'PT Persija Jaya', $akunBankMasuk, 1500000000, $akunModalAwal);
         $this->createBankWithJournal('Bank Keluar', '333-444-555', 'PT Persija Jaya', $akunBankKeluar, 500000000, $akunModalAwal);
