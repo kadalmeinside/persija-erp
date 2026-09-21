@@ -44,6 +44,7 @@ class UserKaryawanSeeder extends Seeder
                     'user_id' => $adminUser->id, // Update/Isi user_id
                     'id_departemen' => $mgmtDept->id,
                     'nama_lengkap' => 'Admin ERP',
+                    'jenis_kelamin' => 'L', // Default Laki-laki
                     'jabatan' => 'Administrator',
                     'gaji_pokok' => 10000000,
                     'status_ptkp' => 'TK/0', // Tambahkan default
@@ -68,6 +69,7 @@ class UserKaryawanSeeder extends Seeder
                     'user_id' => $stafUser->id, // Langsung hubungkan
                     'id_departemen' => $edpDept->id,
                     'nama_lengkap' => 'Staf EDP',
+                    'jenis_kelamin' => 'L', // Default Laki-laki
                     'jabatan' => 'Staf IT',
                     'gaji_pokok' => 7000000,
                     'status_ptkp' => 'K/0', // Tambahkan default

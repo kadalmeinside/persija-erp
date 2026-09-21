@@ -43,26 +43,36 @@ class SettingsController extends Controller
         $validated = $request->validate([
             'app_name' => 'nullable|string|max:255',
             'app_logo' => 'nullable|image|max:1024', // Max 1MB
+            'company_name' => 'nullable|string|max:255',
+            'company_address' => 'nullable|string',
+            'company_logo' => 'nullable|image|max:2048', // Max 2MB
+            'reimburse_tolerance_limit' => 'nullable|numeric|min:0',
         ]);
 
-        if ($request->has('app_name')) {
-            Setting::updateOrCreate(
-                ['key' => 'app_name'],
-                ['value' => $validated['app_name']]
-            );
+        $keys = ['app_name', 'company_name', 'company_address', 'reimburse_tolerance_limit'];
+        foreach ($keys as $key) {
+            if ($request->has($key)) {
+                Setting::updateOrCreate(
+                    ['key' => $key],
+                    ['value' => $request->input($key)]
+                );
+            }
         }
 
-        if ($request->hasFile('app_logo')) {
-            $oldLogoPath = Setting::where('key', 'app_logo')->value('value');
-            if ($oldLogoPath) {
-                Storage::disk('public')->delete($oldLogoPath);
-            }
+        $fileKeys = ['app_logo', 'company_logo'];
+        foreach ($fileKeys as $key) {
+            if ($request->hasFile($key)) {
+                $oldPath = Setting::where('key', $key)->value('value');
+                if ($oldPath) {
+                    Storage::disk('public')->delete($oldPath);
+                }
 
-            $path = $request->file('app_logo')->store('logos', 'public');
-            Setting::updateOrCreate(
-                ['key' => 'app_logo'],
-                ['value' => $path]
-            );
+                $path = $request->file($key)->store('logos', 'public');
+                Setting::updateOrCreate(
+                    ['key' => $key],
+                    ['value' => $path]
+                );
+            }
         }
 
         Cache::forget('app_settings');

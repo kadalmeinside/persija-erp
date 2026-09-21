@@ -7,44 +7,102 @@ use App\Models\BudgetDetail;
 use App\Models\PeriodeAnggaran;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB;
 
 class BudgetCheckService
 {
+    /**
+     * Mengurangi saldo anggaran (Booking/Commit).
+     * Status: Dana dipesan/ditahan, belum tentu keluar, tapi mengurangi jatah belanja.
+     */
     public function commitBudget(int $budgetId, float $nominal): void
     {
-        // Commit tetap ke Header (Agregat Tahunan)
         BudgetMaster::where('id', $budgetId)->increment('anggaran_terikat_ytd', $nominal);
-        Log::info("Budget committed", ['budget_id' => $budgetId, 'nominal' => $nominal]);
     }
 
-    public function getSisaSaldoDB(int $id_departemen, int $id_akun, int $id_program, Carbon $tanggal): array
+    /**
+     * Mengembalikan saldo anggaran (Un-commit/Reversal).
+     * Digunakan saat pengajuan dihapus, ditolak, atau saat Settlement (sebelum dicatat ulang).
+     */
+    public function unCommitBudget(int $budgetId, float $nominal): void
     {
-        // 1. Cari Periode Aktif
-        $periode = PeriodeAnggaran::where('is_active', true)->first();
-        
-        if (!$periode) {
-             // Fallback: Coba cari periode berdasarkan tanggal pengajuan
-             $periode = PeriodeAnggaran::whereDate('tanggal_mulai', '<=', $tanggal)
-                        ->whereDate('tanggal_selesai', '>=', $tanggal)
-                        ->first();
+        $budget = BudgetMaster::find($budgetId);
+        if ($budget) {
+            $budget->decrement('anggaran_terikat_ytd', $nominal);
         }
-
-        if (!$periode) {
-            return [ 'success' => false, 'message' => 'Tidak ada periode anggaran yang cocok.', 'sisa_saldo_db' => 0 ];
+    }
+    
+    /**
+     * [BARU] Memindahkan dari Terikat ke Realisasi.
+     * Digunakan saat Finance memverifikasi laporan/pembayaran final.
+     */
+    public function realizeBudget(int $budgetId, float $nominal): void
+    {
+        $budget = BudgetMaster::find($budgetId);
+        if ($budget) {
+            // 1. Kurangi jatah Terikat (karena sudah bukan pesanan lagi)
+            $budget->decrement('anggaran_terikat_ytd', $nominal);
+            // 2. Tambahkan ke Realisasi (Uang benar-benar diakui hilang/terpakai)
+            $budget->increment('anggaran_realisasi_ytd', $nominal);
         }
+    }
 
-        // 2. Cari Budget Header
-        $budget = BudgetMaster::where('id_periode_anggaran', $periode->id)
-            ->where('id_departemen', $id_departemen)
-            ->where('id_akun', $id_akun)
-            ->where('id_program', $id_program)
+    /**
+     * Helper mencari ID Budget Master berdasarkan parameter.
+     */
+    /**
+     * Helper mencari ID Budget Master berdasarkan parameter.
+     */
+    public function getBudgetId(int $id_departemen, int $id_akun, int $id_program, Carbon $tanggal): ?int
+    {
+        // Cari Periode yang mencakup tanggal
+        $periode = PeriodeAnggaran::whereDate('tanggal_mulai', '<=', $tanggal)
+                    ->whereDate('tanggal_selesai', '>=', $tanggal)
+                    ->first();
+
+        if (!$periode) return null;
+
+        // Cari Pos Anggaran (Mapping Program <-> Akun)
+        // Note: id_departemen is ignored for finding the budget master itself in Centralized Budgeting,
+        // unless we implement delegation logic later. For now, budget is at Program level.
+        $posAnggaran = \App\Models\PosAnggaran::where('id_program_kerja', $id_program)
+            ->where('id_akun_gl', $id_akun)
+            ->where('is_active', true)
             ->first();
 
-        if (!$budget) {
-            return [ 'success' => false, 'message' => 'Anggaran tidak ditemukan.', 'sisa_saldo_db' => 0 ];
+        if (!$posAnggaran) return null;
+
+        $budget = BudgetMaster::where('id_periode_anggaran', $periode->id)
+            ->where('id_pos_anggaran', $posAnggaran->id)
+            ->first();
+
+        return $budget ? $budget->id : null;
+    }
+
+    /**
+     * Mendapatkan informasi sisa saldo (Tahunan).
+     */
+    public function getSisaSaldoDB(int $id_departemen, int $id_akun, int $id_program, Carbon $tanggal): array
+    {
+        // 0. Cek Tipe Akun (Bypass untuk Utang/Liability)
+        $akun = \App\Models\AkunGl::find($id_akun);
+        if ($akun && in_array($akun->tipe_akun, ['Utang', 'Kewajiban'])) {
+             return [
+                'success' => true,
+                'message' => 'Akun Kewajiban (Non-Budgeted).',
+                'sisa_saldo_db' => 999999999999, // Unlimited
+                'budget_id' => null,
+            ];
         }
 
+        $budgetId = $this->getBudgetId($id_departemen, $id_akun, $id_program, $tanggal);
+
+        if (!$budgetId) {
+            return ['success' => false, 'message' => 'Anggaran tidak ditemukan pada periode ini.', 'sisa_saldo_db' => 0];
+        }
+
+        $budget = BudgetMaster::find($budgetId);
+        
+        // Rumus Sisa: Total - (Terikat + Realisasi)
         $sisaTahunan = $budget->anggaran_total_tahun - $budget->anggaran_terikat_ytd - $budget->anggaran_realisasi_ytd;
         
         return [
@@ -55,8 +113,22 @@ class BudgetCheckService
         ];
     }
 
+    /**
+     * Melakukan pengecekan ketersediaan dana (Check).
+     */
     public function check(int $id_departemen, int $id_akun, int $id_program, float $nominal, Carbon $tanggal): array
     {
+        // 0. Cek Tipe Akun (Bypass untuk Utang/Liability)
+        $akun = \App\Models\AkunGl::find($id_akun);
+        if ($akun && in_array($akun->tipe_akun, ['Utang', 'Kewajiban'])) {
+             return [
+                'success' => true,
+                'message' => 'Transaksi Non-Budgeter (Kewajiban).',
+                'warning' => null,
+                'budget_id' => null,
+            ];
+        }
+
         // 1. Cek Saldo Tahunan (Hard Limit)
         $saldoResult = $this->getSisaSaldoDB($id_departemen, $id_akun, $id_program, $tanggal);
         
@@ -67,21 +139,16 @@ class BudgetCheckService
         $budgetId = $saldoResult['budget_id'];
         $sisaTahunan = $saldoResult['sisa_saldo_db'];
 
-        // Lock row untuk konkurensi
-        $budget = BudgetMaster::where('id', $budgetId)->lockForUpdate()->first();
-        
         if ($nominal > $sisaTahunan) {
             return [
                 'success' => false,
-                'message' => "Plafon tahunan terlampaui. Sisa: " . number_format($sisaTahunan, 2, ',', '.'),
+                'message' => "Plafon tahunan terlampaui. Sisa: " . number_format($sisaTahunan, 0, ',', '.'),
                 'warning' => null,
             ];
         }
 
-        // 2. Cek Pacing Bulanan (Soft Limit) - VERTIKAL
+        // 2. Cek Pacing Bulanan (Soft Limit - Warning Only)
         $warningMessage = null;
-        
-        // Cari baris detail untuk bulan & tahun spesifik ini
         $pacingDetail = BudgetDetail::where('id_budget_master', $budgetId)
             ->where('bulan', $tanggal->month)
             ->where('tahun', $tanggal->year)
@@ -90,7 +157,7 @@ class BudgetCheckService
         if ($pacingDetail) {
             $plafonBulanan = (float) $pacingDetail->nominal_pacing;
             if ($plafonBulanan > 0 && $nominal > $plafonBulanan) {
-                $warningMessage = "Peringatan: Melebihi pacing bulan ini (Plafon: " . number_format($plafonBulanan, 2, ',', '.') . ")";
+                $warningMessage = "Over Budget Bulanan (Plafon: " . number_format($plafonBulanan, 0, ',', '.') . ").";
             }
         }
 

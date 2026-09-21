@@ -19,7 +19,12 @@ class DatabaseSeeder extends Seeder
             //AdminUserSeeder::class,
             UserKaryawanSeeder::class,
             RoleAndPermissionSeeder::class, 
+            DummyDataSeeder::class, // Moved up to ensure employees exist before leave seeding
             MasterDataBudgetSeeder::class,
+            MasterDataFinanceSeeder::class, // Added Finance Seeder
+            MasterDataTaxSeeder::class, // Added Tax Seeder
+            MasterDataCutiSeeder::class,
+            HariLiburSeeder::class,
         ]);
     }
 }

@@ -13,12 +13,7 @@ window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 
-// === TAMBAHKAN BLOK DEBUGGING INI ===
-console.log('--- DEBUGGING VITE ENV VARIABLES ---');
-console.log('VITE_PUSHER_APP_KEY:', import.meta.env.VITE_PUSHER_APP_KEY);
-console.log('VITE_PUSHER_APP_CLUSTER:', import.meta.env.VITE_PUSHER_APP_CLUSTER);
-console.log('------------------------------------');
-// === AKHIR BLOK DEBUGGING ===
+
 
 
 window.Pusher = Pusher;

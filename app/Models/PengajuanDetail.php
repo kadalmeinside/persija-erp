@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class PengajuanDetail extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     /**
      * Nama tabel yang terkait dengan model.
@@ -27,7 +29,9 @@ class PengajuanDetail extends Model
         'nominal_item',
         'id_program',
         'id_akun',
-        'id_pajak',
+        'id_tax_type',
+        'rate_pajak',
+        'nominal_pajak',
         'attachment_path',
     ];
 
@@ -56,11 +60,11 @@ class PengajuanDetail extends Model
     }
 
     /**
-     * Relasi ke Pajak.
+     * Relasi ke Pajak (TaxType).
      */
     public function pajak()
     {
-        return $this->belongsTo(Pajak::class, 'id_pajak');
+        return $this->belongsTo(TaxType::class, 'id_tax_type');
     }
 
     /**
@@ -69,5 +73,13 @@ class PengajuanDetail extends Model
     public function vendor()
     {
         return $this->belongsTo(Vendor::class, 'id_vendor');
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logFillable()
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
     }
 }

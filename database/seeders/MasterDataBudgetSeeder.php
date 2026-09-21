@@ -76,6 +76,12 @@ class MasterDataBudgetSeeder extends Seeder
                         $programName = $uraian;
                         if (!empty($kodeAkun)) $programName = $kodeAkun;
                         $program = ProgramKerja::firstOrCreate(['nama_program' => $programName]);
+                        
+                        // Ensure Department is linked
+                        if ($currentDepartemenId && !$program->id_departemen) {
+                            $program->update(['id_departemen' => $currentDepartemenId]);
+                        }
+
                         $currentProgramId = $program->id;
                         $this->command->info("    [PROG] {$programName}");
                         continue;
@@ -101,13 +107,18 @@ class MasterDataBudgetSeeder extends Seeder
                             ['nama_akun' => $uraian, 'tipe_akun' => $tipeAkun]
                         );
 
+                        // Create Pos Anggaran (Mapping)
+                        $posAnggaran = \App\Models\PosAnggaran::firstOrCreate([
+                            'id_program_kerja' => $currentProgramId,
+                            'id_akun_gl' => $akun->id
+                        ]);
+
                         // Cek apakah budget header sudah ada
                         $budgetHeader = BudgetMaster::firstOrCreate(
                             [
                                 'id_periode_anggaran' => $periode->id,
-                                'id_departemen' => $currentDepartemenId,
-                                'id_akun' => $akun->id,
-                                'id_program' => $currentProgramId,
+                                // 'id_departemen' => $currentDepartemenId, // Removed
+                                'id_pos_anggaran' => $posAnggaran->id,
                             ],
                             [
                                 'anggaran_total_tahun' => $anggaranTotal,

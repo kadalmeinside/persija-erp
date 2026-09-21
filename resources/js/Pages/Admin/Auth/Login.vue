@@ -44,16 +44,16 @@ const submit = () => {
     <GuestLayout>
         <Head title="Masuk Akun" />
 
-        <!-- Menggunakan struktur dari permintaan pengguna -->
-        <div class="w-full max-w-md rounded-xl bg-white p-4 dark:bg-slate-800">
+        <!-- Glass Form Teks -->
+        <div class="w-full max-w-md p-2">
             <div class="mb-8 text-center">
-                <h2 class="mt-8 text-3xl font-bold leading-9 tracking-tight text-gray-900 dark:text-white">
+                <h2 class="mt-4 text-3xl font-extrabold tracking-tight text-white drop-shadow-md">
                     Admin & Staff Login
                 </h2>
-                <p class="mt-2 text-sm leading-6 text-gray-500 dark:text-gray-400">
+                <p class="mt-2 text-sm text-slate-300 drop-shadow-sm font-medium">
                     Selamat datang kembali! Silakan masuk ke akun Anda.
                 </p>
-                <p v-if="status" class="mt-3 rounded-md bg-green-50 p-3 text-sm text-green-700 dark:bg-green-700 dark:text-green-50">
+                <p v-if="status" class="mt-3 rounded-xl bg-green-500/20 p-3 text-sm text-green-100 border border-green-500/30 backdrop-blur-sm">
                     {{ status }}
                 </p>
             </div>
@@ -62,28 +62,28 @@ const submit = () => {
             <form @submit.prevent="submit" class="space-y-6">
                 <!-- Input Email -->
                 <div>
-                    <InputLabel for="email" value="Alamat Email" class="block text-sm font-medium text-gray-700 dark:text-gray-300" />
-                    <TextInput
+                    <InputLabel for="email" value="Alamat Email" class="block text-sm font-semibold text-slate-300 drop-shadow-sm ml-1" />
+                    <input
                         id="email"
                         type="email"
-                        class="mt-1 block w-full appearance-none rounded-lg border border-gray-300 px-4 py-3 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 dark:focus:border-indigo-500 dark:focus:ring-indigo-500"
+                        class="mt-2 block w-full appearance-none rounded-xl border border-white/20 bg-black/30 px-4 py-3 placeholder-slate-500 text-white shadow-inner backdrop-blur-md focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/50 sm:text-sm transition-all"
                         v-model="form.email"
                         required
                         autofocus
                         autocomplete="username"
                         placeholder="nama@contoh.com"
                     />
-                    <InputError class="mt-2 text-xs text-red-600 dark:text-red-400" :message="form.errors.email" />
+                    <InputError class="mt-2 text-xs text-red-400 font-medium" :message="form.errors.email" />
                 </div>
 
                 <!-- Input Password dengan Tombol Show/Hide -->
                 <div>
-                    <InputLabel for="password" value="Kata Sandi" class="block text-sm font-medium text-gray-700 dark:text-gray-300" />
-                    <div class="relative mt-1">
-                        <TextInput
+                    <InputLabel for="password" value="Kata Sandi" class="block text-sm font-semibold text-slate-300 drop-shadow-sm ml-1" />
+                    <div class="relative mt-2">
+                        <input
                             id="password"
                             :type="showPassword ? 'text' : 'password'"
-                            class="block w-full appearance-none rounded-lg border border-gray-300 px-4 py-3 pr-10 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:text-sm dark:border-slate-600 dark:bg-slate-700 dark:text-white dark:placeholder-slate-400 dark:focus:border-indigo-500 dark:focus:ring-indigo-500"
+                            class="block w-full appearance-none rounded-xl border border-white/20 bg-black/30 px-4 py-3 pr-10 placeholder-slate-500 text-white shadow-inner backdrop-blur-md focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/50 sm:text-sm transition-all"
                             v-model="form.password"
                             required
                             autocomplete="current-password"
@@ -92,7 +92,7 @@ const submit = () => {
                         <button
                             type="button"
                             @click="togglePasswordVisibility"
-                            class="absolute inset-y-0 right-0 flex items-center rounded-r-lg px-3 text-gray-500 hover:text-gray-700 focus:outline-none dark:text-gray-400 dark:hover:text-gray-200"
+                            class="absolute inset-y-0 right-0 flex items-center rounded-r-xl px-3 text-slate-500 hover:text-white focus:outline-none transition-colors"
                             aria-label="Toggle password visibility"
                         >
                             <svg v-if="showPassword" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
@@ -104,21 +104,21 @@ const submit = () => {
                             </svg>
                         </button>
                     </div>
-                    <InputError class="mt-2 text-xs text-red-600 dark:text-red-400" :message="form.errors.password" />
+                    <InputError class="mt-2 text-xs text-red-400 font-medium" :message="form.errors.password" />
                 </div>
 
                 <!-- Opsi "Ingat Saya" dan "Lupa Kata Sandi" -->
                 <div class="flex items-center justify-between pt-2">
                     <div class="flex items-center">
-                        <Checkbox id="remember" name="remember" v-model:checked="form.remember" class="h-4 w-4 rounded border-gray-300 text-red-400 focus:ring-red-500 dark:border-slate-600 dark:bg-slate-700 dark:focus:ring-red-400 dark:focus:ring-offset-slate-600" />
-                        <label for="remember" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">Ingat saya</label>
+                        <Checkbox id="remember" name="remember" v-model:checked="form.remember" class="h-4 w-4 rounded border-white/20 bg-black/30 text-slate-500 focus:ring-slate-400" />
+                        <label for="remember" class="ml-2 block text-sm text-slate-400 hover:text-slate-200 transition-colors cursor-pointer">Ingat saya</label>
                     </div>
 
                     <div class="text-sm">
                         <Link
                             v-if="canResetPassword"
                             :href="route('password.request')"
-                            class="font-medium text-indigo-600 hover:text-indigo-500 hover:underline dark:text-indigo-400 dark:hover:text-indigo-300"
+                            class="font-semibold text-slate-400 hover:text-white hover:underline transition-colors"
                         >
                             Lupa kata sandi?
                         </Link>
@@ -126,33 +126,29 @@ const submit = () => {
                 </div>
 
                 <!-- Tombol Submit -->
-                <div>
-                    <PrimaryButton
-                        class="group relative flex w-full justify-center rounded-lg border border-transparent bg-red-600 py-3 px-4 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-150 ease-in-out dark:bg-red-500 dark:hover:bg-red-600 dark:focus:ring-offset-slate-800"
-                        :class="{ 'opacity-50 cursor-not-allowed': form.processing }"
+                <div class="pt-2">
+                    <button
+                        type="submit"
+                        class="group relative flex w-full justify-center items-center gap-2 rounded-xl border border-white/10 bg-gradient-to-br from-slate-700 to-slate-900 hover:from-slate-600 hover:to-slate-800 py-3.5 px-4 text-sm font-bold text-white shadow-[0_4px_16px_rgba(0,0,0,0.5)] backdrop-blur-sm transition-all duration-300 ease-out hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 focus:ring-offset-slate-900"
+                        :class="{ 'opacity-70 cursor-not-allowed scale-100': form.processing }"
                         :disabled="form.processing"
                     >
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3">
-                            <svg class="h-5 w-5 text-red-400 group-hover:text-red-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                            <path fill-rule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clip-rule="evenodd" />
-                            </svg>
-                        </span>
-                        <svg v-if="form.processing" class="mr-2 h-5 w-5 animate-spin text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <svg v-if="form.processing" class="h-5 w-5 animate-spin text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        {{ form.processing ? 'Memproses...' : 'Masuk' }}
-                    </PrimaryButton>
+                        <span v-else>
+                            <svg class="h-5 w-5 text-slate-400 group-hover:text-white mb-0.5 transition-colors" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clip-rule="evenodd" />
+                            </svg>
+                        </span>
+                        {{ form.processing ? 'Memproses...' : 'Masuk ke Sistem' }}
+                    </button>
                 </div>
             </form>
 
             <!-- Link ke Halaman Registrasi -->
-            <p v-if="!$page.props.auth.user" class="mt-10 text-center text-sm text-gray-600 dark:text-gray-400">
-                Bukan Admin atau Staff?
-                <Link :href="route('login')" class="font-semibold leading-6 text-red-600 hover:text-red-500 hover:underline dark:text-red-400 dark:hover:text-red-300">
-                    Login sebagai Siswa/Wali
-                </Link>
-            </p>
+
         </div>
     </GuestLayout>
 </template>

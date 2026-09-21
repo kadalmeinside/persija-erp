@@ -6,19 +6,17 @@ use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 
 class RoleAndPermissionSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
+        // -------------------------------------------------------
+        // PERMISSIONS
+        // -------------------------------------------------------
         $permissions = [
-            // Pengajuan
             'pengajuan.create',
             'pengajuan.view.own',
             'pengajuan.view.department',
@@ -27,55 +25,67 @@ class RoleAndPermissionSeeder extends Seeder
             'pengajuan.approve.level2',
             'pengajuan.pay',
             'pengajuan.reject',
-            
-            // Anggaran
             'budget.view.department',
             'budget.view.all',
-            'budget.manage', // Untuk import/update
-
-            // Laporan
+            'budget.manage',
             'report.view.gl',
             'report.view.ap',
             'report.view.ar',
-
-            // Master Data
             'master.manage.all',
-
-            // HRIS & Payroll
             'payroll.run',
             'payroll.view',
             'karyawan.manage',
-
-            // AR & PO
             'fakturjual.manage',
             'po.manage',
-
-            // Pengaturan Sistem
             'user.manage',
             'role.manage',
             'permissions.manage',
-            'settings.manage'
+            'settings.manage',
         ];
 
         foreach ($permissions as $permission) {
             Permission::firstOrCreate(['name' => $permission]);
         }
-        $this->command->info('Permissions created.');
+        $this->command->info('✅ Permissions created/verified.');
 
-        $adminRole = Role::firstOrCreate(['name' => 'Super Admin']);
-        $manajerRole = Role::firstOrCreate(['name' => 'Manajer Departemen']);
-        $financeRole = Role::firstOrCreate(['name' => 'Staf Finance']);
-        $stafRole = Role::firstOrCreate(['name' => 'Staf']);
-        
-        $this->command->info('Roles created.');
+        // -------------------------------------------------------
+        // ROLES — harus sesuai PERSIS dengan yang ada di routes/web.php
+        // dan di hasRole() checks di controllers
+        // -------------------------------------------------------
+        $superAdminRole     = Role::firstOrCreate(['name' => 'Super Admin']);
+        $manajerRole        = Role::firstOrCreate(['name' => 'Manajer Departemen']);
+        $direkturRole       = Role::firstOrCreate(['name' => 'Direktur']);
+        $karyawanRole       = Role::firstOrCreate(['name' => 'Karyawan']);
+        $stafRole           = Role::firstOrCreate(['name' => 'Staf']);
 
-        
-        $stafRole->givePermissionTo([
-            'pengajuan.create',
-            'pengajuan.view.own',
-        ]);
+        // Finance group (4 varian, semua dapat izin finance)
+        $financeRole        = Role::firstOrCreate(['name' => 'Finance']);
+        $financeManagerRole = Role::firstOrCreate(['name' => 'Finance Manager']);
+        $financeStaffRole   = Role::firstOrCreate(['name' => 'Finance Staff']);
+        $stafFinanceRole    = Role::firstOrCreate(['name' => 'Staf Finance']); // alias lama
 
-        $manajerRole->givePermissionTo([
+        // HR group
+        $hrManagerRole      = Role::firstOrCreate(['name' => 'HR Manager']);
+        $hrStaffRole        = Role::firstOrCreate(['name' => 'HR Staff']);
+
+        // IT
+        $itSupportRole      = Role::firstOrCreate(['name' => 'IT Support']);
+
+        $this->command->info('✅ Roles created/verified (12 roles).');
+
+        // -------------------------------------------------------
+        // PERMISSION ASSIGNMENTS
+        // -------------------------------------------------------
+
+        $essPermissions = ['pengajuan.create', 'pengajuan.view.own'];
+
+        // ESS-only roles
+        $stafRole->syncPermissions($essPermissions);
+        $karyawanRole->syncPermissions($essPermissions);
+        $itSupportRole->syncPermissions($essPermissions);
+
+        // Manajer Departemen
+        $manajerRole->syncPermissions([
             'pengajuan.create',
             'pengajuan.view.own',
             'pengajuan.view.department',
@@ -84,7 +94,20 @@ class RoleAndPermissionSeeder extends Seeder
             'budget.view.department',
         ]);
 
-        $financeRole->givePermissionTo([
+        // Direktur
+        $direkturRole->syncPermissions([
+            'pengajuan.create',
+            'pengajuan.view.own',
+            'pengajuan.view.all',
+            'pengajuan.approve.level1',
+            'pengajuan.approve.level2',
+            'pengajuan.reject',
+            'budget.view.all',
+            'report.view.gl',
+        ]);
+
+        // Finance (semua varian mendapat izin identik)
+        $financePermissions = [
             'pengajuan.view.all',
             'pengajuan.pay',
             'budget.view.all',
@@ -96,25 +119,43 @@ class RoleAndPermissionSeeder extends Seeder
             'payroll.view',
             'fakturjual.manage',
             'po.manage',
-        ]);
+        ];
+        $financeRole->syncPermissions($financePermissions);
+        $financeManagerRole->syncPermissions($financePermissions);
+        $financeStaffRole->syncPermissions($financePermissions);
+        $stafFinanceRole->syncPermissions($financePermissions);
 
-        $adminRole->givePermissionTo(Permission::all());
+        // HR
+        $hrPermissions = [
+            'karyawan.manage',
+            'payroll.run',
+            'payroll.view',
+            'pengajuan.create',
+            'pengajuan.view.own',
+        ];
+        $hrManagerRole->syncPermissions($hrPermissions);
+        $hrStaffRole->syncPermissions($hrPermissions);
 
-        $this->command->info('Permissions assigned to roles.');
+        // Super Admin — dapat semua
+        $superAdminRole->givePermissionTo(Permission::all());
 
-        
+        $this->command->info('✅ Permissions assigned to all roles.');
+
+        // -------------------------------------------------------
+        // ASSIGN ROLES TO SEED USERS
+        // -------------------------------------------------------
         $adminUser = User::where('email', 'admin@persija.id')->first();
-        if ($adminUser) {
-            $adminUser->assignRole($adminRole);
-            $this->command->info('Super Admin role assigned to admin@persija.id.');
+        if ($adminUser && !$adminUser->hasRole('Super Admin')) {
+            $adminUser->assignRole($superAdminRole);
+            $this->command->info('✅ Super Admin → admin@persija.id');
         }
 
         $stafUser = User::where('email', 'staf.edp@persija.id')->first();
-        if ($stafUser) {
+        if ($stafUser && !$stafUser->hasRole('Staf')) {
             $stafUser->assignRole($stafRole);
-            $this->command->info('Staf role assigned to staf.edp@persija.id.');
+            $this->command->info('✅ Staf → staf.edp@persija.id');
         }
-        
-        $this->command->info('Roles assigned to users.');
+
+        $this->command->info('✅ RoleAndPermissionSeeder selesai.');
     }
 }

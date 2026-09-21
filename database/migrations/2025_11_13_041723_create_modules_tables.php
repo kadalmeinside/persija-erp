@@ -163,6 +163,8 @@ return new class extends Migration
             $table->timestamps();
         });
         
+        // Payroll tables removed to avoid conflict with 2025_11_28_065438_create_payroll_tables.php
+        /*
         Schema::create('tbl_payroll_header', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->id();
@@ -186,6 +188,7 @@ return new class extends Migration
             $table->foreignId('id_jurnal')->nullable()->constrained('tbl_jurnal_header');
             $table->timestamps();
         });
+        */
 
         Schema::table('tbl_pengajuan_header', function (Blueprint $table) {
             $table->foreign('id_pengaju')->references('id')->on('tbl_karyawan');

@@ -33,18 +33,29 @@ class AuthenticatedSessionController extends Controller
 
         $user = $request->user();
 
-        if (!$user->hasAnyRole(['Super Admin', 'user', 'staff_akademik'])) {
-            Auth::guard('web')->logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-
-            return redirect()->route('admin.login')->withErrors([
-                'email' => 'Akun ini tidak memiliki hak akses sebagai admin atau staff.',
-            ]);
-        }
+        // CHECK REMOVED: Allow all authenticated users to access Admin Dashboard
+        // if (!$user->hasAnyRole([...])) { ... }
 
         $request->session()->regenerate();
 
+        activity()
+            ->causedBy($user)
+            ->log('Berhasil Login');
+
         return redirect()->intended(route('admin.dashboard', absolute: false));
+    }
+
+    /**
+     * Destroy an authenticated session.
+     */
+    public function destroy(Request $request): RedirectResponse
+    {
+        Auth::guard('web')->logout();
+
+        $request->session()->invalidate();
+
+        $request->session()->regenerateToken();
+
+        return redirect()->route('admin.login');
     }
 }

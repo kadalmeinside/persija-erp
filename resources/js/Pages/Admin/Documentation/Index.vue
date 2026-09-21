@@ -1,0 +1,554 @@
+<script setup>
+import { ref, computed } from 'vue';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import { Head } from '@inertiajs/vue3';
+import { 
+    BookOpenIcon, 
+    CalendarIcon, 
+    BanknotesIcon, 
+    BriefcaseIcon, 
+    LifebuoyIcon,
+    ChevronDownIcon,
+    MagnifyingGlassIcon,
+    CircleStackIcon,
+    UserGroupIcon,
+    ChartPieIcon,
+    DocumentTextIcon,
+    BuildingOfficeIcon,
+    Cog6ToothIcon,
+    WrenchScrewdriverIcon,
+    ShieldCheckIcon
+} from '@heroicons/vue/24/outline';
+
+// Menyimpan ID topik yang sedang terbuka (accordion state)
+const openTopic = ref(null);
+
+// State untuk pencarian
+const searchQuery = ref('');
+
+const toggleTopic = (id) => {
+    openTopic.value = openTopic.value === id ? null : id;
+};
+
+// Helper SVG Icons untuk disisipkan dalam teks
+const iconPlus = `<svg class="inline-block w-4 h-4 mr-1 mb-0.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>`;
+const iconCheck = `<svg class="inline-block w-4 h-4 mr-1 mb-0.5 text-green-600" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>`;
+const iconX = `<svg class="inline-block w-4 h-4 mr-1 mb-0.5 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>`;
+const iconSend = `<svg class="inline-block w-4 h-4 mr-1 mb-0.5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" /></svg>`;
+const iconEdit = `<svg class="inline-block w-4 h-4 mr-1 mb-0.5 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" /></svg>`;
+const iconTrash = `<svg class="inline-block w-4 h-4 mr-1 mb-0.5 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>`;
+
+// Data struktur dokumentasi
+const allModules = [
+    {
+        title: 'Modul Cuti',
+        icon: CalendarIcon,
+        color: 'text-blue-500',
+        topics: [
+            {
+                id: 'cuti-1',
+                title: 'Cara Mengajukan Cuti Baru',
+                steps: [
+                    'Buka menu <strong>Personal > Cuti Saya</strong> pada navigasi di sebelah kiri.',
+                    `Klik tombol <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconPlus} Ajukan Cuti</strong> yang terdapat di pojok kanan atas.`,
+                    'Pilih rentang tanggal (mulai dan selesai), pilih jenis cuti, serta berikan alasan atau keterangan pengajuan.',
+                    `Klik <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconCheck} Simpan</strong> untuk mengirimkan permohonan ke atasan Anda.`,
+                    '<div class="mt-3 p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg text-sm"><strong class="font-bold">Catatan Penting:</strong> Cuti Anda baru dianggap sah dan disetujui HANYA setelah proses persetujuan (approval) selesai dilakukan oleh atasan terkait dan status cuti berubah menjadi <strong>Approved (Disetujui)</strong>.</div>'
+                ]
+            },
+            {
+                id: 'cuti-2',
+                title: 'Melihat Sisa Saldo Cuti',
+                steps: [
+                    'Buka menu <strong>Personal > Cuti Saya</strong>.',
+                    'Pada bagian atas halaman, akan terdapat kotak informasi yang menampilkan <strong>Sisa Cuti Tahunan</strong> Anda yang masih bisa digunakan.'
+                ]
+            },
+            {
+                id: 'cuti-3',
+                title: 'Menyetujui Cuti (Khusus Atasan / Admin)',
+                steps: [
+                    'Buka menu <strong>Manajemen & Approval > Persetujuan Cuti</strong>.',
+                    'Anda akan melihat daftar pengajuan cuti dari bawahan Anda yang berstatus <em>Pending</em>.',
+                    `Klik tombol <strong class="inline-flex items-center px-2 py-0.5 bg-green-50 border border-green-200 text-green-700 rounded text-xs">${iconCheck} Approve</strong> untuk menyetujui, atau <strong class="inline-flex items-center px-2 py-0.5 bg-red-50 border border-red-200 text-red-700 rounded text-xs">${iconX} Reject</strong> untuk menolak (beserta alasan penolakan).`,
+                    'Setelah disetujui, saldo cuti karyawan akan otomatis terpotong.'
+                ]
+            }
+        ]
+    },
+    {
+        title: 'Modul Pengajuan Dana',
+        icon: BanknotesIcon,
+        color: 'text-green-500',
+        topics: [
+            {
+                id: 'dana-1',
+                title: 'Membuat Pengajuan Dana (Klaim/Kasbon)',
+                steps: [
+                    'Masuk ke menu <strong>Personal > Pengajuan Saya</strong>.',
+                    `Klik tombol <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconPlus} Buat Pengajuan</strong>.`,
+                    'Pilih jenis pengajuan (misal: Kasbon, Reimbursement Transport, dll).',
+                    'Masukkan jumlah nominal dan pastikan Anda melampirkan foto bukti/struk transaksi (jika diperlukan).',
+                    `Klik <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconSend} Kirim</strong> untuk menyerahkan form ke pihak Keuangan (Finance).`,
+                    '<div class="mt-3 p-3 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg text-sm"><strong class="font-bold">Catatan Penting:</strong> Pengajuan dana Anda baru dianggap valid dan dapat diproses pencairannya setelah seluruh tahapan persetujuan (approval atasan) selesai dan status pengajuan menjadi <strong>Approved (Disetujui)</strong>.</div>'
+                ]
+            },
+            {
+                id: 'dana-2',
+                title: 'Memantau Status Pencairan Pengajuan',
+                steps: [
+                    'Buka menu <strong>Personal > Pengajuan Saya</strong>.',
+                    'Pada tabel riwayat, cari pengajuan yang sudah Anda buat.',
+                    'Perhatikan kolom <strong>Status</strong>. Anda bisa melihat tahapan approval (Pending, Approved, Rejected) dan status akhir pencairan dananya.'
+                ]
+            },
+            {
+                id: 'dana-3',
+                title: 'Menyetujui Pengajuan Dana (Khusus Atasan / Admin)',
+                steps: [
+                    'Buka menu <strong>Manajemen & Approval > Persetujuan Pengajuan</strong>.',
+                    'Periksa detail pengajuan dana dari bawahan (nominal, alasan, dan lampiran bukti).',
+                    `Pilih <strong class="inline-flex items-center px-2 py-0.5 bg-green-50 border border-green-200 text-green-700 rounded text-xs">${iconCheck} Approve</strong> jika pengajuan valid, atau <strong class="inline-flex items-center px-2 py-0.5 bg-red-50 border border-red-200 text-red-700 rounded text-xs">${iconX} Reject</strong> jika ditolak.`,
+                    'Pengajuan yang sudah Anda setujui akan diteruskan ke tim Finance untuk proses pembayaran.'
+                ]
+            },
+            {
+                id: 'dana-4',
+                title: 'Proses Pembayaran / Pencairan (Khusus Finance)',
+                steps: [
+                    'Buka menu <strong>Finance > Pembayaran Pengajuan</strong>.',
+                    'Sistem akan menampilkan semua pengajuan dana yang sudah berstatus <strong>Approved</strong> oleh atasan dan siap dibayarkan.',
+                    'Pilih pengajuan, tentukan akun kas/bank yang digunakan untuk membayar, dan unggah bukti transfer/pembayaran.',
+                    `Klik <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconCheck} Selesaikan Pembayaran</strong>. Status pengajuan di sisi karyawan akan berubah menjadi <em>Paid</em> (Dibayar).`
+                ]
+            }
+        ]
+    },
+    {
+        title: 'Modul Manajemen Tugas',
+        icon: BriefcaseIcon,
+        color: 'text-purple-500',
+        topics: [
+            {
+                id: 'tugas-1',
+                title: 'Membuat dan Mendelegasikan Tugas Baru',
+                steps: [
+                    'Pilih menu <strong>Personal > Manajemen Tugas</strong>.',
+                    `Klik tombol <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconPlus} Buat Tugas Baru</strong>.`,
+                    'Lengkapi form dengan detail tugas: Judul, Deskripsi, Batas Waktu (Deadline), dan pilih Karyawan yang akan mengerjakannya (Assignee).',
+                    `Klik <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconCheck} Simpan</strong>. Karyawan yang ditunjuk akan menerima notifikasi tugas tersebut.`
+                ]
+            },
+            {
+                id: 'tugas-2',
+                title: 'Mengubah Status Pengerjaan Tugas',
+                steps: [
+                    'Buka menu <strong>Personal > Manajemen Tugas</strong>.',
+                    'Cari tugas yang ingin Anda update.',
+                    'Jika Anda menggunakan tampilan <strong>Kanban Board</strong>, cukup seret (*drag-and-drop*) kartu tugas tersebut ke kolom yang sesuai (misal: dari <em>To Do</em> ke <em>In Progress</em> atau <em>Done</em>).',
+                    'Jika menggunakan tampilan <strong>Tabel</strong>, klik tugasnya lalu ubah dropdown status, kemudian simpan.'
+                ]
+            }
+        ]
+    },
+    {
+        title: 'Modul IT Support (Tiket)',
+        icon: LifebuoyIcon,
+        color: 'text-red-500',
+        topics: [
+            {
+                id: 'it-1',
+                title: 'Melaporkan Masalah Sistem (Membuat Tiket)',
+                steps: [
+                    'Buka menu <strong>Personal > Tiket Saya (IT)</strong>.',
+                    `Klik <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconPlus} Buat Tiket Baru</strong>.`,
+                    'Tentukan tingkat urgensi masalah dan tuliskan detail kendala yang dialami selengkap mungkin.',
+                    'Sangat disarankan untuk melampirkan <em>screenshot</em> agar tim IT lebih mudah menganalisa masalah.',
+                    `Klik <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconSend} Kirim Ticket</strong>.`
+                ]
+            },
+            {
+                id: 'it-2',
+                title: 'Memantau Proses Perbaikan (Status Tiket)',
+                steps: [
+                    'Masuk ke menu <strong>Personal > Tiket Saya (IT)</strong>.',
+                    'Pada daftar tabel laporan, Anda dapat memantau status tiket Anda secara *real-time*.',
+                    'Status akan berubah dari <strong>Open</strong> (Baru dibuat), menjadi <strong>In Progress</strong> (Sedang diperbaiki IT), dan akhirnya <strong>Resolved/Closed</strong> (Selesai diperbaiki).'
+                ]
+            }
+        ]
+    },
+    {
+        title: 'Modul Master Data',
+        icon: CircleStackIcon,
+        color: 'text-orange-500',
+        topics: [
+            {
+                id: 'master-1',
+                title: 'Menambah & Mengubah Data Karyawan',
+                steps: [
+                    'Buka menu <strong>HR > Karyawan</strong> di sidebar.',
+                    `Klik tombol <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconPlus} Tambah Karyawan</strong> untuk memasukkan data pegawai baru (biodata, jabatan, departemen).`,
+                    'Untuk mengubah data yang sudah ada, cari nama karyawan di tabel lalu klik tombol Edit (ikon pensil).',
+                    `Klik <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconCheck} Simpan</strong> setelah selesai.`
+                ]
+            },
+            {
+                id: 'master-2',
+                title: 'Mengelola Master Vendor & Pelanggan',
+                steps: [
+                    'Akses menu <strong>Finance > Vendor</strong> atau <strong>Finance > Pelanggan</strong>.',
+                    `Klik <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconPlus} Tambah Baru</strong>.`,
+                    'Isi informasi perusahaan vendor/pelanggan, kontak person, dan nomor rekening bank mereka (sangat penting untuk proses pembayaran Finance).',
+                    'Setelah tersimpan, nama vendor/pelanggan ini akan otomatis muncul pada saat pembuatan Invoice atau Pengajuan Dana.'
+                ]
+            },
+            {
+                id: 'master-3',
+                title: 'Mengatur Master Akun (Chart of Accounts) & Pajak',
+                steps: [
+                    'Buka menu <strong>Finance > Master Akun GL</strong> atau <strong>Master Pajak</strong>.',
+                    'Di sini Admin Finance dapat menambahkan daftar kode akun (Account Code) untuk pembukuan atau tarif persentase pajak baru (misal PPh 21, PPN).',
+                    'Pastikan pengaturan ini dilakukan dengan sangat teliti karena berdampak langsung pada laporan keuangan dan pencatatan kasbon/klaim dana.'
+                ]
+            },
+            {
+                id: 'master-4',
+                title: 'Mengelola Master Kas & Bank (Akun Bank)',
+                steps: [
+                    'Buka menu <strong>Master Data > Kas & Bank</strong>.',
+                    `Klik tombol <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconPlus} Tambah Kas/Bank</strong>.`,
+                    'Masukkan nama bank, nomor rekening perusahaan, dan pilih kode akun GL (*Chart of Accounts*) yang terhubung dengan bank tersebut.',
+                    'Anda juga bisa menandai apakah akun ini merupakan tipe Kas Kecil (*Petty Cash*) atau Bank biasa.',
+                    'Akun bank yang ditambahkan di sini akan digunakan oleh Finance saat memproses pembayaran pengajuan dana atau menerima pembayaran Invoice.'
+                ]
+            }
+        ]
+    },
+    {
+        title: 'Modul HR & Payroll',
+        icon: UserGroupIcon,
+        color: 'text-indigo-500',
+        topics: [
+            {
+                id: 'hr-1',
+                title: 'Pemrosesan Penggajian (Payroll)',
+                steps: [
+                    'Buka menu <strong>HR & Payroll > Payroll Processing</strong>.',
+                    'Pilih periode penggajian (bulan & tahun).',
+                    `Klik <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconPlus} Generate Payroll</strong> untuk menghitung gaji, tunjangan, dan potongan otomatis berdasarkan kehadiran dan kasbon.`,
+                    'Cek rincian slip gaji, lalu selesaikan proses (Lock) jika perhitungan sudah benar.'
+                ]
+            },
+            {
+                id: 'hr-2',
+                title: 'Manajemen Pinjaman (Kasbon Karyawan)',
+                steps: [
+                    'Buka menu <strong>HR & Payroll > Pinjaman Karyawan</strong>.',
+                    `Klik <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconPlus} Tambah Pinjaman</strong>, pilih karyawan, dan tentukan jumlah serta tenor cicilan pinjaman.`,
+                    'Cicilan ini akan otomatis memotong perhitungan payroll bulanan karyawan.'
+                ]
+            }
+        ]
+    },
+    {
+        title: 'Modul Finance & Accounting',
+        icon: ChartPieIcon,
+        color: 'text-emerald-600',
+        topics: [
+            {
+                id: 'fin-1',
+                title: 'Pembuatan Anggaran (Budgeting)',
+                steps: [
+                    'Akses <strong>Finance & Accounting > Anggaran (Budget)</strong>.',
+                    'Pilih departemen dan periode (misal: Tahun 2026).',
+                    'Tetapkan plafon anggaran untuk masing-masing pos anggaran.',
+                    `Klik <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconCheck} Simpan</strong>. Sistem otomatis menolak pengajuan dana jika melebihi sisa budget.`
+                ]
+            },
+            {
+                id: 'fin-2',
+                title: 'Jurnal Umum & Laporan Keuangan',
+                steps: [
+                    'Untuk menginput Jurnal manual, buka <strong>Finance & Accounting > Jurnal Umum</strong> dan tambahkan entri Debit/Kredit.',
+                    'Untuk melihat laporan Laba/Rugi, Neraca, dan Arus Kas, buka menu <strong>Finance & Accounting > Laporan Keuangan</strong>.',
+                    'Gunakan filter tanggal untuk melihat periode yang diinginkan.'
+                ]
+            },
+            {
+                id: 'fin-3',
+                title: 'Transfer Internal (Antar Kas/Bank)',
+                steps: [
+                    'Buka menu <strong>Finance & Accounting > Transfer Internal</strong>.',
+                    `Klik <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconPlus} Buat Transfer</strong> untuk memindahkan dana antar rekening perusahaan.`,
+                    'Pilih "Rekening Asal" (misalnya BCA Pusat) dan "Rekening Tujuan" (misalnya Kas Kecil Cabang), lalu masukkan nominal transfer.',
+                    'Sistem akan otomatis mencatat perpindahan saldo antar buku besar (*General Ledger*) tersebut tanpa mempengaruhi Laba/Rugi.'
+                ]
+            },
+            {
+                id: 'fin-4',
+                title: 'Laporan Kas Kecil (Petty Cash)',
+                steps: [
+                    'Buka menu <strong>Finance & Accounting > Laporan Petty Cash</strong>.',
+                    'Pilih akun kas kecil yang ingin dilihat (akun harus di-setting sebagai tipe *Petty Cash* pada Master Data Kas & Bank).',
+                    'Tentukan rentang tanggal laporan.',
+                    'Sistem akan menampilkan semua mutasi (uang masuk dari transfer internal dan uang keluar dari pengajuan dana/reimbursement) yang menggunakan kas kecil tersebut.',
+                    'Anda dapat men-download atau mencetak laporannya untuk keperluan rekonsiliasi fisik.'
+                ]
+            }
+        ]
+    },
+    {
+        title: 'Modul Penjualan (Revenue & Sales)',
+        icon: DocumentTextIcon,
+        color: 'text-sky-500',
+        topics: [
+            {
+                id: 'sales-1',
+                title: 'Pembuatan Invoice Penjualan',
+                steps: [
+                    'Akses <strong>Revenue & Sales > Invoice Penjualan</strong>.',
+                    `Klik <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconPlus} Buat Invoice Baru</strong>.`,
+                    'Pilih pelanggan, isi detail produk/layanan, jumlah, dan harga.',
+                    'Sistem akan otomatis menghitung Pajak (PPN) jika diterapkan.',
+                    `Klik <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconCheck} Simpan & Cetak</strong>.`
+                ]
+            }
+        ]
+    },
+    {
+        title: 'Modul Manajemen Aset',
+        icon: BuildingOfficeIcon,
+        color: 'text-amber-600',
+        topics: [
+            {
+                id: 'aset-1',
+                title: 'Manajemen Aset Tetap',
+                steps: [
+                    'Buka <strong>Fixed Assets > Aset Tetap</strong>.',
+                    `Klik <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconPlus} Tambah Aset</strong>.`,
+                    'Isi nama barang, kategori, tanggal pembelian, dan harga perolehan.',
+                    'Sistem akan menghitung nilai penyusutan (depresiasi) secara otomatis per periode.'
+                ]
+            }
+        ]
+    },
+    {
+        title: 'Modul Workflow Approval',
+        icon: ShieldCheckIcon,
+        color: 'text-rose-500',
+        topics: [
+            {
+                id: 'approval-1',
+                title: 'Membuat Aturan Persetujuan Baru (Tambah)',
+                steps: [
+                    'Buka menu <strong>Manajemen & Approval > Workflow Approval</strong>.',
+                    'Di sini Anda dapat membuat skenario persetujuan (approval) secara dinamis untuk modul Cuti maupun Pengajuan Dana.',
+                    `Klik <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconPlus} Tambah Aturan</strong> untuk membuat alur persetujuan baru.`,
+                    'Tentukan <em>User</em> atau <em>Role</em> siapa saja yang harus menyetujui, dan atur urutan tingkatannya (Level 1, Level 2, dst).',
+                    '<strong>Penting:</strong> Dokumen/pengajuan hanya akan berubah status menjadi <em>Approved</em> jika sudah disetujui oleh orang terakhir pada urutan workflow ini.'
+                ]
+            },
+            {
+                id: 'approval-2',
+                title: 'Mengubah dan Memperbarui Aturan (Edit & Hapus)',
+                steps: [
+                    'Buka menu <strong>Manajemen & Approval > Workflow Approval</strong>.',
+                    `Cari aturan yang ingin diperbarui pada tabel, lalu klik tombol <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconEdit} Edit</strong>.`,
+                    'Anda dapat menambahkan tingkat persetujuan baru (misal: menambahkan Level 3), mengubah approver, atau menghapus tingkat yang sudah tidak relevan.',
+                    `Pastikan untuk mengklik <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconCheck} Simpan Perubahan</strong> setelah selesai.`,
+                    `Jika sebuah aturan secara keseluruhan sudah tidak digunakan, Anda dapat menghapusnya dengan mengklik tombol <strong class="inline-flex items-center px-2 py-0.5 bg-red-50 border border-red-200 text-red-700 rounded text-xs">${iconTrash} Hapus</strong>.`
+                ]
+            }
+        ]
+    },
+    {
+        title: 'Modul Pengaturan Sistem (Settings)',
+        icon: Cog6ToothIcon,
+        color: 'text-gray-700 dark:text-gray-400',
+        topics: [
+            {
+                id: 'sys-1',
+                title: 'Manajemen Pengguna (Users)',
+                steps: [
+                    'Buka menu <strong>System Settings > Users</strong>.',
+                    'Di sini Anda dapat mengelola seluruh akun yang bisa login ke aplikasi.',
+                    `<strong>Menambah User Baru:</strong> Klik <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconPlus} Tambah User</strong> untuk membuatkan akun login secara manual bagi staf atau admin baru.`,
+                    `<strong>Mengedit / Update User:</strong> Cari nama pengguna di tabel, lalu klik tombol <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconEdit} Edit</strong> untuk mengubah *Role*, mereset password, atau memperbarui informasi profil mereka.`,
+                    '<strong>User Siswa:</strong> Akun login untuk siswa akan terbuat <em>secara otomatis</em> ketika siswa menyelesaikan proses pendaftaran. Anda tidak perlu membuat akun siswa satu per satu secara manual.'
+                ]
+            },
+            {
+                id: 'sys-2',
+                title: 'Pengaturan Hak Akses (Roles)',
+                steps: [
+                    'Buka menu <strong>System Settings > Roles</strong>.',
+                    'Atur batasan hak akses (Permissions) untuk masing-masing tipe user.',
+                    'Pastikan setiap user memiliki Role yang tepat (misal: Role <em>Siswa</em> hanya bisa melihat menu tertentu, sedangkan Role <em>Finance</em> bisa melihat laporan keuangan).'
+                ]
+            }
+        ]
+    },
+    {
+        title: 'Modul Utilitas Tambahan',
+        icon: WrenchScrewdriverIcon,
+        color: 'text-teal-600',
+        topics: [
+            {
+                id: 'util-1',
+                title: 'Alat PDF & Gambar',
+                steps: [
+                    'Buka menu <strong>Utilitas > Alat PDF / Alat Gambar</strong>.',
+                    'Gunakan fitur PDF untuk menggabungkan (Merge) atau memotong (Split) dokumen PDF.',
+                    'Gunakan Alat Gambar untuk kompresi ukuran file sebelum diunggah ke pengajuan dana.'
+                ]
+            }
+        ]
+    }
+];
+
+// Logika Filter Pencarian
+const filteredModules = computed(() => {
+    if (!searchQuery.value) return allModules;
+    
+    const query = searchQuery.value.toLowerCase();
+    
+    return allModules.map(module => {
+        // Filter topik yang sesuai dengan pencarian
+        const filteredTopics = module.topics.filter(topic => {
+            const matchesTitle = topic.title.toLowerCase().includes(query);
+            // Cek juga apakah ada kata yang cocok di dalam langkah-langkahnya
+            const matchesSteps = topic.steps.some(step => step.toLowerCase().includes(query));
+            return matchesTitle || matchesSteps;
+        });
+
+        return {
+            ...module,
+            topics: filteredTopics
+        };
+    }).filter(module => module.topics.length > 0); // Hanya tampilkan modul yang topiknya cocok
+});
+</script>
+
+<template>
+    <Head title="Dokumentasi Sistem" />
+
+    <AuthenticatedLayout>
+        <template #header>
+            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+                Pusat Bantuan & Dokumentasi
+            </h2>
+        </template>
+
+        <div class="py-12">
+            <!-- Diubah dari max-w-4xl menjadi max-w-7xl untuk tampilan yang lebih lebar -->
+            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+                
+                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
+                    <div class="p-8 text-gray-900 dark:text-gray-100">
+                        
+                        <!-- Header & Search -->
+                        <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 pb-6 border-b dark:border-gray-700 gap-4">
+                            <div class="flex items-center space-x-4">
+                                <div class="p-3 bg-indigo-50 dark:bg-indigo-900 rounded-full">
+                                    <BookOpenIcon class="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
+                                </div>
+                                <div>
+                                    <h3 class="text-2xl font-bold">Panduan Penggunaan Sistem</h3>
+                                    <p class="text-gray-500 dark:text-gray-400 mt-1">
+                                        Pilih panduan atau cari kata kunci yang ingin Anda pelajari.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Search Bar -->
+                            <div class="relative w-full md:w-72 lg:w-96">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <MagnifyingGlassIcon class="h-5 w-5 text-gray-400" aria-hidden="true" />
+                                </div>
+                                <input
+                                    type="text"
+                                    v-model="searchQuery"
+                                    placeholder="Cari panduan..."
+                                    class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg leading-5 bg-white dark:bg-gray-700 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors"
+                                />
+                            </div>
+                        </div>
+
+                        <!-- Empty State if no results -->
+                        <div v-if="filteredModules.length === 0" class="text-center py-12">
+                            <BookOpenIcon class="mx-auto h-12 w-12 text-gray-400 mb-3" />
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Panduan tidak ditemukan</h3>
+                            <p class="mt-1 text-gray-500 dark:text-gray-400">Tidak ada hasil panduan untuk kata kunci "{{ searchQuery }}".</p>
+                            <button @click="searchQuery = ''" class="mt-4 text-indigo-600 hover:text-indigo-500 font-medium">Clear Search</button>
+                        </div>
+
+                        <!-- Accordion List per Module -->
+                        <div v-else class="space-y-8">
+                            <div 
+                                v-for="(module, mIndex) in filteredModules" 
+                                :key="mIndex" 
+                                class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-sm"
+                            >
+                                <!-- Module Header -->
+                                <div class="bg-gray-50 dark:bg-gray-750/50 px-6 py-4 flex items-center space-x-3 border-b border-gray-200 dark:border-gray-700">
+                                    <component :is="module.icon" :class="['h-6 w-6', module.color]" />
+                                    <h4 class="text-lg font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wide text-sm">{{ module.title }}</h4>
+                                </div>
+                                
+                                <!-- Module Topics (Accordion) -->
+                                <div class="divide-y divide-gray-100 dark:divide-gray-700">
+                                    <div v-for="topic in module.topics" :key="topic.id" class="bg-white dark:bg-gray-800">
+                                        <!-- Accordion Button -->
+                                        <button 
+                                            @click="toggleTopic(topic.id)"
+                                            class="w-full text-left px-6 py-4 flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-700/50 focus:outline-none transition-colors group"
+                                        >
+                                            <span class="font-medium text-gray-700 dark:text-gray-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                                {{ topic.title }}
+                                            </span>
+                                            <div 
+                                                class="ml-4 p-1 rounded-full transition-colors flex-shrink-0"
+                                                :class="openTopic === topic.id ? 'bg-indigo-100 dark:bg-indigo-900' : 'bg-gray-100 dark:bg-gray-700 group-hover:bg-gray-200 dark:group-hover:bg-gray-600'"
+                                            >
+                                                <ChevronDownIcon 
+                                                    class="h-5 w-5 transition-transform duration-300" 
+                                                    :class="[
+                                                        openTopic === topic.id ? 'transform rotate-180 text-indigo-600 dark:text-indigo-400' : 'text-gray-400 dark:text-gray-400'
+                                                    ]" 
+                                                />
+                                            </div>
+                                        </button>
+                                        
+                                        <!-- Accordion Content (Steps) -->
+                                        <transition 
+                                            enter-active-class="transition duration-200 ease-out"
+                                            enter-from-class="transform scale-y-95 opacity-0"
+                                            enter-to-class="transform scale-y-100 opacity-100"
+                                            leave-active-class="transition duration-100 ease-in"
+                                            leave-from-class="transform scale-y-100 opacity-100"
+                                            leave-to-class="transform scale-y-95 opacity-0"
+                                        >
+                                            <div 
+                                                v-show="openTopic === topic.id" 
+                                                class="px-6 py-5 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-700 origin-top"
+                                            >
+                                                <ol class="list-decimal list-outside ml-4 space-y-3 text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
+                                                    <li v-for="(step, sIndex) in topic.steps" :key="sIndex">
+                                                        <span v-html="step"></span>
+                                                    </li>
+                                                </ol>
+                                            </div>
+                                        </transition>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </AuthenticatedLayout>
+</template>

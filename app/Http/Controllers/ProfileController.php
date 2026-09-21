@@ -18,9 +18,15 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): Response
     {
+        $user = $request->user();
+        
+        // Memuat relasi karyawan jika ada, beserta departemen, saldo cuti, dan rekening bank
+        $user->load(['karyawan.departemen', 'karyawan.saldoCuti.jenisCuti', 'karyawan.rekeningBank']);
+
         return Inertia::render('Profile/Edit', [
-            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
+            'mustVerifyEmail' => $user instanceof MustVerifyEmail,
             'status' => session('status'),
+            'karyawan' => $user->karyawan,
         ]);
     }
 

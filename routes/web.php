@@ -1,77 +1,107 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
-use Illuminate\Foundation\Application;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Http\Request;
-use Inertia\Inertia;
+/**
+ * routes/web.php
+ *
+ * Entry point untuk semua routes web.
+ * Routes dipisah per modul di routes/admin/ agar mudah di-maintain.
+ *
+ * Struktur:
+ *   routes/admin/system.php  → Super Admin: Users, Roles, Settings, Logs
+ *   routes/admin/hr.php      → HR: Karyawan, Payroll, Cuti, Pinjaman
+ *   routes/admin/finance.php → Finance: Budget, GL, Vendor, Invoice, Asset
+ *   routes/admin/ess.php     → ESS: Pengajuan, Approval, Ticket, Kalender
+ */
 
 use App\Http\Controllers\Admin\Auth\AuthenticatedSessionController as AdminAuthenticatedSessionController;
-
-use App\Http\Controllers\DisplayController;
+use App\Http\Controllers\Admin\Auth\PinVerificationController;
 use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\RoleController;
-use App\Http\Controllers\Admin\PermissionController;
-use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\Admin\SettingsController;
-use App\Http\Controllers\Admin\PengajuanController;
+use App\Http\Controllers\Admin\PinController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Public\VerificationController as PublicVerificationController;
+use App\Http\Controllers\WelcomeController;
+use Illuminate\Support\Facades\Route;
 
+// -----------------------------------------------------------------------
+// Public Routes
+// -----------------------------------------------------------------------
+Route::get('/', [WelcomeController::class, 'index']);
+Route::get('/verify/{uuid}', [PublicVerificationController::class, 'verify'])->name('public.verify');
 
-Route::get('/', function (Request $request) {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'userIp' => $request->ip(),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION ,
-    ]);
-});
-
-Route::get('/display', [DisplayController::class, 'index'])->name('display.index');
-
+// -----------------------------------------------------------------------
+// Dashboard Redirect
+// -----------------------------------------------------------------------
 Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
+    return redirect()->route('admin.dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
+// -----------------------------------------------------------------------
+// Profile Routes
+// -----------------------------------------------------------------------
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+// -----------------------------------------------------------------------
+// Admin Routes — Prefix: /admin, Name: admin.*
+// -----------------------------------------------------------------------
 Route::prefix('admin')->name('admin.')->group(function () {
-    Route::get('login', [AdminAuthenticatedSessionController::class, 'create'])
-                ->middleware('guest') // Hanya bisa diakses oleh guest (belum login)
-                ->name('login');
 
-    Route::post('login', [AdminAuthenticatedSessionController::class, 'store'])
-                ->middleware('guest');
+    // Auth
+    Route::middleware('guest')->group(function () {
+        Route::get('login', [AdminAuthenticatedSessionController::class, 'create'])->name('login');
+        Route::post('login', [AdminAuthenticatedSessionController::class, 'store']);
+    });
 
+    // Authenticated
     Route::middleware(['auth', 'verified'])->group(function () {
-        
-        Route::middleware(['role:Super Admin'])->group(function () {
-            Route::resource('roles', RoleController::class);
-            Route::resource('permissions', PermissionController::class);
-            Route::resource('users', UserController::class);
-            Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
-            Route::post('settings', [SettingsController::class, 'update'])->name('settings.update');
+
+        // PIN Management
+        Route::post('auth/verify-pin', [PinVerificationController::class, 'verify'])->name('auth.verify-pin');
+        Route::prefix('pin')->name('pin.')->controller(PinController::class)->group(function () {
+            Route::get('status', 'checkStatus')->name('status');
+            Route::post('set', 'setPin')->name('set');
+            Route::post('change', 'changePin')->name('change');
+            Route::post('verify', 'verifyPin')->name('verify');
         });
 
-        Route::middleware(['role:Super Admin|Manajer Departemen|Staf Finance|Staf'])->group(function() {
-            Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
-            Route::get('pengajuan/get-programs', [PengajuanController::class, 'getProgramsByDepartemen'])
-                ->name('pengajuan.getProgramsByDepartemen');
-            Route::get('pengajuan/get-accounts', [PengajuanController::class, 'getAccountsByProgram'])
-                ->name('pengajuan.getAccountsByProgram');
+        // Dashboard (semua authenticated user)
+        Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-            Route::get('pengajuan/get-budget-balance', [PengajuanController::class, 'getBudgetBalance'])
-                ->name('pengajuan.getBudgetBalance');
-            Route::resource('pengajuan', PengajuanController::class);
-            
+        // Notifications
+        Route::prefix('notifications')->name('notifications.')->controller(\App\Http\Controllers\Admin\NotificationController::class)->group(function () {
+            Route::post('mark-all-read', 'markAllAsRead')->name('mark-all-read');
+            Route::get('{id}/read', 'markAsRead')->name('read');
         });
 
+        // PDF Tools
+        Route::prefix('pdf-tools')->name('pdf-tools.')->controller(\App\Http\Controllers\Admin\PdfToolController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('merge', 'merge')->name('merge');
+            Route::post('split', 'split')->name('split');
+            Route::post('convert-image', 'convertImageToPdf')->name('convert-image');
+            Route::post('convert-word', 'convertWordToPdf')->name('convert-word');
+        });
+
+        // Image Tools
+        Route::prefix('image-tools')->name('image-tools.')->controller(\App\Http\Controllers\Admin\ImageToolController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('compress', 'compress')->name('compress');
+            Route::post('upscale', 'upscale')->name('upscale');
+        });
+
+        // Modul Routes — dipisah per domain
+        Route::get('documentation', function () {
+            return inertia('Admin/Documentation/Index');
+        })->name('documentation');
+
+        require __DIR__ . '/admin/system.php';
+        require __DIR__ . '/admin/hr.php';
+        require __DIR__ . '/admin/finance.php';
+        require __DIR__ . '/admin/ess.php';
     });
 });
 
-
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

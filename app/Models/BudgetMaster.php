@@ -23,9 +23,8 @@ class BudgetMaster extends Model
      */
     protected $fillable = [
         'id_periode_anggaran',
-        'id_departemen',
-        'id_akun',
-        'id_program',
+        // 'id_departemen', // Removed for Centralized Budgeting
+        'id_pos_anggaran',
         'anggaran_total_tahun',
         'anggaran_terikat_ytd',
         'anggaran_realisasi_ytd',
@@ -42,32 +41,16 @@ class BudgetMaster extends Model
     /**
      * Relasi ke pacing vertikal
      */
-    public function details() 
+    public function details()
     {
         return $this->hasMany(BudgetDetail::class, 'id_budget_master');
     }
 
     /**
-     * Relasi ke Departemen.
+     * Relasi ke Pos Anggaran.
      */
-    public function departemen()
+    public function posAnggaran()
     {
-        return $this->belongsTo(Departemen::class, 'id_departemen');
-    }
-
-    /**
-     * Relasi ke AkunGl.
-     */
-    public function akunGl()
-    {
-        return $this->belongsTo(AkunGl::class, 'id_akun');
-    }
-
-    /**
-     * Relasi ke ProgramKerja.
-     */
-    public function programKerja()
-    {
-        return $this->belongsTo(ProgramKerja::class, 'id_program');
+        return $this->belongsTo(PosAnggaran::class, 'id_pos_anggaran');
     }
 }

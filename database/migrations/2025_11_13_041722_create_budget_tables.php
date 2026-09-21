@@ -22,6 +22,32 @@ return new class extends Migration
             $table->timestamps();
         });
 
+        // 1.1. Create tbl_pos_anggaran (Mapping Program <-> COA)
+        Schema::create('tbl_pos_anggaran', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
+            $table->id();
+            $table->foreignId('id_program_kerja')->constrained('tbl_program_kerja')->onDelete('cascade');
+            $table->foreignId('id_akun_gl')->constrained('tbl_akun_gl')->onDelete('cascade');
+            
+            $table->timestamps();
+            
+            // Prevent duplicate mapping
+            $table->unique(['id_program_kerja', 'id_akun_gl'], 'pos_anggaran_unique');
+        });
+
+        // 1.2. Create tbl_pos_anggaran_delegasi (Delegation)
+        Schema::create('tbl_pos_anggaran_delegasi', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
+            $table->id();
+            $table->foreignId('id_pos_anggaran')->constrained('tbl_pos_anggaran')->onDelete('cascade');
+            $table->foreignId('id_departemen')->constrained('tbl_departemen')->onDelete('cascade'); // Dept that receives delegation
+            
+            $table->timestamps();
+
+            // Prevent duplicate delegation
+            $table->unique(['id_pos_anggaran', 'id_departemen'], 'delegasi_unique');
+        });
+
         // 2. TABEL BUDGET MASTER (Header) - Dirombak
         Schema::create('tbl_budget_master', function (Blueprint $table) {
             $table->engine = 'InnoDB';
@@ -29,21 +55,23 @@ return new class extends Migration
             
             // Relasi ke Periode (Bukan lagi tahun integer)
             $table->foreignId('id_periode_anggaran')->constrained('tbl_periode_anggaran');
+            // id_departemen removed (Centralized Budgeting: Owner is Program Owner)
             
-            $table->foreignId('id_departemen')->constrained('tbl_departemen');
-            $table->foreignId('id_akun')->constrained('tbl_akun_gl');
-            $table->foreignId('id_program')->constrained('tbl_program_kerja');
+            // Refactored: Use Pos Anggaran ID instead of separate Program & Account
+            $table->foreignId('id_pos_anggaran')->constrained('tbl_pos_anggaran'); // Link to Program+Akun
 
             // Agregat Tahunan (Masih disimpan di header untuk performa)
-            $table->decimal('anggaran_total_tahun', 15, 2)->default(0);
+            $table->decimal('anggaran_total_tahun', 15, 2);
             $table->decimal('anggaran_terikat_ytd', 15, 2)->default(0);
             $table->decimal('anggaran_realisasi_ytd', 15, 2)->default(0);
 
             // Kolom pacing horizontal (pacing_jan, dll) DIHAPUS
             
             $table->timestamps();
-            // Unik per periode, dept, akun, program
-            $table->unique(['id_periode_anggaran', 'id_departemen', 'id_akun', 'id_program'], 'budget_unique');
+            $table->softDeletes();
+
+            // Unique: Periode + Pos Anggaran (One budget per Pos per Period)
+            $table->unique(['id_periode_anggaran', 'id_pos_anggaran'], 'budget_unique');
         });
 
         // 3. TABEL BUDGET DETAIL (Pacing Vertikal) - Baru

@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class LaporanDetail extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     /**
      * Nama tabel yang terkait dengan model.
@@ -29,6 +31,11 @@ class LaporanDetail extends Model
         'id_program_beban',
         'id_akun_beban',
         'id_pajak',
+        'bukti_path'
+    ];
+
+    protected $casts = [
+        'nominal_bon' => 'decimal:2',
     ];
 
     /**
@@ -50,7 +57,7 @@ class LaporanDetail extends Model
     /**
      * Relasi ke Program Kerja (yang dibebani biaya).
      */
-    public function programBeban()
+    public function programKerja()
     {
         return $this->belongsTo(ProgramKerja::class, 'id_program_beban');
     }
@@ -58,7 +65,7 @@ class LaporanDetail extends Model
     /**
      * Relasi ke Akun GL (yang dibebani biaya).
      */
-    public function akunBeban()
+    public function akunGl()
     {
         return $this->belongsTo(AkunGl::class, 'id_akun_beban');
     }
@@ -69,5 +76,13 @@ class LaporanDetail extends Model
     public function pajak()
     {
         return $this->belongsTo(Pajak::class, 'id_pajak');
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logFillable()
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
     }
 }

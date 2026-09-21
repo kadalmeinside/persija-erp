@@ -9,31 +9,26 @@ class JurnalHeader extends Model
 {
     use HasFactory;
 
-    /**
-     * Nama tabel yang terkait dengan model.
-     *
-     * @var string
-     */
     protected $table = 'tbl_jurnal_header';
 
-    /**
-     * Kolom yang dapat diisi secara massal.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'nomor_jurnal',
         'tgl_jurnal',
         'deskripsi_jurnal',
+        'tipe_transaksi',
+        'status',
+        'created_by',
         'sumber_modul',
-        'id_referensi_sumber',
+        'id_referensi_sumber'
     ];
 
-    /**
-     * Relasi ke JurnalDetail (satu Header memiliki banyak Detail).
-     */
-    public function jurnalDetail()
+    public function detail()
     {
         return $this->hasMany(JurnalDetail::class, 'id_jurnal');
+    }
+
+    public function pembuat()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 }

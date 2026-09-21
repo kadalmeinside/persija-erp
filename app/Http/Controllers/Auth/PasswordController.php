@@ -24,6 +24,10 @@ class PasswordController extends Controller
             'password' => Hash::make($validated['password']),
         ]);
 
+        activity()
+            ->causedBy($request->user())
+            ->log('Password telah diubah');
+
         return back();
     }
 }
