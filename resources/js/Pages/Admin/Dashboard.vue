@@ -77,7 +77,7 @@ const greeting = computed(() => {
                                 Perhatian: Setup Bank Belum Selesai
                             </h3>
                             <div class="mt-2 text-sm text-amber-700">
-                                <p>Sistem mendeteksi bahwa rekening untuk <strong>{{ dashboardData.unconfigured_banks.join(', ') }}</strong> masih menggunakan konfigurasi bawaan (belum diatur). Harap segera atur di menu <Link :href="route('admin.kas_bank.index')" class="font-bold underline hover:text-amber-900">Master Data &rarr; Kas & Bank</Link> agar transaksi bisa berjalan lancar.</p>
+                                <p>Sistem mendeteksi bahwa rekening untuk <strong>{{ dashboardData.unconfigured_banks.join(', ') }}</strong> masih menggunakan konfigurasi bawaan (belum diatur). Harap segera atur di menu <Link :href="route('admin.kas-bank.index')" class="font-bold underline hover:text-amber-900">Master Data &rarr; Kas & Bank</Link> agar transaksi bisa berjalan lancar.</p>
                             </div>
                         </div>
                     </div>
