@@ -28,6 +28,24 @@ class HariLiburSeeder extends Seeder
             ['tanggal' => '2025-08-17', 'keterangan' => 'Hari Kemerdekaan Republik Indonesia'],
             ['tanggal' => '2025-09-05', 'keterangan' => 'Maulid Nabi Muhammad SAW'],
             ['tanggal' => '2025-12-25', 'keterangan' => 'Hari Raya Natal'],
+
+            // 2026 Holidays
+            ['tanggal' => '2026-01-01', 'keterangan' => 'Tahun Baru 2026 Masehi'],
+            ['tanggal' => '2026-02-14', 'keterangan' => 'Isra Mikraj Nabi Muhammad SAW'],
+            ['tanggal' => '2026-02-17', 'keterangan' => 'Tahun Baru Imlek'],
+            ['tanggal' => '2026-03-19', 'keterangan' => 'Hari Suci Nyepi'],
+            ['tanggal' => '2026-03-20', 'keterangan' => 'Idul Fitri 1447 Hijriah'],
+            ['tanggal' => '2026-03-21', 'keterangan' => 'Idul Fitri 1447 Hijriah'],
+            ['tanggal' => '2026-04-03', 'keterangan' => 'Wafat Yesus Kristus'],
+            ['tanggal' => '2026-05-01', 'keterangan' => 'Hari Buruh Internasional'],
+            ['tanggal' => '2026-05-14', 'keterangan' => 'Kenaikan Yesus Kristus'],
+            ['tanggal' => '2026-05-27', 'keterangan' => 'Idul Adha 1447 Hijriah'],
+            ['tanggal' => '2026-05-31', 'keterangan' => 'Hari Raya Waisak'],
+            ['tanggal' => '2026-06-01', 'keterangan' => 'Hari Lahir Pancasila'],
+            ['tanggal' => '2026-06-16', 'keterangan' => 'Tahun Baru Islam 1448 Hijriah'],
+            ['tanggal' => '2026-08-17', 'keterangan' => 'Hari Kemerdekaan Republik Indonesia'],
+            ['tanggal' => '2026-08-25', 'keterangan' => 'Maulid Nabi Muhammad SAW'],
+            ['tanggal' => '2026-12-25', 'keterangan' => 'Hari Raya Natal'],
         ];
 
         foreach ($holidays as $holiday) {
@@ -37,6 +55,6 @@ class HariLiburSeeder extends Seeder
             );
         }
 
-        $this->command->info('Data Hari Libur 2025 berhasil dibuat.');
+        $this->command->info('Data Hari Libur 2025 & 2026 berhasil dibuat.');
     }
 }
