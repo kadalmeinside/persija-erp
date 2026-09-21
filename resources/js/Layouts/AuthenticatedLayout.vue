@@ -664,7 +664,7 @@ watch(sidebarMenu, (menu) => {
         
         <div class="h-screen flex bg-gray-100 dark:bg-gray-900">
             <!-- Mobile sidebar overlay -->
-            <div v-if="mobileSidebarOpen" @click="mobileSidebarOpen = false" class="fixed inset-0 bg-black bg-opacity-50 z-20 transition-opacity md:hidden" aria-hidden="true"></div>
+            <div v-if="mobileSidebarOpen" @click="mobileSidebarOpen = false" class="fixed inset-0 bg-gray-900/40 dark:bg-black/60 backdrop-blur-sm z-20 transition-opacity md:hidden" aria-hidden="true"></div>
 
             <!-- Sidebar -->
             <aside :class="[
