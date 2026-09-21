@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             RoleAndPermissionSeeder::class, 
+            DepartemenSeeder::class, // Seed base departments
             AdminUserSeeder::class, // Create Admin with Karyawan Profile
             SettingSeeder::class,   // Base App Settings
             MasterDataBudgetSeeder::class, // Base Budget Accounts

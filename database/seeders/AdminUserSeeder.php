@@ -33,14 +33,14 @@ class AdminUserSeeder extends Seeder
 
         $adminUser->assignRole($adminRole);
 
-        // Create Default Department if not exists
-        $dept = Departemen::firstOrCreate(['nama_departemen' => 'Board of Directors']);
+        // Get Default Department
+        $dept = Departemen::where('nama_departemen', 'IT')->first();
 
         // Create Karyawan Profile for Admin
         Karyawan::firstOrCreate(
             ['user_id' => $adminUser->id],
             [
-                'id_departemen' => $dept->id,
+                'id_departemen' => $dept ? $dept->id : 1,
                 'nomor_induk_karyawan' => 'ERP-001',
                 'nama_lengkap' => 'Admin ERP',
                 'jenis_kelamin' => 'L',
