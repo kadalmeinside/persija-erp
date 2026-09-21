@@ -61,9 +61,9 @@ class MasterDataCutiSeeder extends Seeder
                         'tahun_periode' => $currentYear
                     ],
                     [
-                        'saldo_awal' => $quota,
+                        'saldo_awal' => 0, // Reset ke 0 sesuai request
                         'saldo_terpakai' => 0,
-                        'saldo_akhir' => $quota // Initial = Awal
+                        'saldo_akhir' => 0 
                     ]
                 );
             }
