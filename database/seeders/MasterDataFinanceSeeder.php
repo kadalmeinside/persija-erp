@@ -53,10 +53,10 @@ class MasterDataFinanceSeeder extends Seeder
 
         // 4. Buat Data Kas/Bank dengan Saldo Awal + Jurnal
         
-        $this->createBankWithJournal('Bank Masuk', '000-111-222', 'PT Persija Jaya', $akunBankMasuk, 1500000000, $akunModalAwal);
-        $this->createBankWithJournal('Bank Keluar', '333-444-555', 'PT Persija Jaya', $akunBankKeluar, 500000000, $akunModalAwal);
-        $this->createBankWithJournal('Bank Gaji', '123-000-999', 'PT Persija Jaya', $akunBankPayroll, 500000000, $akunModalAwal);
-        $this->createBankWithJournal('Petty Cash', 'CASH', 'Finance Dept', $akunKasKecil, 10000000, $akunModalAwal);
+        $this->createBankWithJournal('Bank Masuk', '-', '-', $akunBankMasuk, 0, $akunModalAwal);
+        $this->createBankWithJournal('Bank Keluar', '-', '-', $akunBankKeluar, 0, $akunModalAwal);
+        $this->createBankWithJournal('Bank Gaji', '-', '-', $akunBankPayroll, 0, $akunModalAwal);
+        $this->createBankWithJournal('Petty Cash', '-', '-', $akunKasKecil, 0, $akunModalAwal);
 
         $this->command->info('Master Data Finance (Kas/Bank + Jurnal Saldo Awal) berhasil dibuat.');
     }

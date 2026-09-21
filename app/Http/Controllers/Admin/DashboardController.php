@@ -55,15 +55,28 @@ class DashboardController extends Controller
             ];
         }
 
-        // 3. FINANCE VIEW
-        if ($user->hasRole(Role::financeRoles())) {
-            $data['finance_stats'] = [
-                'pending_expenses' => PengajuanHeader::where('status_global', 'Pending Approval')->count(),
-                'unpaid_invoices' => InvoiceHeader::where('status', 'Unpaid')->count(),
-                'need_settlement' => PengajuanHeader::where('tipe_pengajuan', 'UangMuka')
-                                        ->where('status_global', 'Paid') // Sudah bayar tapi belum settlement
-                                        ->count(),
-            ];
+        // 3. FINANCE VIEW (AND ADMIN)
+        if ($user->hasRole(Role::financeRoles()) || $user->hasRole(Role::adminRoles())) {
+            if ($user->hasRole(Role::financeRoles())) {
+                $data['finance_stats'] = [
+                    'pending_expenses' => PengajuanHeader::where('status_global', 'Pending Approval')->count(),
+                    'unpaid_invoices' => InvoiceHeader::where('status', 'Unpaid')->count(),
+                    'need_settlement' => PengajuanHeader::where('tipe_pengajuan', 'UangMuka')
+                                            ->where('status_global', 'Paid') // Sudah bayar tapi belum settlement
+                                            ->count(),
+                ];
+            }
+
+            // Cek bank yang belum diatur
+            $unconfiguredBanks = \App\Models\KasBank::whereIn('nama_bank', ['Bank Masuk', 'Bank Keluar', 'Bank Gaji', 'Petty Cash'])
+                ->where(function($q) {
+                    $q->where('nomor_rekening', '-')
+                      ->orWhere('atas_nama', '-');
+                })->pluck('nama_bank')->toArray();
+                
+            if (!empty($unconfiguredBanks)) {
+                $data['unconfigured_banks'] = $unconfiguredBanks;
+            }
         }
 
         // 4. EMPLOYEE / PERSONAL VIEW (ALL USERS)
