@@ -1,6 +1,6 @@
-# Persija ERP
+# PJH-ERP
 
-Persija ERP is a proprietary Enterprise Resource Planning system built exclusively for **Internal Office Use**. It is designed to digitize, streamline, and centralize internal business operations ranging from human resources to corporate finance and operational workflows.
+PJH-ERP is a proprietary Enterprise Resource Planning system built exclusively for **Internal Office Use**. It is designed to digitize, streamline, and centralize internal business operations ranging from human resources to corporate finance and operational workflows.
 
 > **Note**: This application is strictly confidential. It is not intended for public deployment or external use.
 

@@ -119,12 +119,12 @@ Status cicilan pinjaman per bulan.
 
 ---
 
-## 2. Konfigurasi Persija ERP
+## 2. Konfigurasi PJH-ERP
 
 ### 2.1 Environment Variables (`.env`)
 
 ```env
-APP_NAME="Persija ERP"
+APP_NAME="PJH-ERP"
 APP_ENV=local
 APP_KEY=             # Generate via php artisan key:generate
 

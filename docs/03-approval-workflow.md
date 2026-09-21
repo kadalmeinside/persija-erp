@@ -1,6 +1,6 @@
 # 03 — Alur Persetujuan (ApprovalService)
 
-`ApprovalService` adalah **jantung** sistem workflow Persija ERP. Service ini mengelola approval multi-level untuk tiga jenis dokumen: **Pengajuan Dana**, **Cuti**, dan **Pinjaman**.
+`ApprovalService` adalah **jantung** sistem workflow PJH-ERP. Service ini mengelola approval multi-level untuk tiga jenis dokumen: **Pengajuan Dana**, **Cuti**, dan **Pinjaman**.
 
 ---
 

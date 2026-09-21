@@ -14,7 +14,7 @@ const props = defineProps({
         <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-white shadow-md overflow-hidden sm:rounded-lg">
             <div class="flex justify-center mb-6">
                 <!-- Logo Placehoder -->
-                <div class="text-2xl font-bold text-gray-700">PERSIJA ERP</div>
+                <div class="text-2xl font-bold text-gray-700">PJH-ERP</div>
             </div>
 
             <div v-if="verification.isValid" class="text-center">

@@ -348,7 +348,7 @@ class InvoiceController extends Controller
             'invoice'   => $invoice,
             'timestamp' => now()->translatedFormat('d F Y, H:i'),
             'company'   => [
-                'name'    => $settings['company_name'] ?? 'Persija ERP',
+                'name'    => $settings['company_name'] ?? 'PJH-ERP',
                 'address' => $settings['company_address'] ?? 'Jl. Rasuna Said No. 1, Jakarta Selatan',
                 'logo'    => isset($settings['company_logo'])
                     ? \Illuminate\Support\Facades\Storage::url($settings['company_logo'])

@@ -1,6 +1,6 @@
-# 📘 Persija ERP — Dokumentasi Sistem
+# 📘 PJH-ERP — Dokumentasi Sistem
 
-Selamat datang di dokumentasi lengkap **Persija ERP**, sistem manajemen sumber daya perusahaan yang dibangun di atas Laravel 12.
+Selamat datang di dokumentasi lengkap **PJH-ERP**, sistem manajemen sumber daya perusahaan yang dibangun di atas Laravel 12.
 
 ## 📂 Daftar Dokumen
 

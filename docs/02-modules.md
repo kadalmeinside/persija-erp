@@ -1,6 +1,6 @@
 # 02 — Modul Sistem
 
-Persija ERP dibagi menjadi **4 domain route** utama, masing-masing memiliki kendali akses berbeda.
+PJH-ERP dibagi menjadi **4 domain route** utama, masing-masing memiliki kendali akses berbeda.
 
 ---
 
@@ -251,7 +251,7 @@ if (!$user->hasRole(Role::itRoles())) { abort(403); }
 ## 5. Ringkasan Modul
 
 ```
-Persija ERP
+PJH-ERP
 ├── [SYSTEM]  Users, Roles, Permissions, Settings, Logs
 ├── [HR]      Karyawan, JenisCuti, Payroll, Pinjaman, CompanyEvents
 ├── [FINANCE] Dept, Vendors, Budget, GL, Kas/Bank, Tax, Invoice, Aset

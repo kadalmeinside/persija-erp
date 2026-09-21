@@ -1,6 +1,6 @@
-# Struktur Organisasi & Hak Akses (RBAC) - Persija ERP
+# Struktur Organisasi & Hak Akses (RBAC) - PJH-ERP
 
-Dokumen ini memetakan struktur divisi, peran (*roles*), dan batasan wewenang (*permissions*) yang berlaku di dalam ekosistem Persija ERP. Sistem ini menggunakan arsitektur *Role-Based Access Control* (RBAC) untuk menjaga keamanan dan privasi data antar divisi.
+Dokumen ini memetakan struktur divisi, peran (*roles*), dan batasan wewenang (*permissions*) yang berlaku di dalam ekosistem PJH-ERP. Sistem ini menggunakan arsitektur *Role-Based Access Control* (RBAC) untuk menjaga keamanan dan privasi data antar divisi.
 
 > [!NOTE]
 > Seluruh pengguna di sistem ini secara otomatis memiliki hak akses tingkat dasar (Employee Self-Service) untuk mengajukan permohonan pribadi dan melihat data mereka sendiri.

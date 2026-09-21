@@ -113,7 +113,7 @@ const userPermissions = computed(() => page.props.auth?.user?.permissions || [])
 const userName = computed(() => page.props.auth?.user?.name ?? 'User');
 const userInitial = computed(() => userName.value.charAt(0).toUpperCase());
 const appSettings = computed(() => page.props.app_settings || {});
-const appName = computed(() => appSettings.value.app_name || 'Persija ERP'); 
+const appName = computed(() => appSettings.value.app_name || 'PJH-ERP'); 
 const appLogo = computed(() => appSettings.value.app_logo || null);
 const openTicketsCount = computed(() => page.props.open_tickets_count || 0); // Added ticket count
 const isCutiApprover = computed(() => page.props.is_cuti_approver || false);

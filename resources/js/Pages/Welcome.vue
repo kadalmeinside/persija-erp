@@ -9,7 +9,7 @@ defineProps({
 </script>
 
 <template>
-    <Head title="Welcome | Persija ERP" />
+    <Head title="Welcome | PJH-ERP" />
     
     <div class="relative min-h-screen flex items-center justify-center overflow-hidden bg-slate-950 selection:bg-red-500 selection:text-white">
         <!-- Background Glowing Accents -->
