@@ -26,12 +26,12 @@ class MasterDataFinanceSeeder extends Seeder
 
         $akunBankPayroll = AkunGl::firstOrCreate(
             ['kode_akun' => '1-1103'],
-            ['nama_akun' => 'Bank Payroll', 'tipe_akun' => 'Aset']
+            ['nama_akun' => 'Bank Gaji', 'tipe_akun' => 'Aset']
         );
 
         $akunKasKecil = AkunGl::firstOrCreate(
             ['kode_akun' => '1-1100'],
-            ['nama_akun' => 'Kas Kecil (Petty Cash)', 'tipe_akun' => 'Aset']
+            ['nama_akun' => 'Petty Cash', 'tipe_akun' => 'Aset']
         );
 
         // 2. Buat Akun Modal Awal (Equity Opening Balance)
@@ -55,7 +55,7 @@ class MasterDataFinanceSeeder extends Seeder
         
         $this->createBankWithJournal('Bank Masuk', '000-111-222', 'PT Persija Jaya', $akunBankMasuk, 1500000000, $akunModalAwal);
         $this->createBankWithJournal('Bank Keluar', '333-444-555', 'PT Persija Jaya', $akunBankKeluar, 500000000, $akunModalAwal);
-        $this->createBankWithJournal('Bank Payroll', '123-000-999', 'PT Persija Jaya', $akunBankPayroll, 500000000, $akunModalAwal);
+        $this->createBankWithJournal('Bank Gaji', '123-000-999', 'PT Persija Jaya', $akunBankPayroll, 500000000, $akunModalAwal);
         $this->createBankWithJournal('Petty Cash', 'CASH', 'Finance Dept', $akunKasKecil, 10000000, $akunModalAwal);
 
         $this->command->info('Master Data Finance (Kas/Bank + Jurnal Saldo Awal) berhasil dibuat.');
