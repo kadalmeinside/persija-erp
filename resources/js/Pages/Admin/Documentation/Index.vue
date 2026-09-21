@@ -73,6 +73,17 @@ const allModules = [
                     `Klik tombol <strong class="inline-flex items-center px-2 py-0.5 bg-green-50 border border-green-200 text-green-700 rounded text-xs">${iconCheck} Approve</strong> untuk menyetujui, atau <strong class="inline-flex items-center px-2 py-0.5 bg-red-50 border border-red-200 text-red-700 rounded text-xs">${iconX} Reject</strong> untuk menolak (beserta alasan penolakan).`,
                     'Setelah disetujui, saldo cuti karyawan akan otomatis terpotong.'
                 ]
+            },
+            {
+                id: 'cuti-4',
+                title: 'Menambah/Menyesuaikan Saldo Cuti Tahunan (Khusus HR)',
+                steps: [
+                    'Buka menu <strong>HR > Karyawan</strong> atau menu Pengaturan Cuti.',
+                    `Cari nama karyawan pada tabel, lalu klik tombol <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconEdit} Edit</strong>.`,
+                    'Temukan kolom input untuk <strong>Saldo Cuti Tahunan</strong>.',
+                    'Masukkan jumlah saldo cuti yang baru (misalnya penambahan jatah tahunan atau penyesuaian pro-rata).',
+                    `Klik <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconCheck} Simpan</strong>. Saldo cuti terbaru akan langsung muncul di Dashboard karyawan yang bersangkutan.`
+                ]
             }
         ]
     },
@@ -245,8 +256,11 @@ const allModules = [
                 title: 'Manajemen Pinjaman (Kasbon Karyawan)',
                 steps: [
                     'Buka menu <strong>HR & Payroll > Pinjaman Karyawan</strong>.',
-                    `Klik <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconPlus} Tambah Pinjaman</strong>, pilih karyawan, dan tentukan jumlah serta tenor cicilan pinjaman.`,
-                    'Cicilan ini akan otomatis memotong perhitungan payroll bulanan karyawan.'
+                    `Klik <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconPlus} Tambah Pinjaman</strong> untuk mencatat pengajuan kasbon baru.`,
+                    'Pilih nama karyawan, masukkan nominal pinjaman, dan tentukan jumlah bulan tenor cicilan.',
+                    'Pengajuan ini memerlukan persetujuan dari pihak Finance atau Atasan (sesuai alur Workflow).',
+                    `Setelah disetujui (Approved), Anda bisa mengubah detailnya melalui tombol <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconEdit} Edit</strong> jika diperlukan penyesuaian cicilan.`,
+                    'Sistem akan <strong>otomatis memotong gaji</strong> karyawan sejumlah nominal cicilan per bulan pada saat proses Generate Payroll.'
                 ]
             }
         ]
@@ -401,6 +415,24 @@ const allModules = [
                     'Buka menu <strong>Utilitas > Alat PDF / Alat Gambar</strong>.',
                     'Gunakan fitur PDF untuk menggabungkan (Merge) atau memotong (Split) dokumen PDF.',
                     'Gunakan Alat Gambar untuk kompresi ukuran file sebelum diunggah ke pengajuan dana.'
+                ]
+            }
+        ]
+    },
+    {
+        title: 'Modul Dashboard & Kalender',
+        icon: CalendarIcon,
+        color: 'text-pink-500',
+        topics: [
+            {
+                id: 'dash-1',
+                title: 'Menambah Event Kalender Perusahaan',
+                steps: [
+                    'Buka menu <strong>Dashboard</strong> atau menu <strong>Kalender</strong>.',
+                    `Klik tombol <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconPlus} Tambah Event</strong> pada widget kalender.`,
+                    'Isikan judul event (misalnya "Libur Nasional", "Meeting Direksi", atau "Gajian"), lalu pilih tanggal mulai dan selesai.',
+                    `Klik <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconCheck} Simpan</strong>. Event ini akan tampil di kalender semua karyawan secara real-time.`,
+                    `Untuk menghapus atau mengubah jadwal event, klik pada event tersebut di dalam kalender lalu gunakan tombol <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconEdit} Edit</strong> atau <strong class="inline-flex items-center px-2 py-0.5 bg-red-50 border border-red-200 text-red-700 rounded text-xs">${iconTrash} Hapus</strong>.`
                 ]
             }
         ]
