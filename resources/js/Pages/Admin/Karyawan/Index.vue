@@ -134,9 +134,10 @@ const deleteItem = (item) => {
                                             <span v-if="item.user" class="bg-green-100 text-green-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-green-900 dark:text-green-300">Active</span>
                                             <span v-else class="bg-gray-100 text-gray-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-gray-300">No User</span>
                                         </td>
-                                        <td class="px-6 py-4 text-center flex justify-center gap-2">
-                                            <Link :href="route('admin.karyawan.show', item.id)" class="text-green-600 hover:text-green-900">
-                                                <EyeIcon class="w-5 h-5" />
+                                        <td class="px-6 py-4 text-center">
+                                            <div class="flex items-center justify-center gap-2">
+                                                <Link :href="route('admin.karyawan.show', item.id)" class="text-green-600 hover:text-green-900">
+                                                    <EyeIcon class="w-5 h-5" />
                                             </Link>
                                             <button @click="openEditModal(item)" class="text-indigo-600 hover:text-indigo-900">
                                                 <PencilSquareIcon class="w-5 h-5" />
@@ -144,6 +145,7 @@ const deleteItem = (item) => {
                                             <button @click="deleteItem(item)" class="text-red-600 hover:text-red-900">
                                                 <TrashIcon class="w-5 h-5" />
                                             </button>
+                                            </div>
                                         </td>
                                     </tr>
                                     <tr v-if="karyawans.data.length === 0">
