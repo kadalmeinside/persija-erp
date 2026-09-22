@@ -168,8 +168,8 @@ const deleteItem = (item) => {
                                                 <span class="font-medium" :class="item.status_karyawan === 'Tetap' ? 'text-indigo-600 dark:text-indigo-400' : 'text-blue-600 dark:text-blue-400'">
                                                     {{ item.status_karyawan }}
                                                 </span>
-                                                <span v-if="item.status_karyawan === 'Tetap'" class="text-xs text-gray-500 flex items-center gap-1">
-                                                    ∞ Tidak Terbatas
+                                                <span v-if="item.status_karyawan === 'Tetap'" class="text-xs text-gray-500 flex items-center gap-1" title="Tidak Terbatas">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><path d="M12 12c-2-2.67-4-4-6-4a4 4 0 1 0 0 8c2 0 4-1.33 6-4Zm0 0c2 2.67 4 4 6 4a4 4 0 1 0 0-8c-2 0-4 1.33-6 4Z"/></svg>
                                                 </span>
                                                 <span v-else class="text-xs flex items-center gap-1" :class="isContractEndingSoon(item.tanggal_berakhir_kontrak) ? 'text-red-600 font-bold' : 'text-gray-500'">
                                                     S/D: {{ formatDateShort(item.tanggal_berakhir_kontrak) }}
