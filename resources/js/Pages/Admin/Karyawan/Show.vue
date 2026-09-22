@@ -8,6 +8,7 @@ import {
     IdentificationIcon, CheckBadgeIcon, AtSymbolIcon, BuildingOfficeIcon
 } from '@heroicons/vue/24/outline';
 import EmployeeFormModal from '@/Components/EmployeeFormModal.vue';
+import CareerHistoryModal from '@/Components/CareerHistoryModal.vue';
 
 const props = defineProps({
     karyawan: Object,
@@ -35,6 +36,12 @@ const openEditModal = () => {
 const closeEditModal = () => {
     showEditModal.value = false;
 };
+
+// Career History Modal
+const showCareerHistoryModal = ref(false);
+const closeCareerHistoryModal = () => {
+    showCareerHistoryModal.value = false;
+};
 const refreshData = () => {
     router.reload();
 };
@@ -53,8 +60,8 @@ const refreshData = () => {
             </div>
         </template>
 
-        <div class="pb-12 pt-6">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="pb-12 pt-4">
+            <div class="max-w-7xl mx-auto">
                 
                 <!-- Breadcrumb & Back Button -->
                 <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4 bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700/50">
@@ -153,17 +160,17 @@ const refreshData = () => {
                             <div class="p-4 border-b border-gray-100 dark:border-gray-700/50">
                                 <nav class="flex space-x-2 bg-gray-50 dark:bg-gray-900/50 p-1.5 rounded-2xl" aria-label="Tabs">
                                     <button 
-                                        v-for="tab in ['profile', 'employment', 'salary', 'leave']" 
+                                        v-for="tab in ['profile', 'employment', 'history', 'salary', 'leave']" 
                                         :key="tab"
                                         @click="activeTab = tab"
                                         :class="[
                                             activeTab === tab 
                                                 ? 'bg-white dark:bg-gray-800 text-indigo-700 dark:text-indigo-400 shadow-sm' 
                                                 : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-200/50 dark:hover:bg-gray-700/50',
-                                            'w-1/4 py-2.5 px-4 text-center rounded-xl font-semibold text-sm capitalize transition-all duration-300 relative'
+                                            'w-1/5 py-2.5 px-4 text-center rounded-xl font-semibold text-sm capitalize transition-all duration-300 relative'
                                         ]"
                                     >
-                                        {{ tab === 'profile' ? 'Biodata' : tab === 'employment' ? 'Karir' : tab === 'salary' ? 'Finansial' : 'Cuti' }}
+                                        {{ tab === 'profile' ? 'Biodata' : tab === 'employment' ? 'Kepegawaian' : tab === 'history' ? 'Histori' : tab === 'salary' ? 'Finansial' : 'Cuti' }}
                                     </button>
                                 </nav>
                             </div>
@@ -248,6 +255,72 @@ const refreshData = () => {
                                                 </div>
                                                 <div v-if="karyawan.user" class="hidden sm:block">
                                                     <CheckBadgeIcon class="w-10 h-10 text-green-500 opacity-20" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- History Tab -->
+                                    <div v-else-if="activeTab === 'history'" class="space-y-6">
+                                        <div class="flex justify-between items-center mb-6">
+                                            <div class="flex items-center">
+                                                <div class="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center mr-4">
+                                                    <BriefcaseIcon class="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                                                </div>
+                                                <h4 class="text-xl font-bold text-gray-900 dark:text-white">Riwayat Karir & Kontrak</h4>
+                                            </div>
+                                            <button @click="showCareerHistoryModal = true" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-xl font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:border-indigo-900 focus:ring ring-indigo-300 disabled:opacity-25 transition ease-in-out duration-150 shadow-sm">
+                                                Tambah Riwayat
+                                            </button>
+                                        </div>
+
+                                        <div class="relative border-l-2 border-indigo-100 dark:border-indigo-900/30 ml-4 md:ml-6 space-y-8 pb-4">
+                                            <div v-if="!karyawan.riwayat_karir || karyawan.riwayat_karir.length === 0" class="pl-8 text-gray-400 italic">
+                                                Belum ada data riwayat karir
+                                            </div>
+                                            
+                                            <div v-else v-for="(histori, idx) in karyawan.riwayat_karir" :key="histori.id" class="relative pl-8 md:pl-10">
+                                                <!-- Timeline Dot -->
+                                                <div class="absolute -left-[9px] mt-1.5 w-4 h-4 rounded-full bg-indigo-500 ring-4 ring-white dark:ring-gray-800 shadow-sm z-10"></div>
+                                                
+                                                <!-- Card -->
+                                                <div class="bg-white dark:bg-gray-800/80 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
+                                                    <div class="flex justify-between items-start mb-2">
+                                                        <div>
+                                                            <h5 class="text-lg font-bold text-gray-900 dark:text-white">{{ histori.tipe_peristiwa }}</h5>
+                                                            <p class="text-sm text-gray-500 font-medium mt-1">Efektif: {{ formatDate(histori.tanggal_efektif) }}</p>
+                                                        </div>
+                                                        <span :class="[
+                                                            'px-3 py-1 text-xs font-bold rounded-full shadow-sm',
+                                                            histori.status_karyawan === 'Tetap' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
+                                                        ]">{{ histori.status_karyawan }}</span>
+                                                    </div>
+                                                    
+                                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 bg-gray-50 dark:bg-gray-900/40 p-4 rounded-xl">
+                                                        <div>
+                                                            <p class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Jabatan</p>
+                                                            <p class="text-sm font-medium text-gray-900 dark:text-white">{{ histori.jabatan }}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Departemen</p>
+                                                            <p class="text-sm font-medium text-gray-900 dark:text-white">{{ histori.departemen?.nama_departemen || '-' }}</p>
+                                                        </div>
+                                                        <div v-if="histori.tanggal_berakhir_kontrak">
+                                                            <p class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Berakhir Kontrak</p>
+                                                            <p class="text-sm font-medium text-amber-600">{{ formatDate(histori.tanggal_berakhir_kontrak) }}</p>
+                                                        </div>
+                                                        <div v-if="histori.file_sk_url">
+                                                            <p class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Dokumen SK</p>
+                                                            <a :href="histori.file_sk_url" target="_blank" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center mt-1">
+                                                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                                                                Lihat File
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div v-if="histori.catatan" class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                                                        <p class="text-sm text-gray-600 dark:text-gray-400 italic">"{{ histori.catatan }}"</p>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -398,6 +471,15 @@ const refreshData = () => {
             :employee="karyawan" 
             :departemens="departemens"
             @close="closeEditModal"
+            @saved="refreshData"
+        />
+
+        <!-- Career History Modal -->
+        <CareerHistoryModal
+            :show="showCareerHistoryModal"
+            :karyawanId="karyawan.id"
+            :departemens="departemens"
+            @close="closeCareerHistoryModal"
             @saved="refreshData"
         />
     </AuthenticatedLayout>

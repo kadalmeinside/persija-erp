@@ -127,4 +127,12 @@ class Karyawan extends Model
     {
         return $this->hasMany(Task::class, 'id_karyawan_creator');
     }
+
+    /**
+     * Relasi ke Riwayat Karir Karyawan.
+     */
+    public function riwayatKarir()
+    {
+        return $this->hasMany(RiwayatKarir::class, 'id_karyawan')->orderBy('tanggal_efektif', 'desc');
+    }
 }

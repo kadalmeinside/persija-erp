@@ -171,7 +171,7 @@ class AttendanceController extends Controller
     /**
      * Halaman Rekap Absensi untuk HR
      */
-    public function index(Request $request)
+    private function buildFilteredQuery(Request $request)
     {
         $date = $request->input('date', Carbon::today()->toDateString());
         $status = $request->input('status');
@@ -185,26 +185,65 @@ class AttendanceController extends Controller
         }
 
         if ($timeIn) {
-            // For example, filter check-ins that happened ON or AFTER the specified time
             $query->whereTime('waktu_masuk', '>=', $timeIn);
         }
 
         if ($timeOut) {
-            // For example, filter check-outs that happened ON or BEFORE the specified time
             $query->whereTime('waktu_keluar', '<=', $timeOut);
         }
 
+        return $query;
+    }
+
+    /**
+     * Halaman Rekap Absensi untuk HR
+     */
+    public function index(Request $request)
+    {
+        $query = $this->buildFilteredQuery($request);
+        
         $absensis = $query->orderBy('waktu_masuk', 'asc')->paginate(20)->withQueryString();
 
         return Inertia::render('Admin/Absensi/Index', [
             'absensis' => $absensis,
             'filters' => [
-                'date' => $date,
-                'status' => $status,
-                'time_in' => $timeIn,
-                'time_out' => $timeOut,
+                'date' => $request->input('date', Carbon::today()->toDateString()),
+                'status' => $request->input('status'),
+                'time_in' => $request->input('time_in'),
+                'time_out' => $request->input('time_out'),
             ]
         ]);
+    }
+
+    /**
+     * Print Rekap Absensi
+     */
+    public function print(Request $request)
+    {
+        $query = $this->buildFilteredQuery($request);
+        $absensis = $query->orderBy('waktu_masuk', 'asc')->get();
+        
+        return view('admin.absensi.print', [
+            'absensis' => $absensis,
+            'date' => $request->input('date', Carbon::today()->toDateString())
+        ]);
+    }
+
+    /**
+     * Export PDF Rekap Absensi
+     */
+    public function exportPdf(Request $request)
+    {
+        $query = $this->buildFilteredQuery($request);
+        $absensis = $query->orderBy('waktu_masuk', 'asc')->get();
+        $date = $request->input('date', Carbon::today()->toDateString());
+        
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('admin.absensi.print', [
+            'absensis' => $absensis,
+            'date' => $date
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download("Rekap_Absensi_{$date}.pdf");
     }
 
     /**

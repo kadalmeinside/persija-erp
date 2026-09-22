@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\AbsensiSettingController;
 use App\Http\Controllers\Admin\CompanyEventController;
 use App\Http\Controllers\Admin\JenisCutiController;
 use App\Http\Controllers\Admin\KaryawanController;
+use App\Http\Controllers\Admin\RiwayatKarirController;
 use App\Http\Controllers\Admin\PayrollController;
 use App\Http\Controllers\Admin\PinjamanController;
 use Illuminate\Support\Facades\Route;
@@ -18,6 +19,8 @@ Route::middleware(['role:Super Admin|HR Manager|HR Staff'])->group(function () {
 
     // Karyawan Management
     Route::resource('karyawan', KaryawanController::class);
+    Route::post('karyawan/{karyawan}/riwayat-karir', [RiwayatKarirController::class, 'store'])->name('karyawan.riwayat-karir.store');
+    Route::delete('riwayat-karir/{riwayatKarir}', [RiwayatKarirController::class, 'destroy'])->name('karyawan.riwayat-karir.destroy');
 
     // Jenis Cuti
     Route::resource('jenis-cuti', JenisCutiController::class);

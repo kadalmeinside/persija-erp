@@ -5,7 +5,7 @@ import Modal from '@/Components/Modal.vue';
 import { UserGroupIcon, MapPinIcon, PhotoIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/vue/24/outline';
 import dayjs from 'dayjs';
 import 'dayjs/locale/id';
-import { ref, watch, onMounted, nextTick } from 'vue';
+import { ref, watch, onMounted, nextTick, computed } from 'vue';
 
 dayjs.locale('id');
 
@@ -20,6 +20,18 @@ const filterForm = ref({
     time_in: props.filters?.time_in || '',
     time_out: props.filters?.time_out || '',
 });
+
+const queryString = computed(() => {
+    const params = new URLSearchParams();
+    if (filterForm.value.date) params.append('date', filterForm.value.date);
+    if (filterForm.value.status) params.append('status', filterForm.value.status);
+    if (filterForm.value.time_in) params.append('time_in', filterForm.value.time_in);
+    if (filterForm.value.time_out) params.append('time_out', filterForm.value.time_out);
+    return params.toString();
+});
+
+const printUrl = computed(() => route('admin.absensi.print') + '?' + queryString.value);
+const pdfUrl = computed(() => route('admin.absensi.export-pdf') + '?' + queryString.value);
 
 // Generate dates around the selected date
 const dateList = ref([]);
@@ -153,7 +165,7 @@ const formatPaginationLabel = (label) => {
                     </div>
 
                     <!-- Filters Section -->
-                    <div class="p-4 bg-white border-b border-gray-100 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="p-4 bg-white border-b border-gray-100 grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
                             <label class="block text-xs font-medium text-gray-500 mb-1">Status Kehadiran</label>
                             <select v-model="filterForm.status" class="w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500">
@@ -172,6 +184,20 @@ const formatPaginationLabel = (label) => {
                         <div>
                             <label class="block text-xs font-medium text-gray-500 mb-1">Waktu Keluar (Sebelum jam)</label>
                             <input type="time" v-model="filterForm.time_out" class="w-full border-gray-300 rounded-md shadow-sm text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                        </div>
+                        <div class="flex flex-row gap-2 justify-end items-end h-full mt-2 md:mt-0">
+                            <a :href="printUrl" target="_blank" class="inline-flex justify-center items-center px-3 py-1.5 bg-white border border-gray-300 rounded text-[10px] font-bold text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                <svg class="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                </svg>
+                                Print
+                            </a>
+                            <a :href="pdfUrl" class="inline-flex justify-center items-center px-3 py-1.5 bg-red-600 border border-transparent rounded text-[10px] font-bold text-white uppercase tracking-widest shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                <svg class="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                PDF
+                            </a>
                         </div>
                     </div>
 

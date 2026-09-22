@@ -64,12 +64,6 @@ const formatDate = (dateStr) => {
         <div class="pb-12 pt-4">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg border border-gray-100">
-                    <div class="p-4 sm:p-6 bg-indigo-600 text-white flex flex-col md:flex-row justify-between items-center gap-4">
-                        <div>
-                            <h2 class="text-xl font-bold">Riwayat Absensi Saya</h2>
-                            <p class="text-indigo-100 text-sm mt-1">Daftar rekaman kehadiran harian Anda</p>
-                        </div>
-                    </div>
 
                 <div class="p-0">
                     <div v-if="!absensis || absensis.length === 0" class="p-12 text-center">
