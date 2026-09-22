@@ -83,6 +83,10 @@ class DashboardController extends Controller
         $karyawan = $user->karyawan;
         if ($karyawan) {
             $currentYear = date('Y');
+            
+            $data['my_attendance_today'] = \App\Models\Absensi::where('id_karyawan', $karyawan->id)
+                ->whereDate('tanggal', \Carbon\Carbon::today())
+                ->first();
             $data['my_stats'] = [
                 'leave_balance' => SaldoCuti::where('id_karyawan', $karyawan->id)
                                     ->where('tahun_periode', $currentYear)

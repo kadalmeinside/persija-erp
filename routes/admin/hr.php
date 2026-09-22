@@ -3,6 +3,7 @@
 // routes/admin/hr.php
 // Modul: HR & Payroll — Karyawan, Cuti, Payroll, Pinjaman
 
+use App\Http\Controllers\Admin\AbsensiSettingController;
 use App\Http\Controllers\Admin\CompanyEventController;
 use App\Http\Controllers\Admin\JenisCutiController;
 use App\Http\Controllers\Admin\KaryawanController;
@@ -11,6 +12,10 @@ use App\Http\Controllers\Admin\PinjamanController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['role:Super Admin|HR Manager|HR Staff'])->group(function () {
+    // Pengaturan Absensi Lokasi
+    Route::get('absensi/settings', [AbsensiSettingController::class, 'index'])->name('absensi.settings');
+    Route::post('absensi/settings', [AbsensiSettingController::class, 'update'])->name('absensi.settings.update');
+
     // Karyawan Management
     Route::resource('karyawan', KaryawanController::class);
 

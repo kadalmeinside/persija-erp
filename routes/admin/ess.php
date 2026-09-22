@@ -108,4 +108,14 @@ Route::middleware(["role:{$essRoles}"])->group(function () {
     // ----------------------------------------------------------------
     Route::post('tasks/{task}/status', [\App\Http\Controllers\TaskController::class, 'updateStatus'])->name('tasks.updateStatus');
     Route::resource('tasks', \App\Http\Controllers\TaskController::class)->except(['create', 'show', 'edit']);
+    // ----------------------------------------------------------------
+    // Absensi (Attendance)
+    // ----------------------------------------------------------------
+    Route::prefix('absensi')->name('absensi.')->controller(\App\Http\Controllers\AttendanceController::class)->group(function () {
+        Route::get('clock', 'clock')->name('clock');
+        Route::post('clock', 'storeClock')->name('storeClock');
+        Route::match(['get', 'post'], 'register-face', 'registerFace')->name('register-face');
+        Route::get('my-attendance', 'myAttendance')->name('my-attendance');
+        Route::get('rekap', 'index')->name('rekap'); // Untuk HR
+    });
 });

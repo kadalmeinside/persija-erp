@@ -72,13 +72,10 @@ const destroy = () => {
     <Modal :show="show" max-width="2xl" @close="emit('close')">
         <div class="bg-white overflow-y-auto max-h-[90vh] flex flex-col">
             <!-- Header -->
-            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+            <div class="px-6 py-4 border-b border-gray-100">
                 <h3 class="text-lg font-semibold text-gray-800">
                     {{ task ? 'Detail Tugas' : 'Buat Tugas Baru' }}
                 </h3>
-                <button @click="emit('close')" type="button" class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors">
-                    <XMarkIcon class="w-6 h-6" />
-                </button>
             </div>
 
             <!-- Body -->

@@ -39,7 +39,7 @@ import {
     ClockIcon,
     ArrowsRightLeftIcon, // Internal Transfer
     LifebuoyIcon, // Added LifebuoyIcon
-    LockClosedIcon, LockOpenIcon, PhotoIcon
+    LockClosedIcon, LockOpenIcon, PhotoIcon, MapPinIcon
 } from '@heroicons/vue/24/outline';
 
 const page = usePage();
@@ -245,6 +245,15 @@ const sidebarMenu = computed(() => {
         current: 'admin.cuti.my-requests' 
     });
 
+    // Riwayat Absensi (Visible to All)
+    menu.push({ 
+        type: 'link',
+        name: 'Riwayat Absensi', 
+        route: 'admin.absensi.my-attendance', 
+        icon: ClockIcon, 
+        current: 'admin.absensi.my-attendance' 
+    });
+
     // Pengajuan Saya (Visible to All)
     menu.push({ 
         type: 'link',
@@ -339,6 +348,8 @@ const sidebarMenu = computed(() => {
         hrChildren.push({ name: 'Pinjaman Karyawan', route: 'admin.pinjaman.index', icon: BanknotesIcon, current: 'admin.pinjaman.*' });
         hrChildren.push({ name: 'Hari Libur', route: 'admin.hari-libur.index', icon: CalendarDaysIcon, current: 'admin.hari-libur.*' });
         hrChildren.push({ name: 'Agenda Perusahaan', route: 'admin.company-events.index', icon: CalendarIcon, current: 'admin.company-events.*' });
+        hrChildren.push({ name: 'Rekap Absensi', route: 'admin.absensi.rekap', icon: ClockIcon, current: 'admin.absensi.rekap' });
+        hrChildren.push({ name: 'Pengaturan Absensi', route: 'admin.absensi.settings', icon: MapPinIcon, current: 'admin.absensi.settings' });
         
         // Payroll
         hrChildren.push({ 
@@ -352,7 +363,7 @@ const sidebarMenu = computed(() => {
             type: 'dropdown',
             name: 'HR & Payroll',
             icon: UserGroupIcon,
-            current: 'admin.karyawan.* admin.hari-libur.* admin.payrolls.* admin.company-events.*',
+            current: 'admin.karyawan.* admin.hari-libur.* admin.payrolls.* admin.company-events.* admin.absensi.settings admin.absensi.rekap',
             children: hrChildren
         });
     }
