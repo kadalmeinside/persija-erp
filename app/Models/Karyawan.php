@@ -30,7 +30,7 @@ class Karyawan extends Model
         'status_karyawan'
     ];
 
-    protected $appends = ['foto_url'];
+    protected $appends = ['foto_url', 'tanggal_berakhir_kontrak'];
 
     /**
      * Get dynamic photo URL (uploaded photo or UI Avatar)
@@ -134,5 +134,15 @@ class Karyawan extends Model
     public function riwayatKarir()
     {
         return $this->hasMany(RiwayatKarir::class, 'id_karyawan')->orderBy('tanggal_efektif', 'desc');
+    }
+
+    public function latestRiwayatKarir()
+    {
+        return $this->hasOne(RiwayatKarir::class, 'id_karyawan')->ofMany('tanggal_efektif', 'max');
+    }
+
+    public function getTanggalBerakhirKontrakAttribute()
+    {
+        return $this->latestRiwayatKarir ? $this->latestRiwayatKarir->tanggal_berakhir_kontrak : null;
     }
 }

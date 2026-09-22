@@ -17,7 +17,7 @@ class KaryawanController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Karyawan::with(['departemen', 'user', 'rekeningBank']);
+        $query = Karyawan::with(['departemen', 'user', 'rekeningBank', 'latestRiwayatKarir']);
 
         if ($request->status_aktif == 'non-aktif') {
             $query->onlyTrashed();

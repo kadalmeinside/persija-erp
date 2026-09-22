@@ -46,6 +46,20 @@ const refreshData = () => {
     router.reload({ only: ['karyawans'] });
 };
 
+const formatDateShort = (dateString) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+};
+
+const isContractEndingSoon = (dateString) => {
+    if (!dateString) return false;
+    const endDate = new Date(dateString);
+    const today = new Date();
+    const diffTime = endDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays >= 0 && diffDays <= 30;
+};
+
 const deleteItem = (item) => {
     Swal.fire({
         title: 'Apakah Anda yakin?',
@@ -133,6 +147,7 @@ const deleteItem = (item) => {
                                         <th scope="col" class="px-6 py-3">Nama Lengkap</th>
                                         <th scope="col" class="px-6 py-3">Departemen</th>
                                         <th scope="col" class="px-6 py-3">Jabatan</th>
+                                        <th scope="col" class="px-6 py-3">Status & Kontrak</th>
                                         <th scope="col" class="px-6 py-3">User Akun</th>
                                         <th scope="col" class="px-6 py-3 text-center">Aksi</th>
                                     </tr>
@@ -148,6 +163,19 @@ const deleteItem = (item) => {
                                         </td>
                                         <td class="px-6 py-4">{{ item.departemen?.nama_departemen || '-' }}</td>
                                         <td class="px-6 py-4">{{ item.jabatan }}</td>
+                                        <td class="px-6 py-4">
+                                            <div class="flex flex-col gap-1">
+                                                <span class="font-medium" :class="item.status_karyawan === 'Tetap' ? 'text-indigo-600 dark:text-indigo-400' : 'text-blue-600 dark:text-blue-400'">
+                                                    {{ item.status_karyawan }}
+                                                </span>
+                                                <span v-if="item.status_karyawan === 'Tetap'" class="text-xs text-gray-500 flex items-center gap-1">
+                                                    ∞ Tidak Terbatas
+                                                </span>
+                                                <span v-else class="text-xs flex items-center gap-1" :class="isContractEndingSoon(item.tanggal_berakhir_kontrak) ? 'text-red-600 font-bold' : 'text-gray-500'">
+                                                    S/D: {{ formatDateShort(item.tanggal_berakhir_kontrak) }}
+                                                </span>
+                                            </div>
+                                        </td>
                                         <td class="px-6 py-4">
                                             <span v-if="item.user" class="bg-green-100 text-green-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-green-900 dark:text-green-300">Active</span>
                                             <span v-else class="bg-gray-100 text-gray-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-gray-700 dark:text-gray-300">No User</span>
@@ -167,7 +195,7 @@ const deleteItem = (item) => {
                                         </td>
                                     </tr>
                                     <tr v-if="karyawans.data.length === 0">
-                                        <td colspan="6" class="px-6 py-4 text-center">Tidak ada data karyawan ditemukan.</td>
+                                        <td colspan="7" class="px-6 py-4 text-center">Tidak ada data karyawan ditemukan.</td>
                                     </tr>
                                 </tbody>
                             </table>
