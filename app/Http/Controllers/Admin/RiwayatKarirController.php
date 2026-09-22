@@ -16,7 +16,7 @@ class RiwayatKarirController extends Controller
     public function store(Request $request, Karyawan $karyawan)
     {
         $validated = $request->validate([
-            'tipe_peristiwa' => 'required|in:Pengangkatan Awal,Perpanjangan Kontrak,Pengangkatan Tetap,Promosi,Demosi,Mutasi,Penyesuaian Gaji,Lainnya',
+            'tipe_peristiwa' => 'required|in:Pengangkatan Awal,Perpanjangan Kontrak,Pengangkatan Tetap,Promosi,Demosi,Mutasi,Penyesuaian Gaji,Lainnya,Resign,PHK,Habis Kontrak',
             'tanggal_efektif' => 'required|date',
             'tanggal_berakhir_kontrak' => 'nullable|date',
             'id_departemen' => 'nullable|exists:tbl_departemen,id',
@@ -35,6 +35,22 @@ class RiwayatKarirController extends Controller
 
         // Simpan Riwayat
         RiwayatKarir::create($validated);
+
+        // Cek jika tipe peristiwanya adalah pengakhiran kerja
+        if (in_array($validated['tipe_peristiwa'], ['Resign', 'PHK', 'Habis Kontrak'])) {
+            // Cabut hak akses (unlink user)
+            if ($karyawan->id_user) {
+                $user = \App\Models\User::find($karyawan->id_user);
+                if ($user) {
+                    $user->delete(); // atau revoke roles
+                }
+                $karyawan->id_user = null;
+                $karyawan->save();
+            }
+            // Soft delete karyawan
+            $karyawan->delete();
+            return redirect()->back()->with('success', 'Riwayat ditambahkan. Karyawan telah di-nonaktifkan dan hak akses dicabut.');
+        }
 
         // LOGIKA OTOMATIS: Update data Karyawan jika tanggal_efektif >= hari ini ATAU ini adalah data paling baru
         $latestHistory = $karyawan->riwayatKarir()->orderBy('tanggal_efektif', 'desc')->first();
@@ -58,6 +74,7 @@ class RiwayatKarirController extends Controller
     public function destroy(RiwayatKarir $riwayatKarir)
     {
         $karyawanId = $riwayatKarir->id_karyawan;
+        $isTermination = in_array($riwayatKarir->tipe_peristiwa, ['Resign', 'PHK', 'Habis Kontrak']);
         
         if ($riwayatKarir->file_sk && Storage::disk('public')->exists($riwayatKarir->file_sk)) {
             Storage::disk('public')->delete($riwayatKarir->file_sk);
@@ -66,16 +83,24 @@ class RiwayatKarirController extends Controller
         $riwayatKarir->delete();
 
         // Rollback ke riwayat sebelumnya jika ada
-        $karyawan = Karyawan::find($karyawanId);
-        $latestHistory = $karyawan->riwayatKarir()->orderBy('tanggal_efektif', 'desc')->first();
+        $karyawan = Karyawan::withTrashed()->find($karyawanId);
         
-        if ($latestHistory && $latestHistory->tanggal_efektif->lte(now())) {
-            $karyawan->update([
-                'jabatan' => $latestHistory->jabatan,
-                'status_karyawan' => $latestHistory->status_karyawan,
-                'gaji_pokok' => $latestHistory->gaji_pokok,
-                'id_departemen' => $latestHistory->id_departemen,
-            ]);
+        if ($karyawan) {
+            // Restore jika riwayat yang dihapus adalah riwayat pemberhentian
+            if ($isTermination && $karyawan->trashed()) {
+                $karyawan->restore();
+            }
+
+            $latestHistory = $karyawan->riwayatKarir()->orderBy('tanggal_efektif', 'desc')->first();
+            
+            if ($latestHistory && $latestHistory->tanggal_efektif->lte(now())) {
+                $karyawan->update([
+                    'jabatan' => $latestHistory->jabatan,
+                    'status_karyawan' => $latestHistory->status_karyawan,
+                    'gaji_pokok' => $latestHistory->gaji_pokok,
+                    'id_departemen' => $latestHistory->id_departemen,
+                ]);
+            }
         }
 
         return redirect()->back()->with('success', 'Riwayat karir berhasil dihapus.');

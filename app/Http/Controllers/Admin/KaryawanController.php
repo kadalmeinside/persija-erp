@@ -19,9 +19,15 @@ class KaryawanController extends Controller
     {
         $query = Karyawan::with(['departemen', 'user', 'rekeningBank']);
 
+        if ($request->status_aktif == 'non-aktif') {
+            $query->onlyTrashed();
+        }
+
         if ($request->search) {
-            $query->where('nama_lengkap', 'like', '%' . $request->search . '%')
+            $query->where(function($q) use ($request) {
+                $q->where('nama_lengkap', 'like', '%' . $request->search . '%')
                   ->orWhere('nomor_induk_karyawan', 'like', '%' . $request->search . '%');
+            });
         }
 
         if ($request->departemen) {
@@ -41,7 +47,7 @@ class KaryawanController extends Controller
         return Inertia::render('Admin/Karyawan/Index', [
             'karyawans' => $karyawans,
             'departemens' => $departemens,
-            'filters' => $request->only(['search', 'departemen'])
+            'filters' => $request->only(['search', 'departemen', 'status_aktif'])
         ]);
     }
 

@@ -94,6 +94,19 @@ const refreshData = () => {
                     </Link>
                 </div>
 
+                <!-- Non-Aktif Alert -->
+                <div v-if="karyawan.deleted_at" class="mb-8 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-2xl p-5 flex items-start sm:items-center space-x-4 shadow-sm">
+                    <div class="flex-shrink-0 bg-red-100 dark:bg-red-800 p-2 rounded-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-red-800 dark:text-red-300">KARYAWAN NON-AKTIF</h3>
+                        <p class="text-sm text-red-600 dark:text-red-400 mt-1">Karyawan ini telah diberhentikan (Resign/PHK) pada sistem. Akses masuk telah dicabut dan data disembunyikan dari daftar aktif.</p>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
                     <!-- Profile Card (Left Sidebar) -->
                     <div class="lg:col-span-4">
@@ -112,7 +125,7 @@ const refreshData = () => {
                                         <div class="w-32 h-32 rounded-full bg-gray-100 dark:bg-gray-700 border-4 border-indigo-50 dark:border-gray-700 flex items-center justify-center overflow-hidden">
                                             <img :src="karyawan.foto_url" :alt="karyawan.nama_lengkap" class="w-full h-full object-cover" />
                                         </div>
-                                        <div class="absolute bottom-2 right-2 w-6 h-6 bg-green-500 border-4 border-white dark:border-gray-800 rounded-full" title="Active"></div>
+                                        <div :class="karyawan.deleted_at ? 'bg-red-500' : 'bg-green-500'" class="absolute bottom-2 right-2 w-6 h-6 border-4 border-white dark:border-gray-800 rounded-full" :title="karyawan.deleted_at ? 'Non-Aktif' : 'Active'"></div>
                                     </div>
                                 </div>
                                 
@@ -144,8 +157,8 @@ const refreshData = () => {
                                 </div>
 
                                 <div class="mt-8">
-                                    <button @click="openEditModal" class="w-full inline-flex justify-center items-center px-4 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 rounded-xl font-bold text-sm text-white shadow-lg shadow-indigo-200 dark:shadow-none hover:-translate-y-0.5 transition-all duration-200">
-                                        <PencilSquareIcon class="w-5 h-5 mr-2" /> Edit Profil Karyawan
+                                    <button v-if="!karyawan.deleted_at" @click="openEditModal" class="w-full inline-flex justify-center items-center px-4 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 rounded-xl font-bold text-sm text-white shadow-lg shadow-indigo-200 dark:shadow-none hover:-translate-y-0.5 transition-all duration-200">
+                                        <PencilSquareIcon class="w-5 h-5 mr-2" /> Edit Profil
                                     </button>
                                 </div>
                             </div>
@@ -477,7 +490,7 @@ const refreshData = () => {
         <!-- Career History Modal -->
         <CareerHistoryModal
             :show="showCareerHistoryModal"
-            :karyawanId="karyawan.id"
+            :karyawan="karyawan"
             :departemens="departemens"
             @close="closeCareerHistoryModal"
             @saved="refreshData"

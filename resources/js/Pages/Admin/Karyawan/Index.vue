@@ -17,13 +17,10 @@ const props = defineProps({
 
 const search = ref(props.filters.search || '');
 const filterDepartemen = ref(props.filters.departemen || '');
+const filterStatusAktif = ref(props.filters.status_aktif || 'aktif');
 
-watch(search, (value) => {
-    router.get(route('admin.karyawan.index'), { search: value, departemen: filterDepartemen.value }, { preserveState: true, replace: true });
-});
-
-watch(filterDepartemen, (value) => {
-    router.get(route('admin.karyawan.index'), { search: search.value, departemen: value }, { preserveState: true, replace: true });
+watch([search, filterDepartemen, filterStatusAktif], ([newSearch, newDept, newStatus]) => {
+    router.get(route('admin.karyawan.index'), { search: newSearch, departemen: newDept, status_aktif: newStatus }, { preserveState: true, replace: true });
 });
 
 // Modal State
@@ -81,7 +78,28 @@ const deleteItem = (item) => {
             <div class="max-w-7xl mx-auto">
                 <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6 text-gray-900 dark:text-gray-100">
-                        
+                        <!-- Status Tabs -->
+                        <div class="mb-4 border-b border-gray-200 dark:border-gray-700">
+                            <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="status-tab" role="tablist">
+                                <li class="mr-2" role="presentation">
+                                    <button 
+                                        @click="filterStatusAktif = 'aktif'" 
+                                        :class="filterStatusAktif === 'aktif' ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-gray-500 hover:text-gray-600 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'"
+                                        class="inline-block p-4 border-b-2 rounded-t-lg" type="button">
+                                        Karyawan Aktif
+                                    </button>
+                                </li>
+                                <li class="mr-2" role="presentation">
+                                    <button 
+                                        @click="filterStatusAktif = 'non-aktif'" 
+                                        :class="filterStatusAktif === 'non-aktif' ? 'border-red-500 text-red-600 dark:text-red-400' : 'border-transparent text-gray-500 hover:text-gray-600 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'"
+                                        class="inline-block p-4 border-b-2 rounded-t-lg" type="button">
+                                        Mantan Karyawan (Non-Aktif)
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+
                         <!-- Toolbar -->
                         <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                             <div class="flex gap-2 w-full md:w-auto">
