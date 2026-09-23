@@ -123,7 +123,7 @@ const greeting = computed(() => {
                             </div>
                         </div>
                         <div>
-                            <span class="text-gray-900 dark:text-gray-100 font-black text-3xl md:text-4xl tracking-tight">{{ currentTime }}</span>
+                            <span class="text-gray-900 dark:text-gray-100 font-black text-2xl md:text-3xl tracking-tight">{{ currentTime }}</span>
                         </div>
                     </div>
                 </div>
