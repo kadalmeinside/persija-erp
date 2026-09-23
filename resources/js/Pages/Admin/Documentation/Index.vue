@@ -17,7 +17,8 @@ import {
     BuildingOfficeIcon,
     Cog6ToothIcon,
     WrenchScrewdriverIcon,
-    ShieldCheckIcon
+    ShieldCheckIcon,
+    CameraIcon
 } from '@heroicons/vue/24/outline';
 
 // Menyimpan ID topik yang sedang terbuka (accordion state)
@@ -40,6 +41,51 @@ const iconTrash = `<svg class="inline-block w-4 h-4 mr-1 mb-0.5 text-red-600" fi
 
 // Data struktur dokumentasi
 const allModules = [
+    {
+        title: 'Modul Absensi',
+        icon: CameraIcon,
+        color: 'text-indigo-600',
+        topics: [
+            {
+                id: 'absen-1',
+                title: 'Cara Melakukan Absensi (Clock In / Clock Out)',
+                steps: [
+                    'Buka menu <strong>Personal > Live Absensi</strong> pada navigasi di sebelah kiri.',
+                    'Pastikan browser Anda diizinkan untuk mengakses <strong>Kamera</strong> dan <strong>Lokasi (GPS)</strong>.',
+                    'Arahkan wajah Anda ke kamera. Sistem AI akan mendeteksi dan memverifikasi wajah Anda.',
+                    'Jika Anda berada di kantor, sistem akan memastikan lokasi Anda berada di dalam radius yang diizinkan.',
+                    'Klik tombol <strong class="inline-flex items-center px-2 py-0.5 bg-green-500 text-white rounded text-xs">CLOCK IN</strong> saat datang, atau <strong class="inline-flex items-center px-2 py-0.5 bg-red-500 text-white rounded text-xs">CLOCK OUT</strong> saat pulang.'
+                ]
+            },
+            {
+                id: 'absen-2',
+                title: 'Melakukan Absensi Dinas Luar',
+                steps: [
+                    'Buka menu <strong>Personal > Live Absensi</strong>.',
+                    'Aktifkan toggle (saklar) <strong>"Saya sedang Dinas Luar / Meliput"</strong> di bawah bagian kamera.',
+                    'Masukkan <strong>Keterangan</strong> mengenai lokasi atau kegiatan dinas Anda (misal: "Meeting di kantor klien").',
+                    'Lakukan proses Clock In / Clock Out seperti biasa. Lokasi Anda tetap akan dicatat, namun validasi radius kantor akan diabaikan.'
+                ]
+            },
+            {
+                id: 'absen-3',
+                title: 'Melihat Riwayat Kehadiran Sendiri',
+                steps: [
+                    'Buka menu <strong>Personal > Kehadiran Saya</strong>.',
+                    'Anda dapat melihat daftar absensi lengkap dengan jam masuk, jam pulang, status kehadiran (Hadir/Terlambat), dan foto kehadiran.'
+                ]
+            },
+            {
+                id: 'absen-4',
+                title: 'Pendaftaran Wajah Baru (Khusus Karyawan Baru)',
+                steps: [
+                    'Buka menu <strong>Personal > Live Absensi</strong>.',
+                    'Jika wajah belum terdaftar, Anda akan langsung diarahkan ke halaman <strong>Pendaftaran Wajah</strong>.',
+                    'Ikuti instruksi di layar dan pastikan pencahayaan cukup sebelum mendaftarkan data wajah Anda.'
+                ]
+            }
+        ]
+    },
     {
         title: 'Modul Cuti',
         icon: CalendarIcon,
@@ -438,6 +484,9 @@ const allModules = [
         ]
     }
 ];
+
+// Mengurutkan modul secara alfabetis
+allModules.sort((a, b) => a.title.localeCompare(b.title));
 
 // Logika Filter Pencarian
 const filteredModules = computed(() => {
