@@ -349,7 +349,7 @@ const sidebarMenu = computed(() => {
         hrChildren.push({ name: 'Hari Libur', route: 'admin.hari-libur.index', icon: CalendarDaysIcon, current: 'admin.hari-libur.*' });
         hrChildren.push({ name: 'Agenda Perusahaan', route: 'admin.company-events.index', icon: CalendarIcon, current: 'admin.company-events.*' });
         hrChildren.push({ name: 'Rekap Absensi', route: 'admin.absensi.rekap', icon: ClockIcon, current: 'admin.absensi.rekap' });
-        hrChildren.push({ name: 'Pengaturan Absensi', route: 'admin.absensi.settings', icon: MapPinIcon, current: 'admin.absensi.settings' });
+        hrChildren.push({ name: 'Lokasi Kantor (Cabang)', route: 'admin.lokasi-kantor.index', icon: MapPinIcon, current: 'admin.lokasi-kantor.*' });
         
         // Payroll
         hrChildren.push({ 
