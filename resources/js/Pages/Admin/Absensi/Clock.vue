@@ -216,7 +216,7 @@ const performClock = async (type) => {
                 <h2 class="text-white font-bold text-sm">Live Absensi</h2>
                 <p class="text-indigo-200 text-[10px] uppercase tracking-wider font-semibold">Verifikasi Biometrik & Geolokasi</p>
             </div>
-            <Link :href="route('admin.absensi.index')" class="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors shadow-sm backdrop-blur-sm">
+            <Link :href="route('admin.absensi.my-attendance')" class="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors shadow-sm backdrop-blur-sm">
                 <XMarkIcon class="w-5 h-5 text-white" />
             </Link>
         </div>
