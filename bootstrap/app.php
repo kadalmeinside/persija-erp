@@ -27,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->validateCsrfTokens(except: [
             'webhooks/xendit/*', 
+            'iclock/*',
         ]);
 
         $middleware->trustProxies(at: '*');

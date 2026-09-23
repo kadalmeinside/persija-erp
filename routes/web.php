@@ -105,3 +105,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
 });
 
 require __DIR__ . '/auth.php';
+
+// -----------------------------------------------------------------------
+// ADMS / iClock Routes (Fingerspot/ZKTeco)
+// -----------------------------------------------------------------------
+Route::any('iclock/cdata', [\App\Http\Controllers\Api\IClockController::class, 'cdata']);
+Route::any('iclock/getrequest', [\App\Http\Controllers\Api\IClockController::class, 'getrequest']);
+Route::any('iclock/devicecmd', [\App\Http\Controllers\Api\IClockController::class, 'devicecmd']);
+Route::any('iclock/ping', [\App\Http\Controllers\Api\IClockController::class, 'ping']);
