@@ -184,7 +184,6 @@ const handlePhotoUpload = (event) => {
                                         </div>
                                     </div>
                                 </div>
-                                </div>
                             </div>
                         </div>
                     </div>
