@@ -44,11 +44,14 @@ class AttendanceController extends Controller
      */
     public function storeClock(Request $request)
     {
+        $isDinasLuar = filter_var($request->input('is_dinas_luar', false), FILTER_VALIDATE_BOOLEAN);
+
         $request->validate([
-            'tipe' => 'required|in:in,out',
-            'latitude' => 'required|numeric',
-            'longitude' => 'required|numeric',
-            'foto' => 'required|string', // base64 string
+            'tipe'          => 'required|in:in,out',
+            'latitude'      => 'required|numeric',
+            'longitude'     => 'required|numeric',
+            'foto'          => 'required|string', // base64 string
+            'catatan'       => $isDinasLuar ? 'required|string|min:5' : 'nullable|string',
         ]);
 
         $karyawan = Karyawan::where('user_id', Auth::id())->first();
@@ -56,56 +59,80 @@ class AttendanceController extends Controller
             return response()->json(['success' => false, 'message' => 'Profil Karyawan tidak ditemukan.']);
         }
 
-        // Validasi Lokasi (Haversine Formula)
-        $lokasiKantor = LokasiKantor::where('is_active', true)->first();
-        if (!$lokasiKantor) {
-            return response()->json(['success' => false, 'message' => 'Lokasi kantor belum disetting HR.']);
+        // --- Validasi Lokasi (Multi-Branch Geofencing) ---
+        $lokasiTerdekat = null;
+        if (!$isDinasLuar) {
+            $lokasiList = LokasiKantor::where('is_active', true)->get();
+            if ($lokasiList->isEmpty()) {
+                return response()->json(['success' => false, 'message' => 'Lokasi kantor belum disetting HR.']);
+            }
+
+            // Cari lokasi yang paling dekat & masuk dalam radius
+            foreach ($lokasiList as $lokasi) {
+                $distance = $this->calculateDistance(
+                    $request->latitude, $request->longitude,
+                    $lokasi->latitude, $lokasi->longitude
+                );
+                if ($distance <= $lokasi->radius_meter) {
+                    $lokasiTerdekat = $lokasi;
+                    break;
+                }
+            }
+
+            if (!$lokasiTerdekat) {
+                // Hitung jarak ke lokasi terdekat untuk pesan error yang informatif
+                $minDistance = PHP_INT_MAX;
+                $namaLokasi = '-';
+                foreach ($lokasiList as $lokasi) {
+                    $d = $this->calculateDistance($request->latitude, $request->longitude, $lokasi->latitude, $lokasi->longitude);
+                    if ($d < $minDistance) {
+                        $minDistance = $d;
+                        $namaLokasi = $lokasi->nama ?? 'kantor';
+                    }
+                }
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda berada di luar radius semua lokasi kantor. Lokasi terdekat: ' . $namaLokasi . ' (' . round($minDistance) . 'm). Jika sedang bertugas di luar, gunakan fitur "Dinas Luar".',
+                ]);
+            }
         }
 
-        $distance = $this->calculateDistance($request->latitude, $request->longitude, $lokasiKantor->latitude, $lokasiKantor->longitude);
-        if ($distance > $lokasiKantor->radius_meter) {
-            return response()->json([
-                'success' => false, 
-                'message' => 'Anda berada di luar radius kantor (' . round($distance) . ' meter dari ' . $lokasiKantor->radius_meter . 'm yang diizinkan).'
-            ]);
-        }
-
-        // Simpan Foto
+        // --- Simpan Foto ---
         $fotoPath = null;
         if (preg_match('/^data:image\/(\w+);base64,/', $request->foto)) {
-            $data = substr($request->foto, strpos($request->foto, ',') + 1);
-            $data = base64_decode($data);
+            $data     = substr($request->foto, strpos($request->foto, ',') + 1);
+            $data     = base64_decode($data);
             $fileName = 'absensi/' . $karyawan->id . '_' . time() . '.jpg';
             Storage::disk('public')->put($fileName, $data);
             $fotoPath = $fileName;
         }
 
-        $today = Carbon::today()->toDateString();
-        $absensi = Absensi::where('id_karyawan', $karyawan->id)
-                          ->where('tanggal', $today)
-                          ->first();
-
-        $now = Carbon::now();
+        $today   = Carbon::today()->toDateString();
+        $absensi = Absensi::where('id_karyawan', $karyawan->id)->where('tanggal', $today)->first();
+        $now     = Carbon::now();
 
         if ($request->tipe === 'in') {
             if ($absensi && $absensi->waktu_masuk) {
                 return response()->json(['success' => false, 'message' => 'Anda sudah absen masuk hari ini.']);
             }
             if (!$absensi) {
-                $absensi = new Absensi();
+                $absensi              = new Absensi();
                 $absensi->id_karyawan = $karyawan->id;
-                $absensi->tanggal = $today;
+                $absensi->tanggal     = $today;
             }
-            $absensi->waktu_masuk = $now;
-            $absensi->lat_masuk = $request->latitude;
-            $absensi->lng_masuk = $request->longitude;
-            $absensi->foto_masuk = $fotoPath;
-            $absensi->status_kehadiran = 'Hadir'; // Boleh dikembangkan cek jam keterlambatan
+            $absensi->waktu_masuk      = $now;
+            $absensi->lat_masuk        = $request->latitude;
+            $absensi->lng_masuk        = $request->longitude;
+            $absensi->foto_masuk       = $fotoPath;
+            $absensi->status_kehadiran = 'Hadir';
+            $absensi->is_dinas_luar    = $isDinasLuar;
+            $absensi->catatan          = $request->catatan;
+            $absensi->id_lokasi_kantor = $lokasiTerdekat?->id;
             $absensi->save();
 
-            return response()->json(['success' => true, 'message' => 'Berhasil Clock In.']);
-        } 
-        else if ($request->tipe === 'out') {
+            $msg = $isDinasLuar ? 'Berhasil Clock In (Dinas Luar).' : 'Berhasil Clock In.';
+            return response()->json(['success' => true, 'message' => $msg]);
+        } elseif ($request->tipe === 'out') {
             if (!$absensi || !$absensi->waktu_masuk) {
                 return response()->json(['success' => false, 'message' => 'Anda belum absen masuk hari ini.']);
             }
@@ -114,9 +141,9 @@ class AttendanceController extends Controller
             }
 
             $absensi->waktu_keluar = $now;
-            $absensi->lat_keluar = $request->latitude;
-            $absensi->lng_keluar = $request->longitude;
-            $absensi->foto_keluar = $fotoPath;
+            $absensi->lat_keluar   = $request->latitude;
+            $absensi->lng_keluar   = $request->longitude;
+            $absensi->foto_keluar  = $fotoPath;
             $absensi->save();
 
             return response()->json(['success' => true, 'message' => 'Berhasil Clock Out.']);

@@ -2,7 +2,7 @@
 import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import { Head, usePage, Link } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { CameraIcon, MapPinIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/vue/24/outline';
+import { CameraIcon, MapPinIcon, CheckCircleIcon, XCircleIcon, BriefcaseIcon } from '@heroicons/vue/24/outline';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 
@@ -19,6 +19,10 @@ const isError = ref(false);
 const stream = ref(null);
 const location = ref(null);
 const isProcessing = ref(false);
+
+// --- Dinas Luar ---
+const isDinasLuar = ref(false);
+const catatanDinasLuar = ref('');
 
 let faceapiLoaded = false;
 let faceMatcher = null;
@@ -108,6 +112,17 @@ const startCamera = async () => {
 const performClock = async (type) => {
     if (!faceapiLoaded || isError.value || isProcessing.value) return;
 
+    // Validasi catatan jika dinas luar
+    if (isDinasLuar.value && catatanDinasLuar.value.trim().length < 5) {
+        Swal.fire({
+            title: 'Catatan Wajib Diisi',
+            text: 'Harap isi keterangan lokasi atau kegiatan Dinas Luar Anda (minimal 5 karakter).',
+            icon: 'warning',
+            confirmButtonColor: '#4f46e5'
+        });
+        return;
+    }
+
     isProcessing.value = true;
     statusMsg.value = 'Mendeteksi Wajah... (Mohon jangan bergerak)';
     
@@ -137,7 +152,9 @@ const performClock = async (type) => {
             tipe: type,
             latitude: location.value.lat,
             longitude: location.value.lng,
-            foto: photoData
+            foto: photoData,
+            is_dinas_luar: isDinasLuar.value,
+            catatan: catatanDinasLuar.value.trim() || null,
         });
 
         if (response.data.success) {
@@ -177,7 +194,7 @@ const performClock = async (type) => {
                 <div class="p-4 sm:p-6 bg-indigo-600 text-white flex flex-col md:flex-row justify-between items-center gap-4">
                     <div>
                         <h2 class="text-xl font-bold">Live Absensi (Clock In/Out)</h2>
-                        <p class="text-indigo-100 text-sm mt-1">Verifikasi biometrik & geolokasi</p>
+                        <p class="text-indigo-100 text-sm mt-1">Verifikasi biometrik &amp; geolokasi</p>
                     </div>
                 </div>
 
@@ -202,7 +219,7 @@ const performClock = async (type) => {
                     </div>
 
                     <div v-else class="w-full flex flex-col items-center sm:max-w-sm mx-auto">
-                        <div class="relative w-full sm:rounded-2xl overflow-hidden shadow-lg bg-black mb-6 aspect-[3/4] sm:aspect-auto">
+                        <div class="relative w-full sm:rounded-2xl overflow-hidden shadow-lg bg-black mb-4 aspect-[3/4] sm:aspect-auto">
                             <video ref="videoRef" autoplay muted playsinline class="w-full h-full object-cover transform scale-x-[-1]"></video>
                             
                             <!-- Frame Wajah -->
@@ -214,6 +231,34 @@ const performClock = async (type) => {
                             <div v-if="isProcessing" class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white backdrop-blur-sm z-10">
                                 <div class="w-10 h-10 border-4 border-white/20 border-t-white rounded-full animate-spin mb-4"></div>
                                 <span class="text-sm font-medium px-6 text-center leading-relaxed">{{ statusMsg }}</span>
+                            </div>
+
+                            <!-- Dinas Luar Badge Overlay -->
+                            <div v-if="isDinasLuar" class="absolute top-3 left-3 z-10 bg-amber-500 text-white text-xs font-bold px-2 py-1 rounded-lg flex items-center gap-1 shadow">
+                                <BriefcaseIcon class="w-3.5 h-3.5" />
+                                DINAS LUAR
+                            </div>
+                        </div>
+
+                        <!-- Dinas Luar Toggle -->
+                        <div class="w-full mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3">
+                            <label class="flex items-center gap-3 cursor-pointer">
+                                <div class="relative">
+                                    <input type="checkbox" v-model="isDinasLuar" class="sr-only peer" />
+                                    <div class="w-10 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-semibold text-amber-800">Saya sedang Dinas Luar / Meliput</p>
+                                    <p class="text-xs text-amber-600">Aktifkan jika Anda tidak berada di lingkungan kantor</p>
+                                </div>
+                            </label>
+                            <div v-if="isDinasLuar" class="mt-3">
+                                <textarea
+                                    v-model="catatanDinasLuar"
+                                    rows="2"
+                                    placeholder="Keterangan lokasi/kegiatan, contoh: Meliput latihan tim di Stadion GBK"
+                                    class="w-full border border-amber-300 rounded-lg text-sm p-2 focus:ring-amber-400 focus:border-amber-400 bg-white resize-none"
+                                ></textarea>
                             </div>
                         </div>
 

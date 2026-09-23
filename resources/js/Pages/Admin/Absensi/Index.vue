@@ -210,6 +210,7 @@ const formatPaginationLabel = (label) => {
                                 <th class="p-4">Waktu Masuk</th>
                                 <th class="p-4">Waktu Keluar</th>
                                 <th class="p-4">Status</th>
+                                <th class="p-4">Keterangan</th>
                                 <th class="p-4">Foto</th>
                             </tr>
                         </thead>
@@ -227,21 +228,37 @@ const formatPaginationLabel = (label) => {
                                 </td>
                                 <td class="p-4">
                                     <div class="flex flex-col">
-                                        <span class="font-bold">{{ formatTime(item.waktu_keluar) }}</span>
-                                        <button v-if="item.lat_keluar" @click="openMapModal(item.lat_keluar, item.lng_keluar, 'Out')" type="button" class="text-[10px] text-indigo-600 hover:underline flex items-center gap-1 mt-0.5 w-fit">
-                                            <MapPinIcon class="w-3 h-3" /> Maps
-                                        </button>
+                                        <template v-if="item.waktu_keluar">
+                                            <span class="font-bold">{{ formatTime(item.waktu_keluar) }}</span>
+                                            <button v-if="item.lat_keluar" @click="openMapModal(item.lat_keluar, item.lng_keluar, 'Out')" type="button" class="text-[10px] text-indigo-600 hover:underline flex items-center gap-1 mt-0.5 w-fit">
+                                                <MapPinIcon class="w-3 h-3" /> Maps
+                                            </button>
+                                        </template>
+                                        <span v-else class="inline-flex items-center gap-1 text-xs font-semibold text-red-600 bg-red-50 border border-red-200 rounded px-2 py-0.5">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                                            Belum Checkout
+                                        </span>
                                     </div>
                                 </td>
                                 <td class="p-4">
-                                    <span :class="[
-                                        'px-2 py-1 rounded text-xs font-semibold',
-                                        item.status_kehadiran === 'Hadir' ? 'bg-green-100 text-green-700' :
-                                        item.status_kehadiran === 'Terlambat' ? 'bg-yellow-100 text-yellow-700' :
-                                        'bg-red-100 text-red-700'
-                                    ]">
-                                        {{ item.status_kehadiran }}
-                                    </span>
+                                    <div class="flex flex-col gap-1">
+                                        <span :class="[
+                                            'px-2 py-1 rounded text-xs font-semibold w-fit',
+                                            item.status_kehadiran === 'Hadir' ? 'bg-green-100 text-green-700' :
+                                            item.status_kehadiran === 'Terlambat' ? 'bg-yellow-100 text-yellow-700' :
+                                            'bg-red-100 text-red-700'
+                                        ]">
+                                            {{ item.status_kehadiran }}
+                                        </span>
+                                        <span v-if="item.is_dinas_luar" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-700 w-fit">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                                            Dinas Luar
+                                        </span>
+                                    </div>
+                                </td>
+                                <td class="p-4 max-w-[180px]">
+                                    <p v-if="item.catatan" class="text-xs text-gray-600 italic line-clamp-2" :title="item.catatan">{{ item.catatan }}</p>
+                                    <span v-else class="text-xs text-gray-400">-</span>
                                 </td>
                                 <td class="p-4">
                                     <div class="flex gap-2">
@@ -255,7 +272,7 @@ const formatPaginationLabel = (label) => {
                                 </td>
                             </tr>
                             <tr v-if="!absensis.data || absensis.data.length === 0">
-                                <td colspan="6" class="p-8 text-center text-gray-500">
+                                <td colspan="7" class="p-8 text-center text-gray-500">
                                     Belum ada data absensi.
                                 </td>
                             </tr>
