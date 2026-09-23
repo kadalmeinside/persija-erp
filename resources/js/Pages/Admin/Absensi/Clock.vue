@@ -2,7 +2,7 @@
 import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import { Head, usePage, Link } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { CameraIcon, MapPinIcon, CheckCircleIcon, XCircleIcon, BriefcaseIcon } from '@heroicons/vue/24/outline';
+import { CameraIcon, MapPinIcon, CheckCircleIcon, XCircleIcon, BriefcaseIcon, ArrowPathIcon } from '@heroicons/vue/24/outline';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 
@@ -18,9 +18,10 @@ const statusMsg = ref('Memuat Model AI & Kamera...');
 const isError = ref(false);
 const stream = ref(null);
 const location = ref(null);
+const locationName = ref('Mencari koordinat GPS...');
+const isLocating = ref(false);
 const isProcessing = ref(false);
 
-// --- Dinas Luar ---
 const isDinasLuar = ref(false);
 const catatanDinasLuar = ref('');
 
@@ -28,7 +29,6 @@ let faceapiLoaded = false;
 let faceMatcher = null;
 
 onMounted(async () => {
-    // Muat script face-api.js secara dinamis
     const script = document.createElement('script');
     script.src = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js';
     script.onload = () => {
@@ -44,6 +44,41 @@ onUnmounted(() => {
     }
 });
 
+const fetchLocation = () => {
+    isLocating.value = true;
+    locationName.value = 'Mendeteksi lokasi GPS...';
+    
+    navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+            location.value = {
+                lat: pos.coords.latitude,
+                lng: pos.coords.longitude
+            };
+            
+            try {
+                const res = await axios.get(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&zoom=18&addressdetails=1`);
+                if (res.data && res.data.display_name) {
+                    locationName.value = res.data.display_name;
+                } else {
+                    locationName.value = 'Lokasi tidak diketahui (Hanya Koordinat)';
+                }
+            } catch (err) {
+                locationName.value = 'Nama jalan tidak ditemukan (Cek Koneksi)';
+            }
+            
+            isLocating.value = false;
+        },
+        (err) => {
+            isError.value = true;
+            statusMsg.value = 'Akses Lokasi (GPS) Ditolak. Harap izinkan akses lokasi.';
+            loading.value = false;
+            isLocating.value = false;
+            locationName.value = 'GPS Ditolak';
+        },
+        { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
+    );
+};
+
 const initSystem = async () => {
     try {
         statusMsg.value = 'Memuat Model Wajah...';
@@ -57,7 +92,6 @@ const initSystem = async () => {
                 props.karyawan.nama_lengkap,
                 [new Float32Array(descArray)]
             );
-            // Toleransi (distance threshold) = 0.6. Lebih kecil = lebih ketat.
             faceMatcher = new faceapi.FaceMatcher([labeledDescriptor], 0.6);
         } else {
             statusMsg.value = 'Wajah belum didaftarkan. Harap daftar ke menu Pendaftaran Wajah.';
@@ -66,22 +100,10 @@ const initSystem = async () => {
             return;
         }
 
-        statusMsg.value = 'Mengambil Lokasi Anda...';
-        navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                location.value = {
-                    lat: pos.coords.latitude,
-                    lng: pos.coords.longitude
-                };
-                startCamera();
-            },
-            (err) => {
-                isError.value = true;
-                statusMsg.value = 'Akses Lokasi (GPS) Ditolak. Harap izinkan akses lokasi di browser Anda.';
-                loading.value = false;
-            },
-            { enableHighAccuracy: true }
-        );
+        statusMsg.value = 'Mengambil Lokasi & Kamera...';
+        fetchLocation();
+        startCamera();
+        
     } catch (error) {
         isError.value = true;
         statusMsg.value = 'Gagal memuat sistem: ' + error.message;
@@ -91,17 +113,17 @@ const initSystem = async () => {
 
 const startCamera = async () => {
     try {
-        statusMsg.value = 'Membuka Kamera...';
         try {
             stream.value = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
         } catch (e) {
-            // Fallback for desktop webcams that don't support facingMode
             stream.value = await navigator.mediaDevices.getUserMedia({ video: true });
         }
         loading.value = false;
         await nextTick();
-        videoRef.value.srcObject = stream.value;
-        statusMsg.value = 'Arahkan wajah Anda ke kamera dan klik tombol Absen.';
+        if (videoRef.value) {
+            videoRef.value.srcObject = stream.value;
+        }
+        statusMsg.value = 'Arahkan wajah ke lingkaran, lalu klik Absen.';
     } catch (err) {
         isError.value = true;
         statusMsg.value = 'Gagal membuka kamera: ' + err.message;
@@ -110,13 +132,12 @@ const startCamera = async () => {
 };
 
 const performClock = async (type) => {
-    if (!faceapiLoaded || isError.value || isProcessing.value) return;
+    if (!faceapiLoaded || isError.value || isProcessing.value || !location.value) return;
 
-    // Validasi catatan jika dinas luar
     if (isDinasLuar.value && catatanDinasLuar.value.trim().length < 5) {
         Swal.fire({
-            title: 'Catatan Wajib Diisi',
-            text: 'Harap isi keterangan lokasi atau kegiatan Dinas Luar Anda (minimal 5 karakter).',
+            title: 'Catatan Wajib',
+            text: 'Isi keterangan Dinas Luar (min. 5 karakter).',
             icon: 'warning',
             confirmButtonColor: '#4f46e5'
         });
@@ -124,7 +145,7 @@ const performClock = async (type) => {
     }
 
     isProcessing.value = true;
-    statusMsg.value = 'Mendeteksi Wajah... (Mohon jangan bergerak)';
+    statusMsg.value = 'Mendeteksi Wajah...';
     
     try {
         const detection = await faceapi.detectSingleFace(videoRef.value, new faceapi.TinyFaceDetectorOptions())
@@ -132,15 +153,15 @@ const performClock = async (type) => {
             .withFaceDescriptor();
         
         if (!detection) {
-            throw new Error('Wajah tidak terdeteksi. Pastikan pencahayaan cukup dan wajah terlihat penuh.');
+            throw new Error('Wajah tidak terdeteksi. Paskan wajah dalam lingkaran dan pastikan pencahayaan cukup.');
         }
 
         const match = faceMatcher.findBestMatch(detection.descriptor);
         if (match.label === 'unknown') {
-            throw new Error('Verifikasi Gagal: Wajah tidak cocok dengan profil Anda!');
+            throw new Error('Verifikasi Gagal: Wajah tidak cocok!');
         }
 
-        statusMsg.value = 'Wajah Cocok! Mengirim data absen...';
+        statusMsg.value = 'Cocok! Mengirim absen...';
 
         const canvas = document.createElement('canvas');
         canvas.width = videoRef.value.videoWidth;
@@ -178,7 +199,7 @@ const performClock = async (type) => {
             icon: 'error',
             confirmButtonColor: '#ef4444'
         });
-        statusMsg.value = 'Arahkan wajah Anda ke kamera dan klik tombol Absen.';
+        statusMsg.value = 'Arahkan wajah ke lingkaran, lalu klik Absen.';
     } finally {
         isProcessing.value = false;
     }
@@ -189,122 +210,150 @@ const performClock = async (type) => {
     <AuthenticatedLayout>
         <Head title="Live Absensi" />
 
-        <div class="max-w-2xl mx-auto sm:py-8 sm:px-6 lg:px-8">
-            <div class="bg-white sm:rounded-2xl sm:shadow-sm sm:border border-gray-100 overflow-hidden min-h-[calc(100vh-4rem)] sm:min-h-0 flex flex-col">
-                <div class="p-4 sm:p-6 bg-indigo-600 text-white flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div>
-                        <h2 class="text-xl font-bold">Live Absensi (Clock In/Out)</h2>
-                        <p class="text-indigo-100 text-sm mt-1">Verifikasi biometrik &amp; geolokasi</p>
+        <div class="flex flex-col min-h-[calc(100vh-65px)] bg-gray-50 dark:bg-gray-900 overflow-hidden relative">
+            
+            <!-- Minimal Header -->
+            <div class="bg-indigo-600 px-5 py-3 flex items-center justify-between shadow-md relative z-20 shrink-0">
+                <div>
+                    <h2 class="text-white font-bold text-sm">Live Absensi</h2>
+                    <p class="text-indigo-200 text-[10px] uppercase tracking-wider font-semibold">Verifikasi Biometrik & Geolokasi</p>
+                </div>
+                <div class="w-9 h-9 rounded-full border-2 border-indigo-400 overflow-hidden shrink-0 shadow-sm">
+                    <img v-if="karyawan.foto_url" :src="karyawan.foto_url" class="w-full h-full object-cover"/>
+                    <div v-else class="w-full h-full bg-indigo-500 flex items-center justify-center">
+                        <span class="text-white text-xs font-bold">{{ karyawan.nama_lengkap.charAt(0) }}</span>
                     </div>
                 </div>
+            </div>
 
-                <div class="p-4 sm:p-6 flex flex-col items-center flex-grow justify-center">
-                    
-                    <div v-if="loading" class="flex flex-col items-center py-12">
-                        <div class="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
-                        <p class="mt-4 text-gray-500 font-medium text-center px-4">{{ statusMsg }}</p>
-                    </div>
+            <!-- Loading / Error states -->
+            <div v-if="loading" class="flex-1 flex flex-col items-center justify-center p-8">
+                <div class="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                <p class="mt-4 text-gray-600 dark:text-gray-400 font-medium text-center text-sm">{{ statusMsg }}</p>
+            </div>
 
-                    <div v-else-if="isError" class="flex flex-col items-center py-12 text-center px-4">
-                        <XCircleIcon class="w-16 h-16 text-red-500 mb-4" />
-                        <h3 class="text-lg font-medium text-gray-900 mb-2">Terjadi Kendala</h3>
-                        <p class="text-red-500 mb-6">{{ statusMsg }}</p>
+            <div v-else-if="isError" class="flex-1 flex flex-col items-center justify-center p-8 text-center">
+                <XCircleIcon class="w-16 h-16 text-red-500 mb-4" />
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Terjadi Kendala</h3>
+                <p class="text-red-500 text-sm mb-6">{{ statusMsg }}</p>
+                <div v-if="!karyawan.face_descriptor">
+                    <Link :href="route('admin.absensi.register-face')" class="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-full text-sm font-semibold hover:bg-indigo-700 transition">
+                        <CameraIcon class="w-4 h-4" /> Daftar Wajah
+                    </Link>
+                </div>
+            </div>
+
+            <!-- Active Camera State -->
+            <div v-else class="flex flex-col flex-1 h-full w-full relative">
+                
+                <!-- Camera View (Lingkaran) -->
+                <div class="flex-1 flex flex-col items-center justify-center p-4 relative z-10">
+                    <div class="relative w-64 h-64 sm:w-80 sm:h-80 rounded-full overflow-hidden shadow-[0_0_40px_rgba(79,70,229,0.2)] border-[6px] border-white dark:border-gray-800 bg-black">
+                        <video ref="videoRef" autoplay muted playsinline class="w-full h-full object-cover transform scale-x-[-1]"></video>
                         
-                        <div v-if="!karyawan.face_descriptor" class="mt-2">
-                            <Link :href="route('admin.absensi.register-face')" class="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition shadow-md">
-                                <CameraIcon class="w-5 h-5" />
-                                Daftarkan Wajah Sekarang
-                            </Link>
+                        <!-- Processing Overlay inside circle -->
+                        <div v-if="isProcessing" class="absolute inset-0 bg-black/70 flex flex-col items-center justify-center text-white backdrop-blur-md z-20">
+                            <div class="w-8 h-8 border-4 border-white/20 border-t-indigo-400 rounded-full animate-spin mb-3"></div>
+                            <span class="text-xs font-bold tracking-wider px-4 text-center">{{ statusMsg }}</span>
+                        </div>
+                    </div>
+                    <p v-if="!isProcessing" class="mt-6 text-sm font-medium text-gray-500 dark:text-gray-400 text-center px-4 max-w-xs">{{ statusMsg }}</p>
+                </div>
+
+                <!-- Bottom Sheet (Controls) -->
+                <div class="bg-white dark:bg-gray-800 rounded-t-[2rem] shadow-[0_-10px_40px_rgba(0,0,0,0.08)] p-6 pt-7 relative z-20 w-full mt-auto mx-auto max-w-2xl border-t border-gray-100 dark:border-gray-700">
+                    
+                    <!-- Decorative pull indicator -->
+                    <div class="w-12 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full absolute top-3 left-1/2 -translate-x-1/2"></div>
+                    
+                    <!-- Location Section -->
+                    <div class="mb-5">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="text-xs font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">Lokasi Saat Ini</h4>
+                            <button @click="fetchLocation" :disabled="isLocating" class="flex items-center text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 transition bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1.5 rounded-full">
+                                <ArrowPathIcon class="w-3.5 h-3.5 mr-1.5" :class="{ 'animate-spin': isLocating }" />
+                                {{ isLocating ? 'Mencari...' : 'Refresh' }}
+                            </button>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-900/50 rounded-2xl p-4 border border-gray-100 dark:border-gray-700/50 flex items-start gap-3">
+                            <div class="mt-0.5 flex-shrink-0">
+                                <div class="w-9 h-9 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center">
+                                    <MapPinIcon class="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                                </div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-bold text-gray-900 dark:text-white line-clamp-2 leading-snug">
+                                    {{ locationName }}
+                                </p>
+                                <p v-if="location" class="text-[10px] text-gray-500 font-mono mt-1 tracking-wider bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded inline-block">
+                                    {{ location.lat.toFixed(6) }}, {{ location.lng.toFixed(6) }}
+                                </p>
+                            </div>
                         </div>
                     </div>
 
-                    <div v-else class="w-full flex flex-col items-center sm:max-w-sm mx-auto">
-                        <div class="relative w-full sm:rounded-2xl overflow-hidden shadow-lg bg-black mb-4 aspect-[3/4] sm:aspect-auto">
-                            <video ref="videoRef" autoplay muted playsinline class="w-full h-full object-cover transform scale-x-[-1]"></video>
-                            
-                            <!-- Frame Wajah -->
-                            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                <div class="w-48 h-64 border-2 border-dashed border-white/50 rounded-[40%] shadow-[0_0_0_9999px_rgba(0,0,0,0.4)]"></div>
-                            </div>
-                            
-                            <!-- Status Overlay -->
-                            <div v-if="isProcessing" class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white backdrop-blur-sm z-10">
-                                <div class="w-10 h-10 border-4 border-white/20 border-t-white rounded-full animate-spin mb-4"></div>
-                                <span class="text-sm font-medium px-6 text-center leading-relaxed">{{ statusMsg }}</span>
-                            </div>
-
-                            <!-- Dinas Luar Badge Overlay -->
-                            <div v-if="isDinasLuar" class="absolute top-3 left-3 z-10 bg-amber-500 text-white text-xs font-bold px-2 py-1 rounded-lg flex items-center gap-1 shadow">
-                                <BriefcaseIcon class="w-3.5 h-3.5" />
-                                DINAS LUAR
-                            </div>
-                        </div>
-
-                        <!-- Dinas Luar Toggle -->
-                        <div class="w-full mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3">
-                            <label class="flex items-center gap-3 cursor-pointer">
-                                <div class="relative">
-                                    <input type="checkbox" v-model="isDinasLuar" class="sr-only peer" />
-                                    <div class="w-10 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                    <!-- Dinas Luar Toggle -->
+                    <div class="mb-6 bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-200/60 dark:border-amber-700/30 p-4 transition-all">
+                        <label class="flex items-center justify-between cursor-pointer">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
+                                    <BriefcaseIcon class="w-4 h-4 text-amber-600 dark:text-amber-500" />
                                 </div>
                                 <div>
-                                    <p class="text-sm font-semibold text-amber-800">Saya sedang Dinas Luar / Meliput</p>
-                                    <p class="text-xs text-amber-600">Aktifkan jika Anda tidak berada di lingkungan kantor</p>
-                                </div>
-                            </label>
-                            <div v-if="isDinasLuar" class="mt-3">
-                                <textarea
-                                    v-model="catatanDinasLuar"
-                                    rows="2"
-                                    placeholder="Keterangan lokasi/kegiatan, contoh: Meliput latihan tim di Stadion GBK"
-                                    class="w-full border border-amber-300 rounded-lg text-sm p-2 focus:ring-amber-400 focus:border-amber-400 bg-white resize-none"
-                                ></textarea>
-                            </div>
-                        </div>
-
-                        <div class="w-full bg-gray-50 rounded-xl p-4 mb-6 border border-gray-100">
-                            <div class="flex items-start gap-3">
-                                <MapPinIcon class="w-5 h-5 text-indigo-500 mt-0.5 shrink-0" />
-                                <div>
-                                    <p class="text-sm font-medium text-gray-900">Lokasi Anda Saat Ini</p>
-                                    <p class="text-xs text-gray-500 font-mono mt-1">{{ location?.lat }}, {{ location?.lng }}</p>
+                                    <p class="text-sm font-bold text-amber-900 dark:text-amber-400">Dinas Luar</p>
                                 </div>
                             </div>
+                            <div class="relative">
+                                <input type="checkbox" v-model="isDinasLuar" class="sr-only peer" />
+                                <div class="w-11 h-6 bg-amber-200/50 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500 shadow-inner"></div>
+                            </div>
+                        </label>
+                        
+                        <div v-if="isDinasLuar" class="mt-3 overflow-hidden transition-all duration-300 ease-in-out">
+                            <textarea
+                                v-model="catatanDinasLuar"
+                                rows="2"
+                                placeholder="Keterangan agenda dinas luar..."
+                                class="w-full border-amber-300/50 dark:border-amber-700/50 bg-white dark:bg-gray-800 rounded-xl text-sm p-3 focus:ring-amber-500 focus:border-amber-500 placeholder-amber-300 dark:placeholder-amber-700/50 dark:text-gray-200 resize-none shadow-sm transition-all"
+                            ></textarea>
                         </div>
-
-                        <div class="grid grid-cols-2 gap-4 w-full">
-                            <button 
-                                @click="performClock('in')"
-                                :disabled="isProcessing || (absensi && absensi.waktu_masuk)"
-                                :class="[
-                                    'py-4 rounded-xl font-bold flex flex-col items-center justify-center gap-2 transition-all shadow-sm',
-                                    (absensi && absensi.waktu_masuk) 
-                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200' 
-                                        : 'bg-green-500 text-white hover:bg-green-600 border border-transparent hover:shadow-green-500/20 active:scale-95'
-                                ]"
-                            >
-                                <CheckCircleIcon class="w-7 h-7" />
-                                CLOCK IN
-                                <span v-if="absensi && absensi.waktu_masuk" class="text-[10px] font-normal uppercase tracking-wider bg-gray-200 px-2 py-0.5 rounded-full mt-1 text-gray-500">Selesai</span>
-                            </button>
-                            
-                            <button 
-                                @click="performClock('out')"
-                                :disabled="isProcessing || (!absensi || !absensi.waktu_masuk || absensi.waktu_keluar)"
-                                :class="[
-                                    'py-4 rounded-xl font-bold flex flex-col items-center justify-center gap-2 transition-all shadow-sm',
-                                    (!absensi || !absensi.waktu_masuk || absensi.waktu_keluar) 
-                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200' 
-                                        : 'bg-red-500 text-white hover:bg-red-600 border border-transparent hover:shadow-red-500/20 active:scale-95'
-                                ]"
-                            >
-                                <XCircleIcon class="w-7 h-7" />
-                                CLOCK OUT
-                                <span v-if="absensi && absensi.waktu_keluar" class="text-[10px] font-normal uppercase tracking-wider bg-gray-200 px-2 py-0.5 rounded-full mt-1 text-gray-500">Selesai</span>
-                            </button>
-                        </div>
-
                     </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex gap-3">
+                        <button 
+                            @click="performClock('in')"
+                            :disabled="isProcessing || !location || (absensi && absensi.waktu_masuk)"
+                            :class="[
+                                'flex-1 py-4 rounded-2xl font-black text-sm tracking-wider flex items-center justify-center gap-2 transition-all duration-200 shadow-lg',
+                                (absensi && absensi.waktu_masuk) 
+                                    ? 'bg-gray-100 text-gray-400 border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-500 cursor-not-allowed shadow-none' 
+                                    : (!location) 
+                                        ? 'bg-emerald-100 text-emerald-400 cursor-not-allowed shadow-none dark:bg-emerald-900/20'
+                                        : 'bg-gradient-to-br from-emerald-400 to-emerald-600 text-white hover:from-emerald-500 hover:to-emerald-700 active:scale-[0.98] shadow-emerald-500/30 border border-transparent'
+                            ]"
+                        >
+                            <CheckCircleIcon class="w-6 h-6" />
+                            <span>{{ (absensi && absensi.waktu_masuk) ? 'SUDAH MASUK' : 'CLOCK IN' }}</span>
+                        </button>
+                        
+                        <button 
+                            @click="performClock('out')"
+                            :disabled="isProcessing || !location || (!absensi || !absensi.waktu_masuk || absensi.waktu_keluar)"
+                            :class="[
+                                'flex-1 py-4 rounded-2xl font-black text-sm tracking-wider flex items-center justify-center gap-2 transition-all duration-200 shadow-lg',
+                                (!absensi || !absensi.waktu_masuk || absensi.waktu_keluar) 
+                                    ? 'bg-gray-100 text-gray-400 border-gray-200 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-500 cursor-not-allowed shadow-none' 
+                                    : (!location)
+                                        ? 'bg-rose-100 text-rose-400 cursor-not-allowed shadow-none dark:bg-rose-900/20'
+                                        : 'bg-gradient-to-br from-rose-400 to-rose-600 text-white hover:from-rose-500 hover:to-rose-700 active:scale-[0.98] shadow-rose-500/30 border border-transparent'
+                            ]"
+                        >
+                            <XCircleIcon class="w-6 h-6" />
+                            <span>{{ (absensi && absensi.waktu_keluar) ? 'SELESAI' : 'CLOCK OUT' }}</span>
+                        </button>
+                    </div>
+
                 </div>
             </div>
         </div>
