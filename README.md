@@ -6,7 +6,7 @@ PJH-ERP is a proprietary Enterprise Resource Planning system built exclusively f
 
 ## Core Features and Modules
 
-- **Human Resources & Payroll**: End-to-end management of employee databases, annual leave quotas, internal loan/cash advances, and automated monthly payroll processing.
+- **Human Resources & Payroll**: End-to-end management of employee databases, AI facial recognition attendance with multi-location geofencing and mobile out-of-office (*Dinas Luar*) support, annual leave quotas, internal loan/cash advances, and automated monthly payroll processing.
 - **Finance & Accounting**: Robust financial management including budgeting, chart of accounts (GL), multi-currency vendor payments, petty cash tracking, internal transfers, journal entries, and automated tax calculations.
 - **Internal Requests (Pengajuan)**: Digital processing of reimbursements, operational funds, and cash advances. Features a fully dynamic, multi-tier approval workflow system (Workflow Approval).
 - **Revenue & Sales**: Module for managing customer databases and generating sales invoices with automatic tax computations.
