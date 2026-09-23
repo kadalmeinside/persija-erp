@@ -117,5 +117,7 @@ Route::middleware(["role:{$essRoles}"])->group(function () {
         Route::match(['get', 'post'], 'register-face', 'registerFace')->name('register-face');
         Route::get('my-attendance', 'myAttendance')->name('my-attendance');
         Route::get('rekap', 'index')->name('rekap'); // Untuk HR
+        Route::get('print', 'print')->name('print');
+        Route::get('export-pdf', 'exportPdf')->name('export-pdf');
     });
 });
