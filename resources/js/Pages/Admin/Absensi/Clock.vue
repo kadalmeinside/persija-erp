@@ -21,6 +21,14 @@ const locationName = ref('Mencari koordinat GPS...');
 const isLocating = ref(false);
 const isProcessing = ref(false);
 
+const currentTime = ref('');
+let timeInterval = null;
+
+const updateTime = () => {
+    const now = new Date();
+    currentTime.value = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+};
+
 const isDinasLuar = ref(false);
 const catatanDinasLuar = ref('');
 
@@ -28,6 +36,8 @@ let faceapiLoaded = false;
 let faceMatcher = null;
 
 onMounted(async () => {
+    updateTime();
+    timeInterval = setInterval(updateTime, 1000);
     const script = document.createElement('script');
     script.src = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js';
     script.onload = () => {
@@ -38,6 +48,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+    if (timeInterval) clearInterval(timeInterval);
     if (stream.value) {
         stream.value.getTracks().forEach(track => track.stop());
     }
@@ -221,6 +232,17 @@ const performClock = async (type) => {
             </Link>
         </div>
 
+        <!-- User Info & Realtime Clock -->
+        <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md px-4 py-2.5 flex items-center justify-between shadow-sm border-b border-gray-100 dark:border-gray-700 z-10 shrink-0">
+            <div class="flex flex-col">
+                <span class="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 font-bold">Karyawan</span>
+                <span class="text-sm font-bold text-gray-900 dark:text-gray-100 truncate max-w-[180px] leading-tight">{{ karyawan.nama_lengkap }}</span>
+            </div>
+            <div class="flex items-center bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1.5 rounded-lg border border-indigo-100 dark:border-indigo-800/50">
+                <span class="text-sm font-black text-indigo-700 dark:text-indigo-400 tabular-nums tracking-wider">{{ currentTime }}</span>
+            </div>
+        </div>
+
         <!-- Loading / Error states -->
         <div v-if="loading" class="flex-1 flex flex-col items-center justify-center p-8">
             <div class="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
@@ -243,7 +265,7 @@ const performClock = async (type) => {
             
             <!-- Camera View (Lingkaran) -->
             <div class="flex-1 flex flex-col items-center justify-center p-4 relative z-10 shrink-0">
-                <div class="relative w-64 h-64 sm:w-80 sm:h-80 rounded-full overflow-hidden shadow-[0_0_40px_rgba(79,70,229,0.2)] border-[6px] border-white dark:border-gray-800 bg-black">
+                <div class="relative w-72 h-72 sm:w-80 sm:h-80 rounded-full overflow-hidden shadow-[0_0_40px_rgba(79,70,229,0.2)] border-[6px] border-white dark:border-gray-800 bg-black">
                     <video ref="videoRef" autoplay muted playsinline class="w-full h-full object-cover transform scale-x-[-1]"></video>
                     
                     <!-- Processing Overlay inside circle -->
