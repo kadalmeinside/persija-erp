@@ -113,15 +113,17 @@ const greeting = computed(() => {
                         {{ user.name }}
                     </h2>
                     
-                    <div class="flex items-start justify-between gap-2 md:gap-4">
-                        <div class="flex flex-col gap-0.5">
+                    <div class="flex flex-col gap-1 md:gap-2">
+                        <div class="flex items-center justify-between gap-2 md:gap-4">
                             <span class="text-gray-600 dark:text-gray-400 font-medium text-xs md:text-lg">{{ currentDate }}</span>
-                            <span class="text-gray-900 dark:text-gray-100 font-black text-xl md:text-2xl tracking-tight">{{ currentTime }}</span>
+                            
+                            <div v-if="isLoadingLocation" class="bg-gray-200 animate-pulse px-3 py-1.5 md:px-5 md:py-2.5 rounded-full shadow-sm w-28 md:w-48 h-7 md:h-10"></div>
+                            <div v-else class="bg-[#5B7B6B] text-white px-3 py-1.5 md:px-5 md:py-2.5 rounded-full flex items-center gap-1.5 text-[10px] md:text-sm shadow-sm font-medium transition-all duration-300">
+                                <MapPinIcon class="w-3.5 h-3.5 md:w-4 md:h-4 flex-shrink-0" /> <span class="truncate max-w-[150px] sm:max-w-[200px] md:max-w-xs">{{ locationName }}</span>
+                            </div>
                         </div>
-                        
-                        <div v-if="isLoadingLocation" class="bg-gray-200 animate-pulse px-3 py-1.5 md:px-5 md:py-2.5 rounded-full shadow-sm w-28 md:w-48 h-7 md:h-10 mt-1"></div>
-                        <div v-else class="bg-[#5B7B6B] text-white px-3 py-1.5 md:px-5 md:py-2.5 rounded-full flex items-center gap-1.5 text-[10px] md:text-sm shadow-sm font-medium transition-all duration-300 mt-1">
-                            <MapPinIcon class="w-3.5 h-3.5 md:w-4 md:h-4 flex-shrink-0" /> <span class="truncate max-w-[120px] sm:max-w-[200px] md:max-w-xs">{{ locationName }}</span>
+                        <div>
+                            <span class="text-gray-900 dark:text-gray-100 font-black text-3xl md:text-4xl tracking-tight">{{ currentTime }}</span>
                         </div>
                     </div>
                 </div>
