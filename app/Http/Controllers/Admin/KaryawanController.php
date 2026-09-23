@@ -127,7 +127,7 @@ class KaryawanController extends Controller
 
     public function show(Karyawan $karyawan)
     {
-        $karyawan->load(['departemen', 'user', 'rekeningBank', 'riwayatKarir.departemen']);
+        $karyawan->load(['departemen', 'user', 'rekeningBank', 'riwayatKarir.departemen', 'lokasiKantor']);
         $karyawan->append('primary_bank');
         
         // Load Leave Balances

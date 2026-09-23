@@ -257,6 +257,21 @@ const refreshData = () => {
                                                 <label class="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">Jabatan</label>
                                                 <p class="text-lg font-medium text-gray-900 dark:text-white">{{ karyawan.jabatan }}</p>
                                             </div>
+
+                                            <div class="sm:col-span-2 bg-gray-50 dark:bg-gray-900/30 p-5 rounded-2xl border border-gray-100 dark:border-gray-800">
+                                                <label class="block text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">Penempatan Kantor & Absensi</label>
+                                                <div class="flex items-center justify-between">
+                                                    <div>
+                                                        <p class="text-lg font-medium text-gray-900 dark:text-white">
+                                                            <MapPinIcon class="w-5 h-5 text-indigo-500 inline-block mr-1 -mt-1" />
+                                                            {{ karyawan.lokasi_kantor?.nama_kantor || 'Pusat / Bebas (Default)' }}
+                                                        </p>
+                                                        <p class="text-sm mt-1" :class="karyawan.is_strict_location ? 'text-orange-600 font-semibold' : 'text-gray-500'">
+                                                            Status Absen: {{ karyawan.is_strict_location ? 'STRICT (Hanya bisa di cabang ini)' : 'ROAMING (Bisa absen di cabang mana saja)' }}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
                                             
                                             <div class="sm:col-span-2 bg-gradient-to-r from-gray-50 to-white dark:from-gray-900/50 dark:to-gray-800 p-5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex items-center justify-between mt-2">
                                                 <div>
