@@ -5,15 +5,18 @@ import { ref } from 'vue';
 import { 
     UserCircleIcon, BriefcaseIcon, MapPinIcon, CalendarIcon, 
     BanknotesIcon, PencilSquareIcon, ArrowLeftIcon, ChevronRightIcon,
-    IdentificationIcon, CheckBadgeIcon, AtSymbolIcon, BuildingOfficeIcon
+    IdentificationIcon, CheckBadgeIcon, AtSymbolIcon, BuildingOfficeIcon, CameraIcon
 } from '@heroicons/vue/24/outline';
-import EmployeeFormModal from '@/Components/EmployeeFormModal.vue';
 import CareerHistoryModal from '@/Components/CareerHistoryModal.vue';
+import EditProfileModal from '@/Components/Employee/EditProfileModal.vue';
+import EditEmploymentModal from '@/Components/Employee/EditEmploymentModal.vue';
+import EditFinancialModal from '@/Components/Employee/EditFinancialModal.vue';
 
 const props = defineProps({
     karyawan: Object,
     leaveBalances: Array,
-    departemens: Array // Needed for Edit Form
+    departemens: Array, // Needed for Edit Form
+    lokasi_kantors: Array
 });
 
 const formatDate = (dateString) => {
@@ -28,14 +31,14 @@ const formatCurrency = (value) => {
 // Tabs
 const activeTab = ref('profile'); // profile, employment, salary, leave
 
-// Edit Modal
-const showEditModal = ref(false);
-const openEditModal = () => {
-    showEditModal.value = true;
-};
-const closeEditModal = () => {
-    showEditModal.value = false;
-};
+// Edit Modals
+const showEditProfile = ref(false);
+const showEditEmployment = ref(false);
+const showEditFinancial = ref(false);
+
+const openEditProfile = () => showEditProfile.value = true;
+const openEditEmployment = () => showEditEmployment.value = true;
+const openEditFinancial = () => showEditFinancial.value = true;
 
 // Career History Modal
 const showCareerHistoryModal = ref(false);
@@ -44,6 +47,27 @@ const closeCareerHistoryModal = () => {
 };
 const refreshData = () => {
     router.reload();
+};
+
+// Photo Upload
+const photoInput = ref(null);
+const triggerPhotoUpload = () => {
+    photoInput.value.click();
+};
+const handlePhotoUpload = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    router.post(route('admin.karyawan.update', props.karyawan.id), {
+        _method: 'PUT',
+        foto: file
+    }, {
+        forceFormData: true,
+        preserveScroll: true,
+        onSuccess: () => {
+            // Optional: you can show a success toast here
+        }
+    });
 };
 </script>
 
@@ -120,13 +144,18 @@ const refreshData = () => {
                             
                             <!-- Profile Image & Info -->
                             <div class="px-8 pb-8 text-center relative">
-                                <div class="-mt-20 mb-5 flex justify-center">
+                                <div class="-mt-20 mb-5 flex justify-center relative">
                                     <div class="p-2 bg-white dark:bg-gray-800 rounded-full shadow-lg relative group-hover:-translate-y-2 transition-transform duration-500">
-                                        <div class="w-32 h-32 rounded-full bg-gray-100 dark:bg-gray-700 border-4 border-indigo-50 dark:border-gray-700 flex items-center justify-center overflow-hidden">
+                                        <div class="w-32 h-32 rounded-full bg-gray-100 dark:bg-gray-700 border-4 border-indigo-50 dark:border-gray-700 flex items-center justify-center overflow-hidden relative group">
                                             <img :src="karyawan.foto_url" :alt="karyawan.nama_lengkap" class="w-full h-full object-cover" />
+                                            <!-- Hover Overlay for Avatar Edit -->
+                                            <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer" @click="triggerPhotoUpload">
+                                                <CameraIcon class="w-8 h-8 text-white" />
+                                            </div>
                                         </div>
                                         <div :class="karyawan.deleted_at ? 'bg-red-500' : 'bg-green-500'" class="absolute bottom-2 right-2 w-6 h-6 border-4 border-white dark:border-gray-800 rounded-full" :title="karyawan.deleted_at ? 'Non-Aktif' : 'Active'"></div>
                                     </div>
+                                    <input type="file" ref="photoInput" class="hidden" accept="image/*" @change="handlePhotoUpload">
                                 </div>
                                 
                                 <h3 class="text-2xl font-bold text-gray-900 dark:text-white">{{ karyawan.nama_lengkap }}</h3>
@@ -155,11 +184,6 @@ const refreshData = () => {
                                         </div>
                                     </div>
                                 </div>
-
-                                <div class="mt-8">
-                                    <button v-if="!karyawan.deleted_at" @click="openEditModal" class="w-full inline-flex justify-center items-center px-4 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 rounded-xl font-bold text-sm text-white shadow-lg shadow-indigo-200 dark:shadow-none hover:-translate-y-0.5 transition-all duration-200">
-                                        <PencilSquareIcon class="w-5 h-5 mr-2" /> Edit Profil
-                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -193,11 +217,16 @@ const refreshData = () => {
                                 <!-- Profile Tab -->
                                 <Transition name="fade" mode="out-in">
                                     <div v-if="activeTab === 'profile'" class="space-y-6">
-                                        <div class="flex items-center mb-6">
-                                            <div class="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center mr-4 p-0.5 shadow-sm border border-indigo-50 dark:border-gray-700 overflow-hidden">
-                                                <img :src="karyawan.foto_url" class="w-full h-full rounded-full object-cover" />
+                                        <div class="flex items-center justify-between mb-6">
+                                            <div class="flex items-center">
+                                                <div class="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center mr-4 p-0.5 shadow-sm border border-indigo-50 dark:border-gray-700 overflow-hidden">
+                                                    <img :src="karyawan.foto_url" class="w-full h-full rounded-full object-cover" />
+                                                </div>
+                                                <h4 class="text-xl font-bold text-gray-900 dark:text-white">Informasi Personal</h4>
                                             </div>
-                                            <h4 class="text-xl font-bold text-gray-900 dark:text-white">Informasi Personal</h4>
+                                            <button v-if="!karyawan.deleted_at" @click="openEditProfile" class="inline-flex items-center px-3 py-1.5 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-xs font-semibold text-gray-700 dark:text-gray-300 transition-colors shadow-sm">
+                                                <PencilSquareIcon class="w-4 h-4 mr-1.5" /> Edit Biodata
+                                            </button>
                                         </div>
                                         
                                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -228,11 +257,16 @@ const refreshData = () => {
 
                                     <!-- Employment Tab -->
                                     <div v-else-if="activeTab === 'employment'" class="space-y-6">
-                                        <div class="flex items-center mb-6">
-                                            <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center mr-4">
-                                                <BriefcaseIcon class="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                                        <div class="flex items-center justify-between mb-6">
+                                            <div class="flex items-center">
+                                                <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center mr-4">
+                                                    <BriefcaseIcon class="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                                                </div>
+                                                <h4 class="text-xl font-bold text-gray-900 dark:text-white">Detail Kepegawaian</h4>
                                             </div>
-                                            <h4 class="text-xl font-bold text-gray-900 dark:text-white">Detail Kepegawaian</h4>
+                                            <button v-if="!karyawan.deleted_at" @click="openEditEmployment" class="inline-flex items-center px-3 py-1.5 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-xs font-semibold text-gray-700 dark:text-gray-300 transition-colors shadow-sm">
+                                                <PencilSquareIcon class="w-4 h-4 mr-1.5" /> Edit Kepegawaian
+                                            </button>
                                         </div>
                                         
                                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -363,6 +397,9 @@ const refreshData = () => {
                                                 </div>
                                                 <h4 class="text-xl font-bold text-gray-900 dark:text-white">Finansial & Kompensasi</h4>
                                             </div>
+                                            <button v-if="!karyawan.deleted_at" @click="openEditFinancial" class="inline-flex items-center px-3 py-1.5 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-xs font-semibold text-gray-700 dark:text-gray-300 transition-colors shadow-sm">
+                                                <PencilSquareIcon class="w-4 h-4 mr-1.5" /> Edit Finansial
+                                            </button>
                                         </div>
                                         
                                         <div class="bg-gradient-to-r from-amber-50 to-amber-100/50 dark:from-amber-900/20 dark:to-amber-900/10 border-l-4 border-amber-400 p-4 rounded-r-xl rounded-l-sm flex items-start shadow-sm">
@@ -493,12 +530,27 @@ const refreshData = () => {
             </div>
         </div>
 
-        <!-- Edit Modal -->
-        <EmployeeFormModal 
-            :show="showEditModal" 
+        <!-- Edit Modals -->
+        <EditProfileModal 
+            :show="showEditProfile" 
+            :employee="karyawan" 
+            @close="showEditProfile = false"
+            @saved="refreshData"
+        />
+
+        <EditEmploymentModal 
+            :show="showEditEmployment" 
             :employee="karyawan" 
             :departemens="departemens"
-            @close="closeEditModal"
+            :lokasiKantors="lokasi_kantors"
+            @close="showEditEmployment = false"
+            @saved="refreshData"
+        />
+
+        <EditFinancialModal 
+            :show="showEditFinancial" 
+            :employee="karyawan" 
+            @close="showEditFinancial = false"
             @saved="refreshData"
         />
 

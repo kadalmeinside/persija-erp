@@ -138,44 +138,48 @@ class KaryawanController extends Controller
                             ->get();
 
         $departemens = \App\Models\Departemen::all(); // Needed for Edit Form
+        $lokasiKantors = \App\Models\LokasiKantor::where('is_active', true)->get();
 
         return Inertia::render('Admin/Karyawan/Show', [
             'karyawan' => $karyawan,
             'leaveBalances' => $leaveBalances,
-            'departemens' => $departemens
+            'departemens' => $departemens,
+            'lokasi_kantors' => $lokasiKantors
         ]);
     }
 
     public function update(Request $request, Karyawan $karyawan)
     {
-        $request->validate([
-            'nama_lengkap' => 'required|string|max:255',
-            'nomor_induk_karyawan' => ['required', 'string', 'max:100', Rule::unique('tbl_karyawan')->ignore($karyawan->id)->whereNull('deleted_at')],
-            'id_departemen' => 'required|exists:tbl_departemen,id',
-            'jenis_kelamin' => 'required|in:L,P',
-            'jabatan' => 'required|string|max:100',
-            'status_karyawan' => 'required|in:Tetap,Kontrak,Magang',
+        $validated = $request->validate([
+            'nama_lengkap' => 'sometimes|required|string|max:255',
+            'nomor_induk_karyawan' => ['sometimes', 'required', 'string', 'max:100', Rule::unique('tbl_karyawan')->ignore($karyawan->id)->whereNull('deleted_at')],
+            'id_departemen' => 'sometimes|required|exists:tbl_departemen,id',
+            'jenis_kelamin' => 'sometimes|required|in:L,P',
+            'jabatan' => 'sometimes|required|string|max:100',
+            'status_karyawan' => 'sometimes|required|in:Tetap,Kontrak,Magang,Probation',
             'foto' => 'nullable|image|max:2048',
             'id_lokasi_kantor' => 'nullable|exists:tbl_lokasi_kantor,id',
-            'is_strict_location' => 'boolean'
+            'is_strict_location' => 'boolean',
+            'tgl_bergabung' => 'nullable|date',
+            'tempat_lahir' => 'nullable|string|max:255',
+            'tgl_lahir' => 'nullable|date',
+            'alamat' => 'nullable|string',
+            'gaji_pokok' => 'nullable|numeric',
+            'status_ptkp' => 'nullable|string|max:50',
+            'nama_bank' => 'nullable|string|max:100',
+            'nomor_rekening' => 'nullable|string|max:100',
+            'atas_nama_rekening' => 'nullable|string|max:255',
         ]);
 
-        $karyawan->update([
-            'nama_lengkap' => $request->nama_lengkap,
-            'nomor_induk_karyawan' => $request->nomor_induk_karyawan,
-            'id_departemen' => $request->id_departemen,
-            'jenis_kelamin' => $request->jenis_kelamin,
-            'jabatan' => $request->jabatan,
-            'tgl_bergabung' => $request->tgl_bergabung,
-            'status_karyawan' => $request->status_karyawan,
-            'tempat_lahir' => $request->tempat_lahir,
-            'tgl_lahir' => $request->tgl_lahir,
-            'alamat' => $request->alamat,
-            'gaji_pokok' => $request->gaji_pokok,
-            'status_ptkp' => $request->status_ptkp,
-            'id_lokasi_kantor' => $request->id_lokasi_kantor,
-            'is_strict_location' => $request->is_strict_location ?? false,
-        ]);
+        $dataToUpdate = collect($validated)->except(['foto', 'nama_bank', 'nomor_rekening', 'atas_nama_rekening'])->toArray();
+        
+        if ($request->has('is_strict_location')) {
+            $dataToUpdate['is_strict_location'] = filter_var($request->is_strict_location, FILTER_VALIDATE_BOOLEAN);
+        }
+
+        if (!empty($dataToUpdate)) {
+            $karyawan->update($dataToUpdate);
+        }
 
         if ($request->hasFile('foto')) {
             // Hapus foto lama jika ada
