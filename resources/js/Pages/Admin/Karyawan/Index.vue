@@ -12,6 +12,7 @@ import Swal from 'sweetalert2';
 const props = defineProps({
     karyawans: Object,
     departemens: Array,
+    lokasiKantors: Array,
     filters: Object
 });
 
@@ -214,6 +215,7 @@ const deleteItem = (item) => {
             :show="showModal" 
             :employee="selectedEmployee" 
             :departemens="departemens"
+            :lokasiKantors="lokasiKantors"
             @close="closeModal"
             @saved="refreshData"
         />

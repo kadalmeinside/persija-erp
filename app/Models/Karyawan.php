@@ -27,7 +27,13 @@ class Karyawan extends Model
         'tempat_lahir',
         'tgl_lahir',
         'alamat',
-        'status_karyawan'
+        'status_karyawan',
+        'id_lokasi_kantor',
+        'is_strict_location'
+    ];
+
+    protected $casts = [
+        'is_strict_location' => 'boolean',
     ];
 
     protected $appends = ['foto_url', 'tanggal_berakhir_kontrak'];
@@ -144,5 +150,10 @@ class Karyawan extends Model
     public function getTanggalBerakhirKontrakAttribute()
     {
         return $this->latestRiwayatKarir ? $this->latestRiwayatKarir->tanggal_berakhir_kontrak : null;
+    }
+
+    public function lokasiKantor()
+    {
+        return $this->belongsTo(LokasiKantor::class, 'id_lokasi_kantor');
     }
 }

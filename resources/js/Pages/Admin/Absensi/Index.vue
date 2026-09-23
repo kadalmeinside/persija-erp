@@ -207,6 +207,7 @@ const formatPaginationLabel = (label) => {
                             <tr class="bg-gray-50 border-b border-gray-100 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                 <th class="p-4">Tanggal</th>
                                 <th class="p-4">Karyawan</th>
+                                <th class="p-4">Cabang</th>
                                 <th class="p-4">Waktu Masuk</th>
                                 <th class="p-4">Waktu Keluar</th>
                                 <th class="p-4">Status</th>
@@ -218,6 +219,7 @@ const formatPaginationLabel = (label) => {
                             <tr v-for="item in absensis.data" :key="item.id" class="hover:bg-gray-50">
                                 <td class="p-4 whitespace-nowrap">{{ formatDate(item.tanggal) }}</td>
                                 <td class="p-4 font-medium text-gray-900">{{ item.karyawan?.nama_lengkap || 'Unknown' }}</td>
+                                <td class="p-4 text-gray-600">{{ item.lokasi_kantor?.nama_kantor || '-' }}</td>
                                 <td class="p-4">
                                     <div class="flex flex-col">
                                         <span class="font-bold">{{ formatTime(item.waktu_masuk) }}</span>

@@ -14,7 +14,8 @@ import { useClientValidation } from '@/Composables/useClientValidation';
 const props = defineProps({
     show: Boolean,
     employee: Object, // If null, create mode
-    departemens: Array
+    departemens: Array,
+    lokasiKantors: Array,
 });
 
 const emit = defineEmits(['close', 'saved']);
@@ -41,7 +42,9 @@ const form = useForm({
     tgl_lahir: '',
     alamat: '',
     status_karyawan: 'Tetap',
-    foto: null
+    foto: null,
+    id_lokasi_kantor: '',
+    is_strict_location: false
 });
 
 const { clientErrors, validate, clearClientError, clearAllClientErrors, hasClientErrors } = useClientValidation();
@@ -111,6 +114,8 @@ watch(() => props.show, (newVal) => {
             form.tgl_lahir = props.employee.tgl_lahir || '';
             form.alamat = props.employee.alamat || '';
             form.status_karyawan = props.employee.status_karyawan || 'Tetap';
+            form.id_lokasi_kantor = props.employee.id_lokasi_kantor || '';
+            form.is_strict_location = !!props.employee.is_strict_location;
             form.create_user = false; 
             form.foto = null;
             photoPreview.value = props.employee.foto_url || null;
@@ -273,6 +278,30 @@ const close = () => {
                         <option value="Magang">Magang</option>
                     </select>
                     <InputError class="mt-2" :message="clientErrors.status_karyawan || form.errors.status_karyawan" />
+                </div>
+
+                <!-- Penempatan Kantor -->
+                <div>
+                    <InputLabel for="id_lokasi_kantor" value="Penempatan Kantor" />
+                    <select 
+                        id="id_lokasi_kantor" 
+                        v-model="form.id_lokasi_kantor"
+                        class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
+                    >
+                        <option value="">Pusat / Bebas (Default)</option>
+                        <option v-for="lokasi in lokasiKantors" :key="lokasi.id" :value="lokasi.id">{{ lokasi.nama_kantor }}</option>
+                    </select>
+                </div>
+
+                <!-- Strict Location Toggle -->
+                <div class="col-span-1 md:col-span-2 bg-yellow-50 dark:bg-yellow-900/30 p-4 rounded-lg border border-yellow-100 dark:border-yellow-800" v-if="form.id_lokasi_kantor">
+                    <label class="flex items-start">
+                        <input type="checkbox" v-model="form.is_strict_location" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 mt-1" />
+                        <div class="ml-3">
+                            <span class="block text-sm font-medium text-gray-700 dark:text-gray-300">Wajib Absen di Lokasi Penempatan (Strict Mode)</span>
+                            <span class="block text-xs text-gray-500 dark:text-gray-400 mt-1">Jika diaktifkan, karyawan ini <strong>HANYA BISA</strong> absen di radius kantor yang dipilih di atas. Jika dimatikan, karyawan bisa absen di cabang mana pun (Roaming).</span>
+                        </div>
+                    </label>
                 </div>
 
                 <!-- Tanggal Bergabung -->

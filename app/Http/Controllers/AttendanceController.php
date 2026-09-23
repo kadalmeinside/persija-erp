@@ -62,9 +62,17 @@ class AttendanceController extends Controller
         // --- Validasi Lokasi (Multi-Branch Geofencing) ---
         $lokasiTerdekat = null;
         if (!$isDinasLuar) {
-            $lokasiList = LokasiKantor::where('is_active', true)->get();
-            if ($lokasiList->isEmpty()) {
-                return response()->json(['success' => false, 'message' => 'Lokasi kantor belum disetting HR.']);
+            // Jika karyawan strict ke satu lokasi, ambil hanya lokasi tersebut
+            if ($karyawan->is_strict_location && $karyawan->id_lokasi_kantor) {
+                $lokasiList = LokasiKantor::where('id', $karyawan->id_lokasi_kantor)->where('is_active', true)->get();
+                if ($lokasiList->isEmpty()) {
+                    return response()->json(['success' => false, 'message' => 'Lokasi kantor penempatan Anda tidak aktif atau tidak ditemukan.']);
+                }
+            } else {
+                $lokasiList = LokasiKantor::where('is_active', true)->get();
+                if ($lokasiList->isEmpty()) {
+                    return response()->json(['success' => false, 'message' => 'Lokasi kantor belum disetting HR.']);
+                }
             }
 
             // Cari lokasi yang paling dekat & masuk dalam radius
@@ -90,9 +98,17 @@ class AttendanceController extends Controller
                         $namaLokasi = $lokasi->nama ?? 'kantor';
                     }
                 }
+                
+                $errMsg = 'Anda berada di luar radius lokasi kantor. Lokasi terdekat: ' . $namaLokasi . ' (' . round($minDistance) . 'm).';
+                if ($karyawan->is_strict_location) {
+                    $errMsg = 'Anda diwajibkan absen HANYA di cabang ' . $namaLokasi . '. Anda berada di luar radius (' . round($minDistance) . 'm).';
+                } else {
+                    $errMsg .= ' Jika sedang bertugas di luar, gunakan fitur "Dinas Luar".';
+                }
+
                 return response()->json([
                     'success' => false,
-                    'message' => 'Anda berada di luar radius semua lokasi kantor. Lokasi terdekat: ' . $namaLokasi . ' (' . round($minDistance) . 'm). Jika sedang bertugas di luar, gunakan fitur "Dinas Luar".',
+                    'message' => $errMsg,
                 ]);
             }
         }
@@ -204,8 +220,7 @@ class AttendanceController extends Controller
         $status = $request->input('status');
         $timeIn = $request->input('time_in');
         $timeOut = $request->input('time_out');
-
-        $query = Absensi::with('karyawan')->where('tanggal', $date);
+        $query = Absensi::with(['karyawan', 'lokasiKantor'])->where('tanggal', $date);
 
         if ($status) {
             $query->where('status_kehadiran', $status);

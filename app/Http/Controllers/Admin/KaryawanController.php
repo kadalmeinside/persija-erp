@@ -43,10 +43,12 @@ class KaryawanController extends Controller
         });
         
         $departemens = Departemen::orderBy('nama_departemen')->get();
+        $lokasiKantors = \App\Models\LokasiKantor::where('is_active', true)->orderBy('nama_kantor')->get();
 
         return Inertia::render('Admin/Karyawan/Index', [
             'karyawans' => $karyawans,
             'departemens' => $departemens,
+            'lokasiKantors' => $lokasiKantors,
             'filters' => $request->only(['search', 'departemen', 'status_aktif'])
         ]);
     }
@@ -65,7 +67,9 @@ class KaryawanController extends Controller
             'create_user' => 'boolean',
             'password' => 'nullable|string|min:8', // Optional password
             'role' => 'nullable|string|exists:roles,name', // Optional role
-            'foto' => 'nullable|image|max:2048'
+            'foto' => 'nullable|image|max:2048',
+            'id_lokasi_kantor' => 'nullable|exists:tbl_lokasi_kantor,id',
+            'is_strict_location' => 'boolean'
         ]);
 
         DB::transaction(function () use ($request) {
@@ -99,6 +103,8 @@ class KaryawanController extends Controller
                 'alamat' => $request->alamat,
                 'gaji_pokok' => $request->gaji_pokok ?? 0,
                 'status_ptkp' => $request->status_ptkp ?? 'TK/0',
+                'id_lokasi_kantor' => $request->id_lokasi_kantor,
+                'is_strict_location' => $request->is_strict_location ?? false,
             ]);
 
             if ($request->hasFile('foto')) {
@@ -149,7 +155,9 @@ class KaryawanController extends Controller
             'jenis_kelamin' => 'required|in:L,P',
             'jabatan' => 'required|string|max:100',
             'status_karyawan' => 'required|in:Tetap,Kontrak,Magang',
-            'foto' => 'nullable|image|max:2048'
+            'foto' => 'nullable|image|max:2048',
+            'id_lokasi_kantor' => 'nullable|exists:tbl_lokasi_kantor,id',
+            'is_strict_location' => 'boolean'
         ]);
 
         $karyawan->update([
@@ -165,6 +173,8 @@ class KaryawanController extends Controller
             'alamat' => $request->alamat,
             'gaji_pokok' => $request->gaji_pokok,
             'status_ptkp' => $request->status_ptkp,
+            'id_lokasi_kantor' => $request->id_lokasi_kantor,
+            'is_strict_location' => $request->is_strict_location ?? false,
         ]);
 
         if ($request->hasFile('foto')) {
