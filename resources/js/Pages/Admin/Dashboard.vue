@@ -108,20 +108,20 @@ const greeting = computed(() => {
             <div class="max-w-7xl mx-auto space-y-6">
                 
                 <!-- GREETING & DATE & LOCATION SECTION -->
-                <div class="flex flex-col gap-4 mb-4">
-                    <h2 class="text-3xl font-bold leading-tight text-gray-900 dark:text-gray-100">
+                <div class="flex flex-col gap-2 md:gap-4 mb-4">
+                    <h2 class="text-xl md:text-3xl font-bold leading-tight text-gray-900 dark:text-gray-100">
                         {{ user.name }}
                     </h2>
                     
-                    <div class="flex items-center justify-between gap-2 md:gap-4">
-                        <div class="text-gray-700 dark:text-gray-300 font-medium text-sm md:text-lg flex items-center gap-1 md:gap-2">
-                            <span>{{ currentDate }}</span>
-                            <span class="text-gray-400 font-normal">|</span>
-                            <span>{{ currentTime }}</span>
+                    <div class="flex items-start justify-between gap-2 md:gap-4">
+                        <div class="flex flex-col gap-0.5">
+                            <span class="text-gray-600 dark:text-gray-400 font-medium text-xs md:text-lg">{{ currentDate }}</span>
+                            <span class="text-gray-900 dark:text-gray-100 font-black text-xl md:text-2xl tracking-tight">{{ currentTime }}</span>
                         </div>
-                        <div v-if="isLoadingLocation" class="bg-gray-200 animate-pulse px-3 py-1.5 md:px-5 md:py-2.5 rounded-full flex items-center gap-2 shadow-sm w-32 md:w-48 h-8 md:h-10"></div>
-                        <div v-else class="bg-[#5B7B6B] text-white px-3 py-1.5 md:px-5 md:py-2.5 rounded-full flex items-center gap-2 text-[10px] md:text-sm shadow-sm font-medium transition-all duration-300">
-                            <MapPinIcon class="w-3 h-3 md:w-4 md:h-4 flex-shrink-0" /> <span class="truncate max-w-[120px] sm:max-w-[200px] md:max-w-xs">{{ locationName }}</span>
+                        
+                        <div v-if="isLoadingLocation" class="bg-gray-200 animate-pulse px-3 py-1.5 md:px-5 md:py-2.5 rounded-full shadow-sm w-28 md:w-48 h-7 md:h-10 mt-1"></div>
+                        <div v-else class="bg-[#5B7B6B] text-white px-3 py-1.5 md:px-5 md:py-2.5 rounded-full flex items-center gap-1.5 text-[10px] md:text-sm shadow-sm font-medium transition-all duration-300 mt-1">
+                            <MapPinIcon class="w-3.5 h-3.5 md:w-4 md:h-4 flex-shrink-0" /> <span class="truncate max-w-[120px] sm:max-w-[200px] md:max-w-xs">{{ locationName }}</span>
                         </div>
                     </div>
                 </div>
