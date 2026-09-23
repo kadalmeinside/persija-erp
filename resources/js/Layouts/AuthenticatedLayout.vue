@@ -363,7 +363,7 @@ const sidebarMenu = computed(() => {
             type: 'dropdown',
             name: 'HR & Payroll',
             icon: UserGroupIcon,
-            current: 'admin.karyawan.* admin.hari-libur.* admin.payrolls.* admin.company-events.* admin.absensi.settings admin.absensi.rekap',
+            current: 'admin.karyawan.* admin.hari-libur.* admin.payrolls.* admin.company-events.* admin.lokasi-kantor.* admin.absensi.rekap',
             children: hrChildren
         });
     }
