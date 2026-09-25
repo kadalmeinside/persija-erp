@@ -4,7 +4,7 @@ import { Link } from '@inertiajs/vue3';
 </script>
 
 <template>
-    <div class="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-slate-950 selection:bg-slate-700 selection:text-white pt-6 sm:pt-0">
+    <div class="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-slate-950 selection:bg-slate-700 selection:text-white">
         <!-- Liquid Blobs Background (Dark/Grey Mode) - Optimized for Performance -->
         <!-- Mengganti blur-[100px] dan mix-blend-screen dengan blur-3xl dan radial-gradients murni untuk mengurangi beban GPU -->
         <div class="absolute top-0 -left-4 w-96 h-96 bg-slate-800 rounded-full filter blur-3xl opacity-50 animate-blob will-change-transform"></div>
@@ -51,7 +51,7 @@ import { Link } from '@inertiajs/vue3';
 
         <!-- Glassmorphism Container -->
         <!-- Mengganti backdrop-blur-2xl (mahal) dengan backdrop-blur-md (lebih ringan tapi tetap estetik) -->
-        <div class="relative z-10 w-full px-8 py-10 shadow-2xl sm:max-w-md sm:rounded-3xl bg-white/5 backdrop-blur-md border border-white/10">
+        <div class="relative z-10 w-full px-6 py-8 sm:px-8 sm:py-10 shadow-2xl max-w-sm sm:max-w-md rounded-2xl sm:rounded-3xl bg-white/5 backdrop-blur-md border border-white/10 mx-4 sm:mx-0">
             <slot />
         </div>
     </div>

@@ -2,7 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Pagination from '@/Components/Pagination.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { EyeIcon, PencilSquareIcon, PlusIcon, MagnifyingGlassIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/vue/24/outline';
+import { EyeIcon, PencilSquareIcon, PlusIcon, MagnifyingGlassIcon, CheckCircleIcon, XCircleIcon, FunnelIcon } from '@heroicons/vue/24/outline';
 import { ref, watch } from 'vue';
 import { debounce } from 'lodash';
 
@@ -31,6 +31,7 @@ const props = defineProps({
 const search = ref(props.filters.search || '');
 const statusFilter = ref(props.filters.status || '');
 const currentApprovalView = ref(props.approvalView); // Local state for tab
+const showFilters = ref(false); // Toggle for mobile advanced filters
 
 // Approval Modal State
 const showApprovalModal = ref(false);
@@ -151,10 +152,10 @@ const getPageTitle = () => {
             <h2 class="font-semibold text-lg md:text-xl text-gray-800 leading-tight truncate">{{ getPageTitle() }}</h2>
         </template>
 
-        <div class="pb-12 pt-4">
+        <div class="pb-6 pt-2 sm:pb-12 sm:pt-4">
             <div class="max-w-7xl mx-auto">
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6 text-gray-900">
+                    <div class="p-3 sm:p-6 text-gray-900">
                         
                         <!-- Tabs for Approval Page Only -->
                         <div v-if="activeTab === 'approvals'" class="flex border-b border-gray-200 mb-6">
@@ -177,57 +178,69 @@ const getPageTitle = () => {
 
                         <!-- Toolbar: Search, Filter, Create Button -->
                         <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
-                            <div class="flex flex-wrap gap-2 w-full md:w-auto">
-                                <!-- Search -->
-                                <div class="relative w-full md:w-64">
-                                    <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                                        <MagnifyingGlassIcon class="w-4 h-4 text-gray-500" />
+                            <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+                                <!-- Search & Mobile Toggle -->
+                                <div class="flex gap-2 w-full">
+                                    <div class="relative w-full md:w-64">
+                                        <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                            <MagnifyingGlassIcon class="w-4 h-4 text-gray-500" />
+                                        </div>
+                                        <input 
+                                            v-model="search" 
+                                            type="text" 
+                                            class="bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-9 p-2.5 transition-all" 
+                                            placeholder="Cari No. / Nama..." 
+                                        />
                                     </div>
-                                    <input 
-                                        v-model="search" 
-                                        type="text" 
-                                        class="bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-9 p-2" 
-                                        placeholder="Cari No. Pengajuan / Nama..." 
-                                    />
+                                    <!-- Mobile Advance Filter Toggle Button -->
+                                    <button @click="showFilters = !showFilters" :class="{'bg-indigo-100 text-indigo-700 border-indigo-300': showFilters, 'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100': !showFilters}" class="md:hidden shrink-0 inline-flex items-center justify-center p-2.5 border rounded-lg transition-colors">
+                                        <FunnelIcon class="w-5 h-5" />
+                                    </button>
                                 </div>
-                                <!-- Filter Tipe -->
-                                <select v-model="tipeFilter" class="bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block py-2 pl-3 pr-8">
-                                    <option value="">Semua Tipe</option>
-                                    <option value="Langsung">Langsung</option>
-                                    <option value="UangMuka">Uang Muka</option>
-                                </select>
-                                <!-- Filter Laporan -->
-                                <select v-model="laporanFilter" class="bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block py-2 pl-3 pr-8">
-                                    <option value="">Status Laporan</option>
-                                    <option value="butuh">Butuh Laporan</option>
-                                    <option value="ada">Sudah Lapor</option>
-                                </select>
-                                <!-- Filter Status -->
-                                <select v-model="statusFilter" class="bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block py-2 pl-3 pr-8">
-                                    <option value="">Semua Status</option>
-                                    <option value="Pending Approval">Pending Approval</option>
-                                    <option value="Approved">Approved</option>
-                                    <option value="Paid">Paid</option>
-                                    <option value="Revision">Revision</option>
-                                    <option value="Rejected">Rejected</option>
-                                </select>
-                                <!-- Per Page -->
-                                <select v-model="perPageFilter" class="bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block py-2 pl-3 pr-8">
-                                    <option value="15">15 Baris</option>
-                                    <option value="30">30 Baris</option>
-                                    <option value="50">50 Baris</option>
-                                    <option value="100">100 Baris</option>
-                                </select>
+
+                                <!-- Advance Filters (Selects) -->
+                                <div :class="{'hidden md:flex': !showFilters, 'grid grid-cols-2 mt-2 md:mt-0 md:flex': showFilters}" class="gap-2 w-full md:w-auto">
+                                    <!-- Filter Tipe -->
+                                    <select v-model="tipeFilter" class="w-full md:w-auto bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5">
+                                        <option value="">Semua Tipe</option>
+                                        <option value="Langsung">Langsung</option>
+                                        <option value="UangMuka">Uang Muka</option>
+                                    </select>
+                                    <!-- Filter Laporan -->
+                                    <select v-model="laporanFilter" class="w-full md:w-auto bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5">
+                                        <option value="">Status Laporan</option>
+                                        <option value="butuh">Butuh Laporan</option>
+                                        <option value="ada">Sudah Lapor</option>
+                                    </select>
+                                    <!-- Filter Status -->
+                                    <select v-model="statusFilter" class="w-full md:w-auto bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5">
+                                        <option value="">Semua Status</option>
+                                        <option value="Pending Approval">Pending Approval</option>
+                                        <option value="Approved">Approved</option>
+                                        <option value="Paid">Paid</option>
+                                        <option value="Revision">Revision</option>
+                                        <option value="Rejected">Rejected</option>
+                                    </select>
+                                    <!-- Per Page -->
+                                    <select v-model="perPageFilter" class="w-full md:w-auto bg-gray-50 border border-gray-300 text-gray-900 text-xs rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2.5">
+                                        <option value="15">15 Baris</option>
+                                        <option value="30">30 Baris</option>
+                                        <option value="50">50 Baris</option>
+                                        <option value="100">100 Baris</option>
+                                    </select>
+                                </div>
                             </div>
 
                             <!-- Create Button (Only for My Requests) -->
-                            <Link 
-                                v-if="activeTab === 'my-requests'"
-                                :href="route('admin.pengajuan.create')" 
-                                class="inline-flex items-center px-3 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                                <PlusIcon class="w-4 h-4 mr-1" />
-                                Buat Pengajuan
-                            </Link>
+                            <div class="w-full md:w-auto flex justify-end shrink-0">
+                                <Link 
+                                    v-if="activeTab === 'my-requests'"
+                                    :href="route('admin.pengajuan.create')" 
+                                    class="w-full md:w-auto inline-flex justify-center items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-lg font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                    <PlusIcon class="w-4 h-4 mr-2" />
+                                    Buat Pengajuan
+                                </Link>
+                            </div>
                         </div>
 
                         <!-- Notifikasi -->

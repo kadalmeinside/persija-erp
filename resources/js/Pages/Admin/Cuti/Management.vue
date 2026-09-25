@@ -178,22 +178,22 @@ const submitEditBalance = () => {
                 </div>
 
                 <!-- Toolbar -->
-                <div class="flex justify-between items-center mb-4">
-                    <div class="flex gap-2 items-center">
-                         <div class="relative">
+                <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-4 mx-4 md:mx-0">
+                    <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                         <div class="relative w-full sm:w-auto">
                             <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                                 <MagnifyingGlassIcon class="w-4 h-4 text-gray-500" />
                             </div>
                             <input 
                                 v-model="search" 
                                 type="text" 
-                                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-64 pl-10 p-2.5" 
+                                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:w-64 pl-10 p-2.5 transition-all" 
                                 placeholder="Cari Karyawan..." 
                             />
                         </div>
-                        <TextInput v-if="activeTab === 'balances'" v-model="year" type="number" class="w-24 text-sm" placeholder="Tahun" />
+                        <TextInput v-if="activeTab === 'balances'" v-model="year" type="number" class="w-full sm:w-32 text-sm" placeholder="Tahun" />
                     </div>
-                    <PrimaryButton v-if="activeTab === 'balances'" @click="showGenerateModal = true">
+                    <PrimaryButton v-if="activeTab === 'balances'" @click="showGenerateModal = true" class="w-full justify-center md:w-auto">
                         Generate Saldo Massal
                     </PrimaryButton>
                 </div>

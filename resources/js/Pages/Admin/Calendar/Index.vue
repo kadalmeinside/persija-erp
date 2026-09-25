@@ -33,6 +33,7 @@ const filters = reactive({
     otherLeave: true,
     tasks: true,
 });
+const showFilters = ref(false);
 
 // Event Management State
 const showEventModal = ref(false);
@@ -210,15 +211,15 @@ const formatDate = (dateStr) => {
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">Kalender Perusahaan</h2>
         </template>
 
-        <div class="pb-12 pt-4">
+        <div class="pb-6 pt-2 sm:pb-12 sm:pt-4">
             <div class="max-w-7xl mx-auto">
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-3 sm:p-6">
                     
                     <!-- Header Navigation & Toolbar -->
-                    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                    <div class="flex flex-col md:flex-row justify-between items-center mb-4 sm:mb-6 gap-4">
                         <!-- Month Nav -->
-                        <div class="flex items-center gap-4">
-                            <h3 class="text-2xl font-bold text-gray-800 w-48">
+                        <div class="flex items-center justify-between w-full md:w-auto">
+                            <h3 class="text-xl sm:text-2xl font-bold text-gray-800">
                                 {{ monthNames[currentMonth - 1] }} {{ currentYear }}
                             </h3>
                             <div class="flex space-x-1">
@@ -232,39 +233,59 @@ const formatDate = (dateStr) => {
                         </div>
 
                         <!-- Controls -->
-                        <div class="flex flex-wrap items-center gap-4">
+                        <div class="flex flex-col md:flex-row items-stretch md:items-center w-full md:w-auto gap-3">
+                            <!-- Mobile Toggle & View Switcher -->
+                            <div class="flex items-center justify-between md:hidden w-full gap-2">
+                                <button @click="showFilters = !showFilters" :class="{'bg-indigo-100 text-indigo-700 border-indigo-300': showFilters, 'bg-gray-50 text-gray-700 border-gray-300 hover:bg-gray-100': !showFilters}" class="flex-1 inline-flex items-center justify-center px-4 py-2 border rounded-lg transition-colors text-sm font-medium h-10">
+                                    <FunnelIcon class="w-4 h-4 mr-2" /> Filter Agenda
+                                </button>
+                                
+                                <div class="flex bg-gray-100 p-1 rounded-lg shrink-0 border border-gray-200 h-10 items-center">
+                                    <button @click="viewMode = 'grid'" 
+                                        class="p-1.5 rounded-md transition-all duration-200"
+                                        :class="viewMode === 'grid' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'">
+                                        <Squares2X2Icon class="w-4 h-4" />
+                                    </button>
+                                    <button @click="viewMode = 'list'" 
+                                        class="p-1.5 rounded-md transition-all duration-200"
+                                        :class="viewMode === 'list' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'">
+                                        <ListBulletIcon class="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+
                             <!-- Add Event Button -->
-                            <PrimaryButton v-if="canManageEvents" @click="openCreateModal" class="flex items-center gap-2">
+                            <PrimaryButton v-if="canManageEvents" @click="openCreateModal" class="flex justify-center items-center gap-2 w-full md:w-auto order-first md:order-none">
                                 <PlusIcon class="w-4 h-4" /> Tambah Agenda
                             </PrimaryButton>
 
                             <!-- Filters -->
-                            <div class="flex items-center gap-3 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200">
-                                <FunnelIcon class="w-4 h-4 text-gray-500" />
-                                <label class="inline-flex items-center cursor-pointer">
+                            <div :class="{'hidden md:flex': !showFilters, 'grid grid-cols-2 mt-2 gap-2 md:mt-0 md:flex': showFilters}" class="bg-transparent md:bg-gray-50 md:px-3 md:py-2 rounded-lg md:border md:border-gray-200 w-full md:w-auto items-center">
+                                <FunnelIcon class="hidden md:block w-4 h-4 text-gray-500 mr-2 shrink-0" />
+                                <label class="inline-flex items-center cursor-pointer bg-gray-50 md:bg-transparent p-2 md:p-0 rounded border md:border-0 border-gray-200">
                                     <input type="checkbox" v-model="filters.holidays" class="rounded border-gray-300 text-red-600 shadow-sm focus:ring-red-500">
-                                    <span class="ml-2 text-sm text-gray-600">Libur</span>
+                                    <span class="ml-2 text-xs md:text-sm text-gray-600 truncate">Libur</span>
                                 </label>
-                                <label class="inline-flex items-center cursor-pointer">
+                                <label class="inline-flex items-center cursor-pointer bg-gray-50 md:bg-transparent p-2 md:p-0 rounded border md:border-0 border-gray-200">
                                     <input type="checkbox" v-model="filters.companyEvents" class="rounded border-gray-300 text-purple-600 shadow-sm focus:ring-purple-500">
-                                    <span class="ml-2 text-sm text-gray-600">Agenda</span>
+                                    <span class="ml-2 text-xs md:text-sm text-gray-600 truncate">Agenda</span>
                                 </label>
-                                <label class="inline-flex items-center cursor-pointer">
+                                <label class="inline-flex items-center cursor-pointer bg-gray-50 md:bg-transparent p-2 md:p-0 rounded border md:border-0 border-gray-200">
                                     <input type="checkbox" v-model="filters.myLeave" class="rounded border-gray-300 text-green-600 shadow-sm focus:ring-green-500">
-                                    <span class="ml-2 text-sm text-gray-600">Cuti Saya</span>
+                                    <span class="ml-2 text-xs md:text-sm text-gray-600 truncate">Cuti Saya</span>
                                 </label>
-                                <label class="inline-flex items-center cursor-pointer">
+                                <label class="inline-flex items-center cursor-pointer bg-gray-50 md:bg-transparent p-2 md:p-0 rounded border md:border-0 border-gray-200">
                                     <input type="checkbox" v-model="filters.otherLeave" class="rounded border-gray-300 text-blue-600 shadow-sm focus:ring-blue-500">
-                                    <span class="ml-2 text-sm text-gray-600">Cuti Rekan</span>
+                                    <span class="ml-2 text-xs md:text-sm text-gray-600 truncate">Cuti Rekan</span>
                                 </label>
-                                <label class="inline-flex items-center cursor-pointer">
+                                <label class="inline-flex items-center cursor-pointer bg-gray-50 md:bg-transparent p-2 md:p-0 rounded border md:border-0 border-gray-200 md:hidden lg:flex">
                                     <input type="checkbox" v-model="filters.tasks" class="rounded border-gray-300 text-gray-600 shadow-sm focus:ring-gray-500">
-                                    <span class="ml-2 text-sm text-gray-600">Tugas</span>
+                                    <span class="ml-2 text-xs md:text-sm text-gray-600 truncate">Tugas</span>
                                 </label>
                             </div>
 
                             <!-- View Switcher (Desktop Only) -->
-                            <div class="hidden md:flex bg-gray-100 p-1 rounded-lg">
+                            <div class="hidden md:flex bg-gray-100 p-1 rounded-lg shrink-0">
                                 <button @click="viewMode = 'grid'" 
                                     class="p-2 rounded-md transition-all duration-200"
                                     :class="viewMode === 'grid' ? 'bg-white shadow text-indigo-600' : 'text-gray-500 hover:text-gray-700'">
@@ -279,9 +300,9 @@ const formatDate = (dateStr) => {
                         </div>
                     </div>
 
-                    <!-- GRID VIEW (Hidden on Mobile) -->
-                    <div v-show="viewMode === 'grid'" class="hidden md:block">
-                        <div class="grid grid-cols-7 gap-px bg-gray-200 border border-gray-200 rounded-lg overflow-hidden">
+                    <!-- GRID VIEW -->
+                    <div v-show="viewMode === 'grid'" class="overflow-x-auto w-full">
+                        <div class="grid grid-cols-7 gap-px bg-gray-200 border border-gray-200 rounded-lg overflow-hidden min-w-[700px] md:min-w-0">
                             <!-- Days Header -->
                             <div v-for="day in daysOfWeek" :key="day" class="bg-gray-50 p-2 text-center text-sm font-semibold text-gray-600">
                                 {{ day }}
@@ -310,8 +331,8 @@ const formatDate = (dateStr) => {
                         </div>
                     </div>
 
-                    <!-- LIST VIEW (Always Visible on Mobile, Toggle on Desktop) -->
-                    <div class="block" :class="viewMode === 'grid' ? 'md:hidden' : ''">
+                    <!-- LIST VIEW -->
+                    <div v-show="viewMode === 'list'">
                         <div class="bg-white border border-gray-200 rounded-lg divide-y divide-gray-200">
                             <div v-if="sortedEvents.length === 0" class="p-8 text-center text-gray-500">
                                 Tidak ada agenda pada bulan ini.

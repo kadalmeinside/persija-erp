@@ -45,9 +45,9 @@ const submit = () => {
         <Head title="Masuk Akun" />
 
         <!-- Glass Form Teks -->
-        <div class="w-full max-w-md p-2">
-            <div class="mb-8 text-center">
-                <h2 class="mt-4 text-3xl font-extrabold tracking-tight text-white drop-shadow-md">
+        <div class="w-full max-w-md p-0 sm:p-2">
+            <div class="mb-6 sm:mb-8 text-center">
+                <h2 class="mt-2 sm:mt-4 text-2xl sm:text-3xl font-extrabold tracking-tight text-white drop-shadow-md">
                     Admin & Staff Login
                 </h2>
                 <p class="mt-2 text-sm text-slate-300 drop-shadow-sm font-medium">
@@ -59,14 +59,14 @@ const submit = () => {
             </div>
 
             <!-- Form Login -->
-            <form @submit.prevent="submit" class="space-y-6">
+            <form @submit.prevent="submit" class="space-y-4 sm:space-y-6">
                 <!-- Input Email -->
                 <div>
                     <InputLabel for="email" value="Alamat Email" class="block text-sm font-semibold text-slate-300 drop-shadow-sm ml-1" />
                     <input
                         id="email"
                         type="email"
-                        class="mt-2 block w-full appearance-none rounded-xl border border-white/20 bg-black/30 px-4 py-3 placeholder-slate-500 text-white shadow-inner backdrop-blur-md focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/50 sm:text-sm transition-all"
+                        class="mt-2 block w-full appearance-none rounded-xl border border-white/20 bg-black/30 px-4 py-2.5 sm:py-3 placeholder-slate-500 text-white shadow-inner backdrop-blur-md focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/50 sm:text-sm transition-all"
                         v-model="form.email"
                         required
                         autofocus
@@ -83,7 +83,7 @@ const submit = () => {
                         <input
                             id="password"
                             :type="showPassword ? 'text' : 'password'"
-                            class="block w-full appearance-none rounded-xl border border-white/20 bg-black/30 px-4 py-3 pr-10 placeholder-slate-500 text-white shadow-inner backdrop-blur-md focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/50 sm:text-sm transition-all"
+                            class="block w-full appearance-none rounded-xl border border-white/20 bg-black/30 px-4 py-2.5 sm:py-3 pr-10 placeholder-slate-500 text-white shadow-inner backdrop-blur-md focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/50 sm:text-sm transition-all"
                             v-model="form.password"
                             required
                             autocomplete="current-password"
