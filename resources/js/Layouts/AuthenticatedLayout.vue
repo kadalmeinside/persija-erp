@@ -39,7 +39,7 @@ import {
     ClockIcon,
     ArrowsRightLeftIcon, // Internal Transfer
     LifebuoyIcon, // Added LifebuoyIcon
-    LockClosedIcon, LockOpenIcon, PhotoIcon, MapPinIcon
+    LockClosedIcon, LockOpenIcon, PhotoIcon, MapPinIcon, PlusIcon
 } from '@heroicons/vue/24/outline';
 
 const page = usePage();
@@ -104,6 +104,7 @@ onMounted(() => {
 const desktopSidebarOpen = ref(true);
 const mobileSidebarOpen = ref(false);
 const openSubmenu = ref('');
+const showQuickActions = ref(false);
 
 // --- PERBAIKAN: Menggunakan path yang benar dari HandleInertiaRequests.php ---
 const userRoles = computed(() => page.props.auth?.user?.roles || []);
@@ -673,17 +674,36 @@ watch(sidebarMenu, (menu) => {
     <div>
         <!-- <Toast :message="$page.props.flash.message" :type="$page.props.flash.type" /> Replaced by SweetAlert2 -->
         
-        <div class="h-screen flex bg-gray-100 dark:bg-gray-900">
+        <div class="h-screen flex bg-gray-100 dark:bg-gray-900 relative">
+
             <!-- Mobile sidebar overlay -->
-            <div v-if="mobileSidebarOpen" @click="mobileSidebarOpen = false" class="fixed inset-0 bg-gray-900/40 dark:bg-black/60 backdrop-blur-sm z-20 transition-opacity md:hidden" aria-hidden="true"></div>
+            <div v-if="mobileSidebarOpen" @click="mobileSidebarOpen = false" class="fixed inset-0 bg-gray-900/40 dark:bg-black/60 backdrop-blur-sm z-[60] transition-opacity md:hidden" aria-hidden="true"></div>
 
             <!-- Sidebar -->
             <aside :class="[
-                        'fixed inset-y-0 left-0 z-30 bg-primary-800 text-gray-300 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 flex flex-col',
+                        'fixed inset-y-0 left-0 z-[70] bg-primary-800 text-gray-300 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 flex flex-col',
                         mobileSidebarOpen ? 'translate-x-0 w-64 sm:w-72' : '-translate-x-full w-64 sm:w-72',
                         desktopSidebarOpen ? 'md:w-64' : 'md:w-20'
                     ]">
                 
+                <!-- Toggle Button (Hamburger / Close) -->
+                <button @click="mobileSidebarOpen = !mobileSidebarOpen" 
+                        :class="[
+                            'md:hidden absolute top-5 z-50 p-2 rounded-lg transition-all duration-300 ease-in-out focus:outline-none flex items-center justify-center',
+                            mobileSidebarOpen 
+                                ? 'right-4 bg-transparent text-gray-400 hover:text-white shadow-none' 
+                                : '-right-10 bg-primary-600 text-white shadow-md hover:bg-primary-700'
+                        ]">
+                    <div class="relative w-5 h-5">
+                        <svg :class="['absolute inset-0 transform transition-all duration-300 ease-in-out', mobileSidebarOpen ? 'rotate-180 opacity-0 scale-50' : 'rotate-0 opacity-100 scale-100']" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                        <svg :class="['absolute inset-0 transform transition-all duration-300 ease-in-out', mobileSidebarOpen ? 'rotate-0 opacity-100 scale-100' : '-rotate-180 opacity-0 scale-50']" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </div>
+                </button>
+
                 <div class="relative flex-shrink-0 h-full flex flex-col">
                     <!-- Grid pattern overlay -->
                     <div class="absolute inset-0 pointer-events-none"
@@ -702,10 +722,6 @@ watch(sidebarMenu, (menu) => {
                                 <ApplicationLogo v-else class="block h-9 w-auto fill-current text-white" />
                                 <span v-show="desktopSidebarOpen || mobileSidebarOpen" class="ml-3 text-white text-lg font-semibold truncate">{{ appName }}</span>
                             </Link>
-                            <button @click="mobileSidebarOpen = false" class="text-gray-400 hover:text-white md:hidden">
-                                <span class="sr-only">Close sidebar</span>
-                                <XMarkIcon class="h-6 w-6" />
-                            </button>
                         </div>
 
                         <!-- Navigasi Sidebar -->
@@ -755,6 +771,22 @@ watch(sidebarMenu, (menu) => {
                                 </div>
                             </template>
                         </nav>
+
+                        <!-- Profil & Actions (Fixed Bottom) -->
+                        <div class="flex-shrink-0 border-t border-white/10 p-4 space-y-4 bg-black/20">
+                            <!-- Profile -->
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center text-white font-bold flex-shrink-0">
+                                    {{ userInitial }}
+                                </div>
+                                <div v-show="desktopSidebarOpen || mobileSidebarOpen" class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-white truncate">{{ userName }}</p>
+                                    <button @click="confirmLogout" class="text-xs text-gray-400 hover:text-white transition flex items-center mt-0.5">
+                                        <ArrowLeftStartOnRectangleIcon class="w-3 h-3 mr-1" /> Keluar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </aside>
@@ -762,9 +794,9 @@ watch(sidebarMenu, (menu) => {
             <!-- Konten Utama -->
             <div class="relative flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
                 <!-- Header Konten -->
-                <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-10 flex-shrink-0 border-b border-gray-200 dark:border-gray-700">
+                <header class="relative md:bg-white md:dark:bg-gray-800 md:shadow-sm md:sticky md:top-0 z-50 flex-shrink-0 md:border-b md:border-gray-200 md:dark:border-gray-700 pt-3 md:pt-0">
                     <div class="mx-auto px-4 sm:px-6 lg:px-8">
-                        <div class="flex justify-between items-center h-16">
+                        <div class="flex justify-between items-center min-h-[3.5rem] md:h-16">
                             <!-- Tombol Toggle Sidebar -->
                             <div class="flex items-center flex-1 min-w-0">
                                 <button @click="desktopSidebarOpen = !desktopSidebarOpen" class="hidden md:inline-flex items-center justify-center rounded-md p-2 text-gray-400 dark:text-gray-300 hover:text-gray-500 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700">
@@ -773,14 +805,8 @@ watch(sidebarMenu, (menu) => {
                                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
                                     </svg>
                                 </button>
-                                <button @click="mobileSidebarOpen = !mobileSidebarOpen" class="md:hidden inline-flex items-center justify-center rounded-md p-2 text-gray-400 dark:text-gray-300 hover:text-gray-500 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700">
-                                    <span class="sr-only">Open sidebar</span>
-                                    <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                                    </svg>
-                                </button>
 
-                                <div class="ml-4 flex-1 min-w-0">
+                                <div class="ml-14 md:ml-4 flex-1 min-w-0">
                                     <slot name="header" />
                                 </div>
                             </div>
@@ -790,7 +816,7 @@ watch(sidebarMenu, (menu) => {
                                 <NavbarNotification />
 
                                 <!-- Dropdown Profil Pengguna -->
-                                <div class="relative">
+                                <div class="relative hidden md:block">
                                     <Dropdown align="right" width="48">
                                         <template #trigger>
                                             <button class="flex items-center text-sm font-medium text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none transition duration-150 ease-in-out">
@@ -839,11 +865,73 @@ watch(sidebarMenu, (menu) => {
 
                 <!-- Slot Konten Utama -->
                 <main>
-                    <div class="p-6">
+                    <div class="px-2 py-4 sm:p-6">
                         <slot />
                     </div>
                 </main>
             </div>
+        </div>
+
+        <!-- FLOATING QUICK ACTIONS (GLOBAL) -->
+        <div class="fixed bottom-6 right-6 z-50 flex flex-col items-end space-y-4">
+            <!-- Action Menu (pops up above the button) -->
+            <transition
+                enter-active-class="transition ease-out duration-200"
+                enter-from-class="opacity-0 translate-y-4 scale-95"
+                enter-to-class="opacity-100 translate-y-0 scale-100"
+                leave-active-class="transition ease-in duration-150"
+                leave-from-class="opacity-100 translate-y-0 scale-100"
+                leave-to-class="opacity-0 translate-y-4 scale-95"
+            >
+                <div v-show="showQuickActions" class="flex flex-col gap-2 bg-white dark:bg-gray-800 p-3 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 w-64 origin-bottom-right">
+                    <h3 class="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-2 py-1 mb-1 border-b border-gray-100 dark:border-gray-700">Aksi Cepat</h3>
+                    
+                    <Link :href="route('admin.absensi.clock')" class="flex items-center gap-3 p-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-xl group transition-colors">
+                        <div class="p-2 rounded-lg bg-blue-100/80 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 group-hover:bg-blue-500 group-hover:text-white transition-colors">
+                            <ClockIcon class="w-5 h-5" />
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-bold text-gray-800 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Live Absensi</h4>
+                            <p class="text-[10px] text-gray-500">Clock In / Out</p>
+                        </div>
+                    </Link>
+                    
+                    <Link :href="route('admin.pengajuan.create')" class="flex items-center gap-3 p-2 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-xl group transition-colors">
+                        <div class="p-2 rounded-lg bg-emerald-100/80 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-500 group-hover:text-white transition-colors">
+                            <DocumentTextIcon class="w-5 h-5" />
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-bold text-gray-800 dark:text-gray-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">Pengajuan Dana</h4>
+                            <p class="text-[10px] text-gray-500">Klaim & pengeluaran</p>
+                        </div>
+                    </Link>
+
+                    <Link :href="route('admin.cuti.my-requests')" class="flex items-center gap-3 p-2 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-xl group transition-colors">
+                        <div class="p-2 rounded-lg bg-indigo-100/80 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-colors">
+                            <CalendarIcon class="w-5 h-5" />
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-bold text-gray-800 dark:text-gray-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Buat Cuti Baru</h4>
+                            <p class="text-[10px] text-gray-500">Tahunan & izin</p>
+                        </div>
+                    </Link>
+
+                    <Link :href="route('admin.tasks.index')" class="flex items-center gap-3 p-2 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-xl group transition-colors">
+                        <div class="p-2 rounded-lg bg-amber-100/80 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 group-hover:bg-amber-500 group-hover:text-white transition-colors">
+                            <BriefcaseIcon class="w-5 h-5" />
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-bold text-gray-800 dark:text-gray-100 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">Buat Tugas</h4>
+                            <p class="text-[10px] text-gray-500">Catat pekerjaan baru</p>
+                        </div>
+                    </Link>
+                </div>
+            </transition>
+
+            <!-- FAB Button -->
+            <button @click="showQuickActions = !showQuickActions" class="flex items-center justify-center w-12 h-12 md:w-14 md:h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform" :class="{'rotate-45 bg-gray-600 hover:bg-gray-700': showQuickActions, 'scale-110': showQuickActions}">
+                <PlusIcon class="w-6 h-6 md:w-7 md:h-7 transition-transform" />
+            </button>
         </div>
         
         <!-- Toast Notifikasi -->

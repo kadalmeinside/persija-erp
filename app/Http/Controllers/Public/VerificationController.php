@@ -12,6 +12,25 @@ class VerificationController extends Controller
 {
     public function verify($uuid)
     {
+        // 0. Check Pemohon Cuti (Encrypted ID)
+        if (str_starts_with($uuid, 'CUTI-')) {
+            try {
+                $id = decrypt(substr($uuid, 5));
+                $cuti = \App\Models\PengajuanCuti::with('karyawan')->findOrFail($id);
+                $data = [
+                    'isValid' => true,
+                    'approverName' => $this->maskName($cuti->karyawan->nama_lengkap),
+                    'approvedAt' => $cuti->created_at->format('d F Y H:i'),
+                    'requestType' => 'Pengajuan Cuti (Pemohon)',
+                    'requestNo' => 'CUTI-' . date('Y', strtotime($cuti->created_at)) . '-' . str_pad($cuti->id, 5, '0', STR_PAD_LEFT),
+                    'status' => 'Submitted'
+                ];
+                return Inertia::render('Public/Verification', ['verification' => $data]);
+            } catch (\Exception $e) {
+                // fall through to fail
+            }
+        }
+
         // 1. Check ApprovalProcess (for Cuti & PengajuanHeader)
         $approval = ApprovalProcess::with(['actionKaryawan', 'pengajuan', 'cuti', 'cuti.karyawan'])
             ->where('uuid', $uuid)

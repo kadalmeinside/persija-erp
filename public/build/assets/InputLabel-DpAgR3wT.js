@@ -1,1 +1,0 @@
-import{c as e,t as o,H as n,m as t}from"./app-CUSA8J_4.js";const l={class:"block text-sm font-medium text-gray-700"},c={key:0},r={key:1},m={__name:"InputLabel",props:{value:{type:String}},setup(s){return(a,_)=>(t(),e("label",l,[s.value?(t(),e("span",c,o(s.value),1)):(t(),e("span",r,[n(a.$slots,"default")]))]))}};export{m as _};

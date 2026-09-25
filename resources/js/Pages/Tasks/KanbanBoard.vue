@@ -101,27 +101,37 @@ const onDrop = (status, event) => {
 
     <AuthenticatedLayout>
         <template #header>
-            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+            <div class="flex items-center justify-between gap-4">
                 <div>
-                    <h2 class="font-bold text-2xl text-gray-900 tracking-tight">Kanban Tugas</h2>
-                    <p class="text-sm text-gray-500 mt-1">Kelola dan pantau progres tugas harian tim Anda.</p>
+                    <h2 class="font-bold text-xl sm:text-2xl text-gray-900 tracking-tight">
+                        <span class="sm:hidden">Tugas</span>
+                        <span class="hidden sm:inline">Kanban Tugas</span>
+                    </h2>
+                    <p class="hidden sm:block text-sm text-gray-500 mt-1">Kelola dan pantau progres tugas harian tim Anda.</p>
                 </div>
-                <button @click="openCreateModal('To Do')" class="bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-100 text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 shadow-sm shadow-indigo-200 transition-all">
+                <button @click="openCreateModal('To Do')" class="hidden sm:flex bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-100 text-white px-5 py-2.5 rounded-xl text-sm font-semibold items-center justify-center gap-2 shadow-sm shadow-indigo-200 transition-all">
                     <PlusIcon class="w-5 h-5" /> Buat Tugas Baru
                 </button>
             </div>
         </template>
 
         <!-- Main Kanban Container -->
-        <div class="py-6 h-[calc(100vh-180px)] flex flex-col">
-            <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8 w-full flex-1 flex flex-col overflow-hidden">
+        <div class="py-4 sm:py-6 h-[calc(100vh-140px)] sm:h-[calc(100vh-180px)] flex flex-col">
+            <div class="max-w-full mx-auto w-full flex-1 flex flex-col overflow-hidden">
                 
-                <div class="flex-1 overflow-x-auto overflow-y-hidden pb-4 custom-scrollbar">
-                    <div class="flex gap-6 h-full min-w-max items-start">
+                <!-- Mobile Action Button -->
+                <div class="flex sm:hidden justify-end mb-4 shrink-0">
+                    <button @click="openCreateModal('To Do')" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 shadow-sm transition-colors">
+                        <PlusIcon class="w-4 h-4 mr-2" /> Buat Tugas
+                    </button>
+                </div>
+
+                <div class="flex-1 overflow-x-auto overflow-y-hidden pb-4 custom-scrollbar snap-x snap-mandatory">
+                    <div class="flex gap-4 sm:gap-6 h-full min-w-max items-start px-2 sm:px-0">
                         
                         <!-- Kanban Column -->
                         <div v-for="status in columns" :key="status" 
-                             class="flex flex-col w-[340px] max-h-full bg-gray-50/80 rounded-2xl border border-gray-200 shadow-sm transition-colors"
+                             class="flex flex-col w-[85vw] sm:w-[340px] max-h-full bg-gray-50/80 rounded-2xl border border-gray-200 shadow-sm transition-colors snap-center sm:snap-none"
                              @dragenter="onDragEnter(status, $event)"
                              @dragover="onDragOver(status, $event)"
                              @drop="onDrop(status, $event)">

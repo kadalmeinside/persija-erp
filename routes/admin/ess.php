@@ -37,8 +37,10 @@ Route::middleware(["role:{$essRoles}"])->group(function () {
         Route::post('generate', 'generate')->name('generate');
         Route::put('balances/{id}', 'updateBalance')->name('update-balance');
         Route::post('{cuti}/approve', 'approve')->name('approve');
+        Route::get('{cuti}/print', 'print')->name('print');
+        Route::get('{cuti}/export-pdf', 'exportPdf')->name('export-pdf');
     });
-    Route::resource('cuti', CutiController::class)->except(['index', 'show', 'create']);
+    Route::resource('cuti', CutiController::class)->except(['index', 'create']);
 
     // ----------------------------------------------------------------
     // Pengajuan (Payment Requests)

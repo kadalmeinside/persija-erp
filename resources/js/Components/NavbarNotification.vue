@@ -37,27 +37,27 @@ onUnmounted(() => document.removeEventListener('click', closeDropdown));
         </button>
 
         <!-- Dropdown Menu -->
-        <div v-show="isOpen" class="origin-top-right absolute right-0 mt-2 w-80 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
-            <div class="px-4 py-2 border-b flex justify-between items-center">
-                <span class="text-sm text-gray-700 font-bold">Notifikasi ({{ count }})</span>
-                <Link v-if="count > 0" :href="route('admin.notifications.mark-all-read')" method="post" as="button" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
+        <div v-show="isOpen" class="origin-top-right absolute right-0 mt-2 w-[90vw] sm:w-96 rounded-2xl shadow-xl py-1 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border-0 focus:outline-none z-[99] overflow-hidden">
+            <div class="px-4 py-3 border-b border-gray-200/50 dark:border-gray-700/50 flex justify-between items-center bg-white/50 dark:bg-gray-800/50">
+                <span class="text-sm text-gray-800 dark:text-gray-200 font-bold">Notifikasi ({{ count }})</span>
+                <Link v-if="count > 0" :href="route('admin.notifications.mark-all-read')" method="post" as="button" class="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 font-medium">
                     Tandai semua dibaca
                 </Link>
             </div>
             
-            <div v-if="notifications.length === 0" class="px-4 py-2 text-sm text-gray-500">
+            <div v-if="notifications.length === 0" class="px-4 py-4 text-sm text-center text-gray-500 dark:text-gray-400">
                 Tidak ada notifikasi baru.
             </div>
 
-            <div v-else class="max-h-64 overflow-y-auto">
+            <div v-else class="max-h-64 overflow-y-auto custom-scrollbar">
                 <Link 
                     v-for="notification in notifications" 
                     :key="notification.id"
                     :href="route('admin.notifications.read', notification.id)"
-                    class="block px-4 py-3 hover:bg-gray-50 transition duration-150 ease-in-out border-b border-gray-100 last:border-0"
+                    class="block px-4 py-3 hover:bg-gray-100/50 dark:hover:bg-gray-800/50 transition duration-150 ease-in-out border-b border-gray-100/50 dark:border-gray-700/50 last:border-0"
                 >
-                    <p class="text-sm font-medium text-gray-900">{{ notification.data.message }}</p>
-                    <p class="text-xs text-gray-500 mt-1">{{ new Date(notification.created_at).toLocaleString() }}</p>
+                    <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ notification.data.message }}</p>
+                    <p class="text-[10px] text-gray-500 dark:text-gray-400 mt-1">{{ new Date(notification.created_at).toLocaleString('id-ID') }}</p>
                 </Link>
             </div>
         </div>

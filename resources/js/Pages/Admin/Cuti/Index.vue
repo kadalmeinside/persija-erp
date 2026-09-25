@@ -8,7 +8,7 @@ import SecondaryButton from '@/Components/SecondaryButton.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
-import { PlusIcon } from '@heroicons/vue/24/outline';
+import { PlusIcon, EyeIcon } from '@heroicons/vue/24/outline';
 import Pagination from '@/Components/Pagination.vue';
 
 const props = defineProps({
@@ -40,17 +40,25 @@ const createForm = useForm({
 
 const availableJenisCuti = computed(() => {
     const list = [];
-    if (props.balances) {
-        props.balances.forEach(b => {
-            if (!list.find(item => item.id === b.id_jenis_cuti)) {
-                list.push(b.jenis_cuti);
-            }
-        });
-    }
     if (props.jenisCutiList) {
         props.jenisCutiList.forEach(jc => {
-            if (jc.is_unlimited && !list.find(item => item.id === jc.id)) {
-                list.push(jc);
+            if (jc.is_unlimited) {
+                list.push({ ...jc, sisa_cuti: 999, status_saldo: 'unlimited' });
+            } else {
+                const balance = props.balances?.find(b => b.id_jenis_cuti === jc.id);
+                if (balance) {
+                    list.push({
+                        ...jc,
+                        sisa_cuti: balance.saldo_awal - balance.saldo_terpakai,
+                        status_saldo: 'available'
+                    });
+                } else {
+                    list.push({
+                        ...jc,
+                        sisa_cuti: 0,
+                        status_saldo: 'not_generated'
+                    });
+                }
             }
         });
     }
@@ -98,7 +106,7 @@ const submitCreate = () => {
             const selectedStart = new Date(createForm.tgl_mulai).setHours(0,0,0,0);
             const selectedEnd = new Date(createForm.tgl_selesai).setHours(0,0,0,0);
             
-            const hasOverlap = props.myRequests?.some(req => {
+            const hasOverlap = props.myRequests?.data?.some(req => {
                 if (['Pending', 'Pending Approval', 'Approved'].includes(req.status)) {
                     const reqStart = new Date(req.tgl_mulai).setHours(0,0,0,0);
                     const reqEnd = new Date(req.tgl_selesai).setHours(0,0,0,0);
@@ -243,31 +251,36 @@ onUnmounted(() => {
                         <div class="p-4 pl-5">
                             <div class="flex justify-between items-start mb-2">
                                 <div>
-                                    <h3 class="font-bold text-gray-900 dark:text-white text-base">{{ req.jenis_cuti.nama_cuti }}</h3>
-                                    <p class="text-xs text-gray-500 mt-0.5 flex items-center">
+                                    <h3 class="font-bold text-gray-900 dark:text-white text-sm">{{ req.jenis_cuti.nama_cuti }}</h3>
+                                    <p class="text-[11px] text-gray-500 mt-0.5 flex items-center">
                                         <svg class="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                         </svg>
                                         {{ formatDate(req.tgl_mulai) }} - {{ formatDate(req.tgl_selesai) }}
                                     </p>
                                 </div>
-                                <span :class="{
-                                    'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400': req.status === 'Pending' || req.status === 'Pending Approval',
-                                    'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400': req.status === 'Approved',
-                                    'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400': req.status === 'Rejected',
-                                }" class="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md">
-                                    {{ req.status }}
-                                </span>
+                                <div class="flex items-center space-x-2">
+                                    <span :class="{
+                                        'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400': req.status === 'Pending' || req.status === 'Pending Approval',
+                                        'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400': req.status === 'Approved',
+                                        'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400': req.status === 'Rejected',
+                                    }" class="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md">
+                                        {{ req.status }}
+                                    </span>
+                                    <Link :href="route('admin.cuti.show', req.id)" class="text-indigo-600 dark:text-indigo-400 p-1.5 bg-indigo-50 dark:bg-indigo-900/30 rounded-md hover:bg-indigo-100 dark:hover:bg-indigo-900/50" title="Lihat Detail">
+                                        <EyeIcon class="w-4 h-4" />
+                                    </Link>
+                                </div>
                             </div>
                             
                             <div class="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
                                 <div>
                                     <p class="text-[10px] text-gray-400 uppercase tracking-wider">Durasi</p>
-                                    <p class="font-medium text-sm text-gray-900 dark:text-gray-100">{{ req.jumlah_hari }} Hari</p>
+                                    <p class="font-medium text-xs text-gray-900 dark:text-gray-100">{{ req.jumlah_hari }} Hari</p>
                                 </div>
                                 <div class="text-right">
                                     <p class="text-[10px] text-gray-400 uppercase tracking-wider">Menunggu</p>
-                                    <div class="font-medium text-sm text-gray-900 dark:text-gray-100">
+                                    <div class="font-medium text-xs text-gray-900 dark:text-gray-100">
                                         <template v-if="req.status === 'Pending Approval' && req.approval_process">
                                             <template v-for="step in req.approval_process" :key="step.id">
                                                 <span v-if="step.status === 'Pending'" class="text-yellow-600 block truncate">{{ step.target_karyawan?.nama_lengkap }}</span>
@@ -292,6 +305,7 @@ onUnmounted(() => {
                                 <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Durasi</th>
                                 <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Status</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Approver</th>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Aksi</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -319,6 +333,12 @@ onUnmounted(() => {
                                     </div>
                                     <span v-else>{{ req.approver?.name || '-' }}</span>
                                 </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                                    <Link :href="route('admin.cuti.show', req.id)" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 flex items-center justify-center space-x-1">
+                                        <EyeIcon class="w-4 h-4" />
+                                        <span>Detail</span>
+                                    </Link>
+                                </td>
                             </tr>
                             <tr v-if="!myRequests.data || myRequests.data.length === 0">
                                 <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">Belum ada riwayat pengajuan cuti.</td>
@@ -342,15 +362,18 @@ onUnmounted(() => {
                         <InputLabel value="Jenis Cuti" />
                         <select v-model="createForm.id_jenis_cuti" @change="createForm.clearErrors('id_jenis_cuti')" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" :class="{'border-red-500': createForm.errors.id_jenis_cuti}">
                             <option value="" disabled>Pilih Jenis Cuti</option>
-                            <option v-for="jc in availableJenisCuti" :key="jc.id" :value="jc.id">{{ jc.nama_cuti }}</option>
+                            <option v-for="jc in availableJenisCuti" :key="jc.id" :value="jc.id" :disabled="jc.status_saldo === 'not_generated' || (jc.status_saldo === 'available' && jc.sisa_cuti <= 0)">
+                                {{ jc.nama_cuti }} 
+                                {{ jc.status_saldo === 'not_generated' ? '(Belum Digenerate)' : (jc.status_saldo === 'available' ? (jc.sisa_cuti > 0 ? `(Sisa: ${jc.sisa_cuti} hari)` : '(Habis)') : '') }}
+                            </option>
                         </select>
                         <InputError :message="createForm.errors.id_jenis_cuti" class="mt-2" />
                     </div>
 
-                    <div class="mb-4">
-                        <InputLabel value="Lampiran (Surat Dokter/Bukti)" :class="{ 'font-bold': createForm.id_jenis_cuti && jenisCutiMap[createForm.id_jenis_cuti]?.wajib_lampiran }" />
-                        <input type="file" @change="e => { createForm.lampiran = e.target.files[0]; createForm.clearErrors('lampiran'); clearClientError('lampiran'); }" accept=".pdf,.jpg,.jpeg,.png" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 border border-gray-300 dark:border-gray-600 rounded-md p-1 bg-white dark:bg-gray-700 cursor-pointer focus:outline-none" />
-                        <InputError class="mt-2" :message="clientErrors.lampiran || createForm.errors.lampiran" />
+                    <div class="mb-4" v-if="isLampiranRequired">
+                        <InputLabel value="Lampiran (Surat Dokter/Bukti Wajib)" class="font-bold" />
+                        <input type="file" @change="e => { createForm.lampiran = e.target.files[0]; createForm.clearErrors('lampiran'); }" accept=".pdf,.jpg,.jpeg,.png" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 border border-gray-300 dark:border-gray-600 rounded-md p-1 bg-white dark:bg-gray-700 cursor-pointer focus:outline-none" />
+                        <InputError class="mt-2" :message="createForm.errors.lampiran" />
                     </div>
 
                     <div class="grid grid-cols-2 gap-4 mb-4">

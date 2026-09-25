@@ -408,4 +408,39 @@ class CutiController extends Controller
 
         return back()->with('success', 'Saldo cuti berhasil diperbarui.');
     }
+
+    public function show(PengajuanCuti $cuti)
+    {
+        $cuti->load(['karyawan.departemen', 'jenisCuti', 'approvalProcess.targetKaryawan']);
+        
+        $qrPemohon = base64_encode(\SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')->size(100)->generate(route('public.verify', 'CUTI-' . encrypt($cuti->id))));
+
+        foreach ($cuti->approvalProcess as $step) {
+            if (in_array($step->status, ['Approved', 'Rejected'])) {
+                $step->setAttribute('qr_base64', base64_encode(\SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')->size(100)->generate(route('public.verify', $step->uuid))));
+            }
+        }
+
+        return inertia('Admin/Cuti/Show', [
+            'cuti' => $cuti,
+            'qrPemohon' => $qrPemohon
+        ]);
+    }
+
+    public function print(PengajuanCuti $cuti)
+    {
+        $cuti->load(['karyawan.departemen', 'jenisCuti', 'approvalProcess.targetKaryawan']);
+        
+        return view('admin.cuti.print', compact('cuti'));
+    }
+
+    public function exportPdf(PengajuanCuti $cuti)
+    {
+        $cuti->load(['karyawan.departemen', 'jenisCuti', 'approvalProcess.targetKaryawan']);
+        
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('admin.cuti.print', compact('cuti'));
+        $pdf->setPaper('A4', 'portrait');
+        
+        return $pdf->download("Cuti_{$cuti->karyawan->nama_lengkap}_{$cuti->id}.pdf");
+    }
 }
