@@ -214,6 +214,7 @@ const getMethodColor = (method) => {
                                             <li><span class="font-medium text-red-600">422:</span> <code>{"errors":{"field":[...]}}</code></li>
                                         </ul>
                                     </div>
+                                </div>
                             </div>
                         </div>
                     </div>
