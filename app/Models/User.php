@@ -7,11 +7,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles; // Pastikan Spatie Trait ada
+use Laravel\Sanctum\HasApiTokens;
 use App\Models\Karyawan; // <-- TAMBAHKAN INI
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, HasRoles; // <-- Pastikan HasRoles ada
+    use HasApiTokens, HasFactory, Notifiable, HasRoles; // <-- Pastikan HasRoles ada
 
     /**
      * The attributes that are mass assignable.

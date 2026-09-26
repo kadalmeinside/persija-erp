@@ -97,6 +97,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
             return inertia('Admin/Documentation/Index');
         })->name('documentation');
 
+        // API Docs (Khusus Admin)
+        Route::middleware(['role:Super Admin'])->group(function () {
+            Route::get('api-docs', function () {
+                return inertia('Admin/ApiDocs/Index');
+            })->name('api-docs');
+        });
+
         require __DIR__ . '/admin/system.php';
         require __DIR__ . '/admin/hr.php';
         require __DIR__ . '/admin/finance.php';

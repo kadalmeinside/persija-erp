@@ -39,7 +39,7 @@ import {
     ClockIcon,
     ArrowsRightLeftIcon, // Internal Transfer
     LifebuoyIcon, // Added LifebuoyIcon
-    LockClosedIcon, LockOpenIcon, PhotoIcon, MapPinIcon, PlusIcon
+    LockClosedIcon, LockOpenIcon, PhotoIcon, MapPinIcon, PlusIcon, CodeBracketIcon
 } from '@heroicons/vue/24/outline';
 
 const page = usePage();
@@ -614,6 +614,13 @@ const sidebarMenu = computed(() => {
         }
 
         // Added System Logs
+        systemChildren.push({
+            name: 'API Documentation',
+            route: 'admin.api-docs',
+            icon: CodeBracketIcon,
+            current: 'admin.api-docs'
+        });
+
         systemChildren.push({ 
             name: 'System Logs', 
             route: 'admin.activity-logs.index', 
