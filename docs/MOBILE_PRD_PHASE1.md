@@ -1,12 +1,12 @@
 # Product Requirements Document (PRD) - Mobile ESS (Phase 1)
-**Project Name:** ERP Enterprise Mobile App
+**Project Name:** Persija ERP Enterprise Mobile App
 **Platform:** Android & iOS (Native via Flutter)
 **Version:** 1.0.0 (Phase 1)
 
 ---
 
 ## 1. Executive Summary
-Aplikasi mobile ini (Employee Self-Service) dirancang secara spesifik untuk memfasilitasi karyawan dalam melakukan presensi harian secara aman dan mengajukan cuti. Tujuan utama pemisahan absensi dari web ke *mobile native* adalah untuk menekan tingkat kecurangan (seperti penggunaan *Fake GPS* atau absen titip) melalui pelacakan lokasi *hardware* perangkat dan pengambilan *selfie* langsung dari kamera HP.
+Aplikasi mobile ini (Employee Self-Service) dirancang secara spesifik untuk memfasilitasi karyawan dalam melakukan presensi harian secara aman dan mengajukan cuti. Tujuan utama pemisahan absensi dari web ke *mobile native* adalah untuk menekan tingkat kecurangan (seperti penggunaan *Fake GPS* atau absen titip) melalui pelacakan lokasi *hardware* perangkat dan pengambilan *selfie* langsung dari kamera HP. Desain antarmuka (UI) akan secara konsisten mengikuti arsitektur visual versi Web Persija ERP.
 
 ---
 
@@ -21,41 +21,75 @@ Aplikasi mobile ini (Employee Self-Service) dirancang secara spesifik untuk memf
 
 ---
 
-## 3. UI/UX & Design Guidelines
-Aplikasi harus merefleksikan estetika *Dashboard Web ERP* yang sudah kita bangun (Gaya Modern TailwindCSS):
-- **Color Palette:** Mengikuti warna primer ERP (Misal: *Primary Red/Blue* khas brand, dengan aksen abu-abu terang untuk *background*).
-- **Typography:** Menggunakan *Google Fonts* modern seperti **Inter** atau **Roboto**.
-- **Card & Layout:** Menggunakan pendekatan antarmuka berbasis *Card* (*Rounded corners*, bayangan halus/drop shadow ringan) dengan jarak ruang (*padding*) yang lega untuk perangkat sentuh.
-- **Micro-interactions:** Berikan *feedback* haptic (getaran kecil) saat menekan tombol absen, dan animasi *loading state* (Shimmer UI) saat mengambil data.
+## 3. Detail UI/UX & Desain Antarmuka
+Aplikasi wajib menggunakan palet warna utama (Identitas Persija) dan *layout* bergaya modern *enterprise*. Desain harus identik dengan rasa (feel) versi Web Tailwind CSS.
+
+### 3.1. Color Palette & Typography
+- **Primary Color:** Merah Persija (`#D2122E` atau `#DC2626` Tailwind Red-600) untuk *Primary Buttons* dan *Active States*.
+- **Secondary Color:** Abu-abu gelap (`#1F2937` Tailwind Gray-800) untuk Teks Utama & Header.
+- **Background Color:** Abu-abu sangat terang (`#F3F4F6` Tailwind Gray-100) untuk *background* aplikasi, putih (`#FFFFFF`) untuk *Cards* (Container).
+- **Success Color:** Hijau (`#10B981` Tailwind Emerald-500) untuk notifikasi sukses dan tombol "Absen Masuk".
+- **Danger Color:** Merah pekat (`#EF4444` Tailwind Red-500) untuk notifikasi gagal dan tombol "Absen Pulang".
+- **Typography:** **Inter** atau **Roboto**. Judul (Font-weight: 700/Bold), Subteks (Font-weight: 400/Regular).
+- **Radius & Shadow:** Gunakan sudut membulat (*Rounded* 8px - 12px) dan *box-shadow* tipis (Drop shadow SM/MD) pada semua elemen *Card* dan *Button*.
+
+### 3.2. Struktur Navigasi (Hamburger Menu & App Bar)
+- **App Bar (Top Bar):** 
+  - Kiri: **Ikon Hamburger** (Garis tiga) untuk membuka *Side Drawer*.
+  - Tengah: Teks Judul Halaman (Misal: "Dashboard", "Kehadiran").
+  - Kanan: **Ikon Lonceng** (Notifikasi) dan **Avatar Bulat** foto profil karyawan. Background App Bar putih pekat dengan *border-bottom* tipis abu-abu.
+- **Side Drawer (Menu Hamburger):**
+  - Akan muncul meluncur dari kiri ketika ikon Hamburger ditekan.
+  - **Header Menu:** Background Merah Persija dengan logo klub/perusahaan, dan detail Profil (Nama Karyawan, NIP, Jabatan).
+  - **Daftar Menu (List Tile):**
+    1. **Dashboard** (Ikon Home) - *Aktif secara default*.
+    2. **Absensi** (Ikon Map Pin) - Menu presensi & histori kehadiran.
+    3. **Cuti** (Ikon Calendar) - Menu pengajuan & sisa kuota cuti.
+    4. **Keluar** (Ikon Log Out, berwarna merah di area paling bawah).
 
 ---
 
-## 4. Key Features (Phase 1)
+## 4. Detail Fitur & Spesifikasi Halaman (Phase 1)
 
-### 4.1. Authentication (Login & Profile)
-- **Login Screen:** Input Email dan Password.
-- Sistem menggunakan token Sanctum yang di-*return* setelah *login* sukses.
-- **Home/Dashboard:** Menampilkan foto profil karyawan, Nama, Jabatan, Departemen, dan **Status Kehadiran Hari Ini** (*Clock-In* / *Clock-Out* timer).
+### 4.1. Halaman Login (Login Screen)
+- **Posisi:** Berada di tengah layar (*Center-aligned*).
+- **Visual:** Logo perusahaan di bagian atas, diikuti dengan *Text Field* bergaris luar halus (*outlined*) untuk Email dan Password.
+- **Tombol Utama:** Tombol lebar (100% width) bertuliskan "Masuk", warna latar Merah (`#DC2626`), tulisan putih tebal. 
+- *Loading State:* Tombol berubah menjadi *spinner* melingkar saat proses login berlangsung.
 
-### 4.2. Absensi (Attendance) dengan Geofencing
-Tombol utama pada layar Beranda akan berubah dinamis antara "Absen Masuk" dan "Absen Pulang".
-- **Geofencing Engine:**
-  - Aplikasi memanggil endpoint `/user` atau memeriksa cache untuk mendapatkan konfigurasi `lokasi_kantor` (Latitude, Longitude, Radius meter) & `is_strict_location`.
-  - Jika `is_strict_location == true`, aplikasi menghitung jarak HP dengan titik kantor (menggunakan *Haversine formula* atau fungsi bawaan Geolocator).
-  - Jika karyawan berada **di luar radius**, tombol Absen **Terkunci/Disabled** (Berubah warna abu-abu dengan pesan "Anda berada di luar radius kantor").
-- **Dinas Luar (Out of Office):** 
-  - Karyawan bisa mencentang "Sedang Dinas Luar" jika *meeting* di luar. Saat dicentang, kunci *Geofencing* dilepas, namun *form input catatan* menjadi **WAJIB** diisi.
-- **Camera Validation:**
-  - Saat absen ditekan, layar kamera terbuka (menghadap depan secara *default*). Pengguna harus memotret dirinya secara *real-time*.
+### 4.2. Halaman Dashboard (Home)
+- **Kartu Profil:** Berada di paling atas, berwarna putih. Menampilkan "Selamat Datang, [Nama]", Jabatan, dan Departemen.
+- **Status Kehadiran Hari Ini (Card Absensi):**
+  - Letak tepat di bawah kartu profil.
+  - Menampilkan dua waktu: **Jam Masuk** (Kiri) dan **Jam Pulang** (Kanan) dengan ukuran *font* digital/tebal.
+  - **Tombol Dinamis:** Jika belum absen masuk, akan ada tombol Hijau penuh ("Absen Masuk"). Jika sudah masuk, tombol berubah menjadi Merah penuh ("Absen Pulang"). Posisinya memanjang *full width* di dalam *Card*.
+- **Quick Action (Grid):** Barisan *icon button* di bagian tengah bawah untuk akses cepat: "Ajukan Cuti", "Histori Absen", dsb.
 
-### 4.3. Pengajuan Cuti (Leave Requests)
-- **Menu Saldo Cuti:** Menampilkan visualisasi (Gauge Chart / Progress Bar) sisa kuota cuti tahunan, cuti besar, dll.
-- **Form Pengajuan Cuti:**
-  - *Dropdown* dinamis Jenis Cuti (Diambil dari API).
-  - *Date picker* rentang waktu (Tanggal Mulai s/d Tanggal Selesai).
-  - *Textarea* alasan.
-  - Opsi mengunggah file (PDF/Gambar) dari Galeri/Filesystem jika `wajib_lampiran == true` (Misal: Surat Dokter untuk cuti sakit).
-- **Riwayat Cuti:** *List view* histori pengajuan yang sudah ada dengan *badge status* (Pending, Approved, Rejected).
+### 4.3. Fitur Absensi (Geofencing & Selfie)
+- Saat menekan "Absen Masuk", sistem memproses 3 layar / *step*:
+  1. **Layar Cek Lokasi (Map/Loading):** Memastikan GPS hidup. Titik lokasi pengguna saat ini (*Blue dot*) akan dicek silang dengan *Circle Geofence* lokasi kantor.
+     - *Validasi:* Jika di luar radius -> Muncul *Snackbar* / *Alert* Peringatan (Tolak Absen).
+     - *Opsi Dinas Luar:* Tersedia *Checkbox* di atas tombol Lanjut: `[ ] Sedang Dinas Luar`. Jika dicentang, akan muncul *Text Field* tambahan "Catatan/Lokasi Dinas", dan blokir radius dimatikan.
+  2. **Layar Kamera (Selfie):** Kamera depan terbuka berbingkai bulat (*circle crop* frame) di tengah. Tombol foto membulat di bagian bawah tengah layar. Terdapat instruksi: "Pastikan wajah terlihat jelas". **Galeri dilarang keras**.
+  3. **Layar Konfirmasi & Upload:** Menampilkan hasil foto dan koordinat. Tombol "Kirim Absensi" berwarna Merah Persija.
+  
+### 4.4. Halaman Pengajuan Cuti
+- **Header Saldo (Gauge/Card):** Tiga kartu kecil horizontal atau satu kartu lebar menampilkan informasi: "Cuti Tahunan", "Kuota Default: 12", "Sisa: 10". Warna biru/ungu pudar untuk latar.
+- **Form Pengajuan:** 
+  - Seluruh *field* berbentuk *outlined box*.
+  - *Dropdown* "Jenis Cuti" (Misal: Cuti Tahunan, Sakit).
+  - Kolom Tanggal (menggunakan pop-up kalender/`showDatePicker`).
+  - *Textarea* panjang untuk "Alasan".
+  - Area Kotak Putus-putus (*Dashed Box*) untuk **Upload Bukti/Lampiran**. Di area ini, user bisa memanggil `image_picker` (Boleh kamera / galeri).
+- **Tombol Aksi:** Tombol biru/merah "Kirim Pengajuan" (*full width*) di bagian bawah layar.
+
+### 4.5. Halaman Histori (Absen & Cuti)
+- Menggunakan *List View* (urutan terbaru di atas).
+- Masing-masing item histori ditampilkan dalam *Card* putih tipis.
+- *Status Badge:* 
+  - Hijau ("Hadir", "Disetujui")
+  - Merah ("Ditolak", "Alpa")
+  - Kuning ("Pending").
 
 ---
 
