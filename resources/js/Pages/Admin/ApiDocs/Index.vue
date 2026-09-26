@@ -97,15 +97,23 @@ const apis = [
                 url: '/api/v1/cuti/jenis', 
                 desc: 'Get available leave types for dropdown',
                 headers: "Authorization: Bearer {token}",
-                response: "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"nama_cuti\": \"Cuti Tahunan\",\n      \"kuota_default\": 12,\n      \"wajib_lampiran\": false\n    }\n  ]\n}"
+                response: "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"nama_cuti\": \"Cuti Tahunan\",\n      \"kuota_default\": 12,\n      \"wajib_lampiran\": false\n    },\n    {\n      \"id\": 2,\n      \"nama_cuti\": \"Cuti Sakit\",\n      \"kuota_default\": 12,\n      \"wajib_lampiran\": true\n    }\n  ]\n}"
             },
             { 
                 id: 'cuti_balances',
                 method: 'GET', 
                 url: '/api/v1/cuti/balances', 
-                desc: 'Get leave balances',
+                desc: 'Get leave balances for current year',
                 headers: "Authorization: Bearer {token}",
-                response: "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"jenis_cuti_id\": 2,\n      \"jenis_cuti\": \"Cuti Tahunan\",\n      \"saldo_awal\": 12,\n      \"saldo_terpakai\": 2,\n      \"saldo_akhir\": 10\n    }\n  ]\n}"
+                response: "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"jenis_cuti_id\": 1,\n      \"jenis_cuti\": \"Cuti Tahunan\",\n      \"saldo_awal\": 12,\n      \"saldo_terpakai\": 2,\n      \"saldo_akhir\": 10\n    }\n  ]\n}"
+            },
+            { 
+                id: 'cuti_requests',
+                method: 'GET', 
+                url: '/api/v1/cuti/requests', 
+                desc: 'Get my leave request history',
+                headers: "Authorization: Bearer {token}",
+                response: "{\n  \"data\": [\n    {\n      \"id\": 5,\n      \"jenis_cuti\": \"Cuti Tahunan\",\n      \"tgl_mulai\": \"2026-10-01\",\n      \"tgl_selesai\": \"2026-10-02\",\n      \"jumlah_hari\": 2,\n      \"alasan\": \"Urusan keluarga\",\n      \"status\": \"Pending\",\n      \"lampiran\": null,\n      \"created_at\": \"2026-09-27 08:00:00\"\n    }\n  ]\n}"
             },
             { 
                 id: 'cuti_submit',
@@ -113,8 +121,33 @@ const apis = [
                 url: '/api/v1/cuti/request', 
                 desc: 'Submit a new leave request',
                 headers: "Authorization: Bearer {token}\nContent-Type: multipart/form-data",
-                body: "jenis_cuti_id: 1\ntgl_mulai: 2026-10-01\ntgl_selesai: 2026-10-02\nketerangan: Sakit (Demam)\nattachment: (File/Image PDF)",
+                body: "jenis_cuti_id: 1               (Integer, Required)\ntgl_mulai: 2026-10-01          (String YYYY-MM-DD, Required)\ntgl_selesai: 2026-10-02        (String YYYY-MM-DD, Required)\nketerangan: Sakit (Demam)      (String max 500, Required)\nattachment: (File jpg/png/pdf) (Optional – Wajib jika wajib_lampiran: true)",
                 response: "{\n  \"message\": \"Pengajuan cuti berhasil dibuat\",\n  \"data\": {\n    \"id\": 5,\n    \"status\": \"Pending\"\n  }\n}"
+            },
+        ]
+    },
+    {
+        title: 'Approval Module (Manager / HR Only)',
+        icon: CalendarDaysIcon,
+        color: 'text-amber-600',
+        bg: 'bg-amber-50',
+        endpoints: [
+            { 
+                id: 'cuti_approvals',
+                method: 'GET', 
+                url: '/api/v1/cuti/approvals', 
+                desc: 'Get pending approvals (Role: Manajer / HR)',
+                headers: "Authorization: Bearer {token}",
+                response: "{\n  \"data\": [\n    {\n      \"id\": 5,\n      \"nama_karyawan\": \"Jane Smith\",\n      \"nip\": \"54321\",\n      \"departemen\": \"IT\",\n      \"jenis_cuti\": \"Cuti Tahunan\",\n      \"tgl_mulai\": \"2026-10-01\",\n      \"tgl_selesai\": \"2026-10-02\",\n      \"jumlah_hari\": 2,\n      \"alasan\": \"Urusan keluarga\",\n      \"lampiran\": null,\n      \"status\": \"Pending\",\n      \"created_at\": \"2026-09-27 08:00:00\"\n    }\n  ]\n}"
+            },
+            { 
+                id: 'cuti_approve',
+                method: 'POST', 
+                url: '/api/v1/cuti/approve/{id}', 
+                desc: 'Approve or Reject a leave request (Role: Manajer / HR)',
+                headers: "Authorization: Bearer {token}\nContent-Type: application/json",
+                body: "{\n  \"status\": \"Approved\",\n  \"catatan\": \"Disetujui, koordinasi dengan tim.\"\n}\n\n// status hanya boleh: \"Approved\" atau \"Rejected\"",
+                response: "{\n  \"message\": \"Pengajuan berhasil approved\"\n}\n\n// Error: { \"message\": \"Pengajuan ini sudah diproses.\" } (422)\n// Error: { \"message\": \"Anda tidak memiliki akses.\" } (403)"
             },
         ]
     }
@@ -156,24 +189,31 @@ const getMethodColor = (method) => {
                                 <h3 class="text-lg font-bold text-gray-900">Developer Guide (Phase 1)</h3>
                                 <p class="text-gray-600 mt-1">This API is designed specifically for Native Android & iOS applications to enforce hardware-based GPS locations.</p>
                                 
-                                <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
                                         <h4 class="font-semibold text-gray-700 mb-2">Base Configurations</h4>
                                         <ul class="space-y-1 text-sm text-gray-600">
                                             <li><span class="font-medium">Base URL:</span> <code class="bg-gray-200 px-1 py-0.5 rounded text-indigo-700">https://your-domain.com/api/v1</code></li>
-                                            <li><span class="font-medium">Authentication:</span> <code class="bg-gray-200 px-1 py-0.5 rounded text-indigo-700">Bearer {token}</code></li>
-                                            <li><span class="font-medium">Content-Type:</span> <code class="bg-gray-200 px-1 py-0.5 rounded text-indigo-700">application/json</code> (or multipart)</li>
+                                            <li><span class="font-medium">Auth:</span> <code class="bg-gray-200 px-1 py-0.5 rounded text-indigo-700">Bearer {token}</code></li>
+                                            <li><span class="font-medium">Accept:</span> <code class="bg-gray-200 px-1 py-0.5 rounded text-indigo-700">application/json</code></li>
                                         </ul>
                                     </div>
                                     <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                                        <h4 class="font-semibold text-gray-700 mb-2">Response Standard (JSend)</h4>
+                                        <h4 class="font-semibold text-gray-700 mb-2">Success Response (JSend)</h4>
                                         <ul class="space-y-1 text-sm text-gray-600">
-                                            <li><span class="font-medium text-emerald-600">200 / 201:</span> <code>{ "data": { ... } }</code></li>
-                                            <li><span class="font-medium text-red-600">422:</span> Validation Errors</li>
-                                            <li><span class="font-medium text-amber-600">401:</span> Unauthorized / Token Expired</li>
+                                            <li><span class="font-medium text-emerald-600">200 OK:</span> <code>{"data": {...}}</code></li>
+                                            <li><span class="font-medium text-emerald-600">201 Created:</span> <code>{"message":"..","data":{}}</code></li>
                                         </ul>
                                     </div>
-                                </div>
+                                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                        <h4 class="font-semibold text-gray-700 mb-2">Error Responses</h4>
+                                        <ul class="space-y-1 text-sm text-gray-600">
+                                            <li><span class="font-medium text-amber-600">401:</span> Token expired → redirect Login</li>
+                                            <li><span class="font-medium text-red-600">403:</span> Akses ditolak (role)</li>
+                                            <li><span class="font-medium text-red-600">404:</span> Data tidak ditemukan</li>
+                                            <li><span class="font-medium text-red-600">422:</span> <code>{"errors":{"field":[...]}}</code></li>
+                                        </ul>
+                                    </div>
                             </div>
                         </div>
                     </div>
