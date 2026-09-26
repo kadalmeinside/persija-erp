@@ -2,6 +2,8 @@
 **Project Name:** Persija ERP Enterprise Mobile App
 **Platform:** Android & iOS (Native via Flutter)
 **Version:** 1.0.0 (Phase 1)
+**Base API URL (Production):** `https://your-domain.com/api/v1`
+**Base API URL (Development):** `http://192.168.x.x:8000/api/v1`
 
 ---
 
@@ -11,13 +13,71 @@ Aplikasi mobile ini (Employee Self-Service) dirancang secara spesifik untuk memf
 ---
 
 ## 2. Tech Stack & Architecture
-- **Framework:** Flutter (Dart) - *Cross-platform (Android & iOS)*
-- **State Management:** Riverpod / BLoC (Disarankan menggunakan arsitektur yang solid untuk *scale-up* di masa depan).
-- **HTTP Client:** Dio (Dilengkapi Interceptor untuk menangani *Bearer Token* dan respon `401 Unauthorized`).
-- **Local Storage:** `flutter_secure_storage` (Untuk menyimpan Token Sanctum) & `shared_preferences`.
-- **Location Service:** `geolocator` & native Android/iOS location services.
-- **Camera:** `camera` atau `image_picker` (Dibatasi hanya bisa menggunakan kamera langsung, **TIDAK BOLEH** ambil gambar dari galeri untuk *Clock-In/Out*).
-- **Security Check:** `root_tail` / `freerasp` / `trust_fall` (Untuk mendeteksi Root/Jailbreak, Emulator, dan Mock Locations).
+
+### 2.1. Dependencies (pubspec.yaml)
+```yaml
+dependencies:
+  flutter:
+    sdk: flutter
+  # Networking
+  dio: ^5.x
+  # Secure Token Storage
+  flutter_secure_storage: ^9.x
+  # Shared Preferences (non-sensitive)
+  shared_preferences: ^2.x
+  # Location / GPS
+  geolocator: ^11.x
+  # Camera & Image Picker
+  image_picker: ^1.x
+  camera: ^0.10.x
+  # Security
+  freerasp: ^6.x
+  # UI
+  google_fonts: ^6.x
+  shimmer: ^3.x
+  # State Management (pilih salah satu)
+  flutter_riverpod: ^2.x      # Pilihan 1: Riverpod
+  # flutter_bloc: ^8.x        # Pilihan 2: BLoC
+```
+
+### 2.2. Arsitektur Folder Project Flutter
+```
+lib/
+├── core/
+│   ├── constants/          # app_colors.dart, app_strings.dart, api_constants.dart
+│   ├── network/            # dio_client.dart, auth_interceptor.dart
+│   ├── security/           # security_checker.dart (Anti-fake GPS, root detection)
+│   └── storage/            # secure_storage.dart
+├── features/
+│   ├── auth/
+│   │   ├── data/           # auth_repository.dart, auth_api.dart
+│   │   ├── models/         # user_model.dart, karyawan_model.dart
+│   │   └── screens/        # login_screen.dart
+│   ├── dashboard/
+│   │   └── screens/        # dashboard_screen.dart
+│   ├── absensi/
+│   │   ├── data/           # absensi_repository.dart, absensi_api.dart
+│   │   ├── models/         # absensi_model.dart
+│   │   └── screens/        # absensi_screen.dart, camera_screen.dart, location_check_screen.dart
+│   └── cuti/
+│       ├── data/           # cuti_repository.dart, cuti_api.dart
+│       ├── models/         # cuti_model.dart, saldo_cuti_model.dart, jenis_cuti_model.dart
+│       └── screens/        # cuti_screen.dart, form_cuti_screen.dart, histori_cuti_screen.dart
+└── main.dart
+```
+
+### 2.3. Konfigurasi Environment
+```dart
+// lib/core/constants/api_constants.dart
+class ApiConstants {
+  // Ganti nilai ini saat build production
+  static const String baseUrl = String.fromEnvironment(
+    'BASE_URL',
+    defaultValue: 'http://192.168.1.1:8000/api/v1',
+  );
+}
+// Build production: flutter build apk --dart-define=BASE_URL=https://erp.persija.id/api/v1
+```
 
 ---
 
@@ -25,99 +85,314 @@ Aplikasi mobile ini (Employee Self-Service) dirancang secara spesifik untuk memf
 Aplikasi wajib menggunakan palet warna utama (Identitas Persija) dan *layout* bergaya modern *enterprise*. Desain harus identik dengan rasa (feel) versi Web Tailwind CSS.
 
 ### 3.1. Color Palette & Typography
-- **Primary Color:** Merah Persija (`#D2122E` atau `#DC2626` Tailwind Red-600) untuk *Primary Buttons* dan *Active States*.
-- **Secondary Color:** Abu-abu gelap (`#1F2937` Tailwind Gray-800) untuk Teks Utama & Header.
-- **Background Color:** Abu-abu sangat terang (`#F3F4F6` Tailwind Gray-100) untuk *background* aplikasi, putih (`#FFFFFF`) untuk *Cards* (Container).
-- **Success Color:** Hijau (`#10B981` Tailwind Emerald-500) untuk notifikasi sukses dan tombol "Absen Masuk".
-- **Danger Color:** Merah pekat (`#EF4444` Tailwind Red-500) untuk notifikasi gagal dan tombol "Absen Pulang".
-- **Typography:** **Inter** atau **Roboto**. Judul (Font-weight: 700/Bold), Subteks (Font-weight: 400/Regular).
-- **Radius & Shadow:** Gunakan sudut membulat (*Rounded* 8px - 12px) dan *box-shadow* tipis (Drop shadow SM/MD) pada semua elemen *Card* dan *Button*.
+| Token           | Hex       | Penggunaan                                        |
+|-----------------|-----------|---------------------------------------------------|
+| Primary         | `#DC2626` | Tombol utama, active state, header sidebar        |
+| Primary Dark    | `#B91C1C` | Hover/Pressed state tombol primary                |
+| Success         | `#10B981` | Tombol "Absen Masuk", badge Hadir/Disetujui       |
+| Danger          | `#EF4444` | Tombol "Absen Pulang", badge Ditolak/Alpa         |
+| Warning         | `#F59E0B` | Badge "Pending"                                   |
+| Text Primary    | `#1F2937` | Judul & teks utama                                |
+| Text Secondary  | `#6B7280` | Subteks, placeholder                              |
+| Background      | `#F3F4F6` | Latar belakang layar                              |
+| Surface (Card)  | `#FFFFFF` | Latar Card, Form Field                            |
+| Border          | `#E5E7EB` | Garis border Card & Input                         |
+
+- **Font:** `Inter` atau `Roboto` (via `google_fonts`).
+- **Heading:** `FontWeight.w700`, size 18–22sp.
+- **Body:** `FontWeight.w400`, size 14sp.
+- **Caption/Label:** `FontWeight.w500`, size 12sp.
+- **Border Radius Card/Button:** `12.0` px.
+- **Elevation/Shadow Card:** `BoxShadow(blurRadius: 8, color: Colors.black12)`.
 
 ### 3.2. Struktur Navigasi (Hamburger Menu & App Bar)
-- **App Bar (Top Bar):** 
-  - Kiri: **Ikon Hamburger** (Garis tiga) untuk membuka *Side Drawer*.
-  - Tengah: Teks Judul Halaman (Misal: "Dashboard", "Kehadiran").
-  - Kanan: **Ikon Lonceng** (Notifikasi) dan **Avatar Bulat** foto profil karyawan. Background App Bar putih pekat dengan *border-bottom* tipis abu-abu.
-- **Side Drawer (Menu Hamburger):**
-  - Akan muncul meluncur dari kiri ketika ikon Hamburger ditekan.
-  - **Header Menu:** Background Merah Persija dengan logo klub/perusahaan, dan detail Profil (Nama Karyawan, NIP, Jabatan).
-  - **Daftar Menu (List Tile):**
-    1. **Dashboard** (Ikon Home) - *Aktif secara default*.
-    2. **Absensi** (Ikon Map Pin) - Menu presensi & histori kehadiran.
-    3. **Cuti** (Ikon Calendar) - Menu pengajuan & sisa kuota cuti.
-    4. **Keluar** (Ikon Log Out, berwarna merah di area paling bawah).
+```
+┌─────────────────────────────────────────────────┐
+│  ☰ (Hamburger)   Judul Halaman   🔔   [Avatar]  │  ← App Bar (putih, border bawah abu)
+├─────────────────────────────────────────────────┤
+│                  Konten Halaman                 │
+└─────────────────────────────────────────────────┘
+
+Side Drawer (Muncul dari Kiri):
+┌──────────────────────┐
+│  [Logo Persija]      │  ← Header bg #DC2626
+│  John Doe            │
+│  NIP: 12345 | IT     │
+├──────────────────────┤
+│  🏠  Dashboard       │  ← ListTile, icon abu, text #1F2937
+│  📍  Absensi         │
+│  📅  Cuti            │
+│  ─────────────────── │
+│  🚪  Keluar (Merah)  │  ← Teks & ikon #DC2626
+└──────────────────────┘
+```
+- Menu aktif: Latar merah muda (`#FEE2E2`) + teks merah + ikon merah.
+- Menu tidak aktif: Teks abu gelap + ikon abu.
 
 ---
 
 ## 4. Detail Fitur & Spesifikasi Halaman (Phase 1)
 
 ### 4.1. Halaman Login (Login Screen)
-- **Posisi:** Berada di tengah layar (*Center-aligned*).
-- **Visual:** Logo perusahaan di bagian atas, diikuti dengan *Text Field* bergaris luar halus (*outlined*) untuk Email dan Password.
-- **Tombol Utama:** Tombol lebar (100% width) bertuliskan "Masuk", warna latar Merah (`#DC2626`), tulisan putih tebal. 
-- *Loading State:* Tombol berubah menjadi *spinner* melingkar saat proses login berlangsung.
+```
+┌─────────────────────────────────┐
+│                                 │
+│      [Logo Persija]             │  ← Center, ukuran 120x120
+│   "Persija ERP"  (Bold, 22sp)  │
+│   "Employee Self-Service"       │
+│                                 │
+│  ┌─────────────────────────┐   │
+│  │  📧  Email              │   │  ← Outlined TextField
+│  └─────────────────────────┘   │
+│  ┌─────────────────────────┐   │
+│  │  🔒  Password        👁 │   │  ← Outlined TextField + toggle show/hide
+│  └─────────────────────────┘   │
+│                                 │
+│  [        MASUK        ]        │  ← ElevatedButton, bg #DC2626, w: 100%, h: 52px
+│                                 │
+│  v1.0.0 (Phase 1)              │  ← Caption, abu, paling bawah
+└─────────────────────────────────┘
+```
+- Error login: Snackbar merah di bawah dengan pesan dari API.
+- Loading state: Tombol menampilkan `CircularProgressIndicator` putih.
 
 ### 4.2. Halaman Dashboard (Home)
-- **Kartu Profil:** Berada di paling atas, berwarna putih. Menampilkan "Selamat Datang, [Nama]", Jabatan, dan Departemen.
-- **Status Kehadiran Hari Ini (Card Absensi):**
-  - Letak tepat di bawah kartu profil.
-  - Menampilkan dua waktu: **Jam Masuk** (Kiri) dan **Jam Pulang** (Kanan) dengan ukuran *font* digital/tebal.
-  - **Tombol Dinamis:** Jika belum absen masuk, akan ada tombol Hijau penuh ("Absen Masuk"). Jika sudah masuk, tombol berubah menjadi Merah penuh ("Absen Pulang"). Posisinya memanjang *full width* di dalam *Card*.
-- **Quick Action (Grid):** Barisan *icon button* di bagian tengah bawah untuk akses cepat: "Ajukan Cuti", "Histori Absen", dsb.
+```
+┌─────────────────────────────────┐
+│  ☰  Dashboard         🔔 [Foto]│  ← App Bar
+├─────────────────────────────────┤
+│  ┌───────────────────────────┐  │
+│  │  Selamat Datang, John! 👋 │  │  ← Card putih, padding 16
+│  │  Staff IT | Departemen IT │  │
+│  └───────────────────────────┘  │
+│                                 │
+│  ┌───────────────────────────┐  │
+│  │  📍 Kehadiran Hari Ini    │  │  ← Card putih
+│  │  Masuk: 08:00  Pulang: -- │  │
+│  │  ─────────────────────── │  │
+│  │  [  🟢 ABSEN MASUK  ]    │  │  ← Tombol Hijau #10B981 (jika belum masuk)
+│  │  [  🔴 ABSEN PULANG ]    │  │  ← Tombol Merah #EF4444 (jika sudah masuk)
+│  └───────────────────────────┘  │
+│                                 │
+│  Quick Actions                  │
+│  ┌──────┐  ┌──────┐  ┌──────┐  │
+│  │  📅  │  │  📋  │  │  ⏱  │  │  ← Grid 3 kolom: Ajukan Cuti, Histori, Jam Kerja
+│  │ Cuti │  │Histor│  │ Jam  │  │
+│  └──────┘  └──────┘  └──────┘  │
+└─────────────────────────────────┘
+```
 
-### 4.3. Fitur Absensi (Geofencing & Selfie)
-- Saat menekan "Absen Masuk", sistem memproses 3 layar / *step*:
-  1. **Layar Cek Lokasi (Map/Loading):** Memastikan GPS hidup. Titik lokasi pengguna saat ini (*Blue dot*) akan dicek silang dengan *Circle Geofence* lokasi kantor.
-     - *Validasi:* Jika di luar radius -> Muncul *Snackbar* / *Alert* Peringatan (Tolak Absen).
-     - *Opsi Dinas Luar:* Tersedia *Checkbox* di atas tombol Lanjut: `[ ] Sedang Dinas Luar`. Jika dicentang, akan muncul *Text Field* tambahan "Catatan/Lokasi Dinas", dan blokir radius dimatikan.
-  2. **Layar Kamera (Selfie):** Kamera depan terbuka berbingkai bulat (*circle crop* frame) di tengah. Tombol foto membulat di bagian bawah tengah layar. Terdapat instruksi: "Pastikan wajah terlihat jelas". **Galeri dilarang keras**.
-  3. **Layar Konfirmasi & Upload:** Menampilkan hasil foto dan koordinat. Tombol "Kirim Absensi" berwarna Merah Persija.
-  
-### 4.4. Halaman Pengajuan Cuti
-- **Header Saldo (Gauge/Card):** Tiga kartu kecil horizontal atau satu kartu lebar menampilkan informasi: "Cuti Tahunan", "Kuota Default: 12", "Sisa: 10". Warna biru/ungu pudar untuk latar.
-- **Form Pengajuan:** 
-  - Seluruh *field* berbentuk *outlined box*.
-  - *Dropdown* "Jenis Cuti" (Misal: Cuti Tahunan, Sakit).
-  - Kolom Tanggal (menggunakan pop-up kalender/`showDatePicker`).
-  - *Textarea* panjang untuk "Alasan".
-  - Area Kotak Putus-putus (*Dashed Box*) untuk **Upload Bukti/Lampiran**. Di area ini, user bisa memanggil `image_picker` (Boleh kamera / galeri).
-- **Tombol Aksi:** Tombol biru/merah "Kirim Pengajuan" (*full width*) di bagian bawah layar.
+### 4.3. Alur Absensi (3 Layar/Step)
+**Step 1 – Cek Lokasi:**
+```
+┌─────────────────────────────────┐
+│  ←  Absen Masuk                 │
+├─────────────────────────────────┤
+│  [   Peta / Map View   ]        │  ← Tampilan peta kecil (atau hanya ikon GPS besar)
+│  📍 Lokasi Anda: Terdeteksi     │
+│  🏢 Kantor Pusat (50m radius)   │
+│                                 │
+│  ✅ Anda dalam radius kantor    │  ← Teks hijau
+│  ❌ Anda di luar radius! (merah)│  ← Muncul jika di luar radius
+│                                 │
+│  ┌──────────────────────────┐   │
+│  │ ☐ Sedang Dinas Luar      │   │  ← Checkbox
+│  └──────────────────────────┘   │
+│  (Jika dicentang, muncul:)      │
+│  ┌──────────────────────────┐   │
+│  │ Catatan lokasi dinas...  │   │  ← TextField WAJIB
+│  └──────────────────────────┘   │
+│                                 │
+│  [   LANJUT KE KAMERA   ]      │  ← Disabled jika diluar radius & bukan dinas luar
+└─────────────────────────────────┘
+```
+**Step 2 – Selfie:**
+```
+┌─────────────────────────────────┐
+│  ←  Ambil Selfie                │
+├─────────────────────────────────┤
+│                                 │
+│   ┌───────────────────────┐     │
+│   │   [Preview Kamera]    │     │  ← Circle crop frame di tengah
+│   │     (Kamera Depan)    │     │
+│   └───────────────────────┘     │
+│                                 │
+│  "Pastikan wajah terlihat jelas"│
+│                                 │
+│           [ 📷 ]                │  ← ShutterButton, bulat, merah, di bawah tengah
+│    (Galeri DILARANG di sini)    │
+└─────────────────────────────────┘
+```
+**Step 3 – Konfirmasi:**
+```
+┌─────────────────────────────────┐
+│  ←  Konfirmasi Absen            │
+├─────────────────────────────────┤
+│  [Preview Foto Selfie]          │
+│                                 │
+│  📍 Lat: -6.2088  Lng: 106.845  │
+│  🕐 Waktu: 08:00 WIB            │
+│  📍 Lokasi: Kantor Pusat        │
+│                                 │
+│  [   KIRIM ABSENSI   ]          │  ← Merah #DC2626
+└─────────────────────────────────┘
+```
 
-### 4.5. Halaman Histori (Absen & Cuti)
-- Menggunakan *List View* (urutan terbaru di atas).
-- Masing-masing item histori ditampilkan dalam *Card* putih tipis.
-- *Status Badge:* 
-  - Hijau ("Hadir", "Disetujui")
-  - Merah ("Ditolak", "Alpa")
-  - Kuning ("Pending").
+### 4.4. Halaman Cuti
+```
+┌─────────────────────────────────┐
+│  ☰  Cuti                🔔 [F] │
+├─────────────────────────────────┤
+│  Saldo Cuti Saya                │
+│  ┌──────────┐  ┌─────────────┐  │
+│  │ Tahunan  │  │ Sakit       │  │  ← Card kecil per jenis cuti
+│  │ Sisa: 10 │  │ Sisa: 5     │  │
+│  └──────────┘  └─────────────┘  │
+│                                 │
+│  [ +  AJUKAN CUTI  ]            │  ← ElevatedButton Merah
+│                                 │
+│  Riwayat Pengajuan              │
+│  ┌───────────────────────────┐  │
+│  │ Cuti Tahunan              │  │  ← Card ListTile
+│  │ 1 Okt – 2 Okt 2026 (2hr) │  │
+│  │                 [Pending] │  │  ← Badge kuning
+│  └───────────────────────────┘  │
+└─────────────────────────────────┘
+```
+- **Form Pengajuan Cuti:**
+  - `DropdownButtonFormField` Jenis Cuti
+  - `TextFormField` Tanggal Mulai (DatePicker, format dd/MM/yyyy)
+  - `TextFormField` Tanggal Selesai (DatePicker)
+  - Kalkulasi otomatis "Jumlah hari: X hari" setelah tanggal dipilih
+  - `TextFormField` (multiline) Alasan/Keterangan
+  - Kotak Upload Lampiran (Dashed Border, muncul hanya jika `wajib_lampiran: true`)
+  - Tombol "Kirim" full-width merah di bawah
 
 ---
 
 ## 5. Security & Anti-Fraud Specifications (CRITICAL)
-Karena tujuan utama aplikasi native ini adalah **menggagalkan kecurangan**, terapkan filter keamanan ini secara ketat di *level native code (Kotlin/Swift)* maupun melalui library Flutter:
 
-1. **Anti-Mock Location (Fake GPS):**
-   - Saat menarik lokasi (GPS), cek atribut perangkat.
-   - *Android:* Periksa variabel `isFromMockProvider()` dari objek Location. Jika `true`, tolak akses absen dan lempar peringatan keras.
-   - *iOS:* Sulit di-mock tanpa Jailbreak (selain via XCode debug), namun blokir aplikasi jika berjalan di mode debug.
-2. **Root & Jailbreak Detection:**
-   - Aplikasi tidak boleh dijalankan di perangkat Android yang di-*root* atau iPhone yang di-*jailbreak*. Gunakan *library* seperti `freerasp` atau `flutter_jailbreak_detection`.
-3. **Emulator Blocking:**
-   - Deteksi apakah *environment* yang berjalan adalah emulator (Bluestacks, Nox, Android Studio Emulator, iOS Simulator). Tolak proses *login/clock-in* jika terdeteksi emulator.
-4. **No Gallery for Absensi:**
-   - Secara fungsional blokir *Image Picker* menuju galeri saat proses presensi. Aplikasi murni harus berinteraksi dengan API Kamera, tidak melayani file statis dari memori HP.
+### 5.1. Anti-Mock Location (Fake GPS)
+```dart
+// lib/core/security/security_checker.dart
+
+import 'package:geolocator/geolocator.dart';
+
+Future<bool> isMockLocation(Position position) async {
+  // Android: isMocked property di Position object
+  if (position.isMocked) {
+    return true;
+  }
+  return false;
+}
+```
+- Jika `isMocked == true`: **Tampilkan dialog peringatan keras** dan **batalkan proses absen**.
+- Jangan beri tahu user cara "bypass" — cukup tampilkan: *"GPS Anda tidak valid. Harap nonaktifkan aplikasi pemalsuan lokasi."*
+
+### 5.2. Root & Jailbreak Detection (`freerasp`)
+```dart
+// Inisialisasi di main.dart atau sebelum LayarLogin
+final config = TalsecConfig(
+  androidConfig: AndroidConfig(
+    packageName: 'id.persija.erp.mobile',
+    signingCertHashes: ['your_signing_cert_hash_here'],
+    supportedStores: [PlayStore()],
+  ),
+  iosConfig: IOSConfig(
+    bundleIds: ['id.persija.erp.mobile'],
+    teamId: 'YOUR_TEAM_ID',
+  ),
+  watcherMail: 'security@persija.id',
+);
+// Jika terdeteksi Root/Jailbreak -> keluar paksa dari aplikasi
+```
+
+### 5.3. Emulator Blocking
+- `freerasp` sudah mendeteksi emulator secara otomatis.
+- Tambahkan flag manual: periksa apakah `Platform.isAndroid` dan `DeviceInfoPlugin` melaporkan `isPhysicalDevice == false`.
+
+### 5.4. No Gallery for Absensi
+```dart
+// Saat absen, HANYA gunakan camera source
+final XFile? photo = await ImagePicker().pickImage(
+  source: ImageSource.camera,       // ← WAJIB, bukan ImageSource.gallery
+  preferredCameraDevice: CameraDevice.front, // Kamera depan
+  imageQuality: 70,                 // Kompres untuk hemat bandwidth
+);
+```
+
+### 5.5. Permissions yang Dibutuhkan
+**Android (`AndroidManifest.xml`):**
+```xml
+<uses-permission android:name="android.permission.INTERNET" />
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+<uses-permission android:name="android.permission.CAMERA" />
+<uses-feature android:name="android.hardware.camera" android:required="true" />
+```
+**iOS (`Info.plist`):**
+```xml
+<key>NSLocationWhenInUseUsageDescription</key>
+<string>Aplikasi membutuhkan akses lokasi untuk verifikasi presensi.</string>
+<key>NSCameraUsageDescription</key>
+<string>Aplikasi membutuhkan kamera untuk selfie presensi.</string>
+<key>NSPhotoLibraryUsageDescription</key>
+<string>Digunakan untuk upload lampiran cuti.</string>
+```
 
 ---
 
 ## 6. API Structure Reference (V1)
-Semua koneksi ke backend harus menggunakan `https` (Wajib SSL) dengan awalan `/api/v1/...`
+Semua koneksi ke backend harus menggunakan `https` (Wajib SSL).
 Setiap *request* yang membutuhkan autentikasi harus mengirimkan header:
-`Authorization: Bearer {token}`
-`Accept: application/json`
+```
+Authorization: Bearer {token}
+Accept: application/json
+```
 
-### 6.1. Authentication (Login & Profile)
+### 6.0. Standard Error Response Format
+Semua error API menggunakan format konsisten berikut:
+```json
+// 401 Unauthorized (Token expired / tidak valid)
+{ "message": "Unauthenticated." }
 
-**1. POST `/api/v1/login`**
+// 403 Forbidden
+{ "message": "Anda tidak memiliki akses untuk melihat data ini." }
+
+// 422 Unprocessable Entity (Validasi gagal)
+{
+  "message": "The email field is required.",
+  "errors": {
+    "email": ["The email field is required."],
+    "password": ["The password field is required."]
+  }
+}
+
+// 404 Not Found
+{ "message": "Pengajuan tidak ditemukan." }
+
+// 500 Server Error
+{ "message": "Server Error" }
+```
+**Penanganan di Dio Interceptor:**
+```dart
+// lib/core/network/auth_interceptor.dart
+onError: (error, handler) {
+  if (error.response?.statusCode == 401) {
+    // Token expired: Hapus token, redirect ke Login
+    SecureStorage().deleteToken();
+    Get.offAll(() => LoginScreen());
+  }
+  handler.next(error);
+}
+```
+
+---
+
+### 6.1. Authentication Module
+
+**POST `/api/v1/login`** — Public (Tanpa token)
+- **Header:** `Content-Type: application/json`
 - **Payload (JSON):**
   ```json
   {
@@ -125,11 +400,11 @@ Setiap *request* yang membutuhkan autentikasi harus mengirimkan header:
     "password": "password123"
   }
   ```
-- **Response Sukses (200 OK):** Mengembalikan token Sanctum.
+- **Response 200 OK:**
   ```json
   {
     "data": {
-      "token": "1|xyz123...",
+      "token": "1|xyz123abc...",
       "user": {
         "id": 1,
         "name": "John Doe",
@@ -139,20 +414,27 @@ Setiap *request* yang membutuhkan autentikasi harus mengirimkan header:
     }
   }
   ```
+- **Response 401:** `{ "message": "Email atau password salah." }`
+- **Response 422:** `{ "message": "...", "errors": { ... } }`
 
-**2. GET `/api/v1/user`**
-- **Tujuan:** Mendapatkan metadata profil dan parameter *Geofencing* untuk mengunci tombol absen.
-- **Response Sukses (200 OK):**
+---
+
+**GET `/api/v1/user`** — Profil & Geofencing Data
+- **Tujuan:** Mendapatkan metadata profil + parameter Geofencing untuk mengunci tombol absen.
+- **Response 200 OK:**
   ```json
   {
     "data": {
       "id": 1,
       "name": "John Doe",
+      "email": "user@persija.id",
+      "role": "Staf",
       "karyawan": {
         "nip": "12345",
         "nama_lengkap": "John Doe",
         "jabatan": "Staff IT",
         "departemen": "IT",
+        "foto": "https://domain.com/storage/foto/karyawan.jpg",
         "is_strict_location": true,
         "lokasi_kantor": {
           "nama": "Kantor Pusat",
@@ -164,12 +446,21 @@ Setiap *request* yang membutuhkan autentikasi harus mengirimkan header:
     }
   }
   ```
+  > ⚠️ Jika `is_strict_location: false` atau `lokasi_kantor: null`, abaikan validasi radius.
+
+---
+
+**POST `/api/v1/logout`** — Menghanguskan Token
+- **Payload:** Tidak diperlukan (Token dibaca dari header `Authorization`).
+- **Response 200 OK:** `{ "message": "Successfully logged out" }`
+
+---
 
 ### 6.2. Absensi (Attendance) Module
 
-**1. GET `/api/v1/absensi/today`**
-- **Tujuan:** Mengecek status absen hari ini untuk merubah warna/status tombol di *Dashboard*.
-- **Response Sukses (200 OK):**
+**GET `/api/v1/absensi/today`** — Status Absen Hari Ini
+- **Tujuan:** Menentukan tombol mana yang ditampilkan di Dashboard (Absen Masuk atau Absen Pulang).
+- **Response 200 OK:**
   ```json
   {
     "data": {
@@ -179,16 +470,23 @@ Setiap *request* yang membutuhkan autentikasi harus mengirimkan header:
     }
   }
   ```
+  > Jika belum absen sama sekali: `clock_in: null`, `clock_out: null`, `status: "Belum Absen"`.
 
-**2. POST `/api/v1/absensi/clock-in` & `/api/v1/absensi/clock-out`**
-- **Header Khusus:** `Content-Type: multipart/form-data`
+---
+
+**POST `/api/v1/absensi/clock-in`** — Absen Masuk
+- **Header:** `Content-Type: multipart/form-data`
 - **Payload (Form Data):**
-  - `latitude` (Double/Numeric) - Wajib
-  - `longitude` (Double/Numeric) - Wajib
-  - `photo` (File/Image) - Opsional (Sesuai kebijakan)
-  - `is_dinas_luar` (Boolean/Int `1` atau `0`) - Opsional (Jika dicentang)
-  - `catatan` (String) - Opsional (Wajib jika dinas luar)
-- **Response Sukses (201 Created):**
+
+  | Field          | Tipe          | Wajib    | Keterangan                          |
+  |----------------|---------------|----------|-------------------------------------|
+  | `latitude`     | Numeric       | ✅ Ya    | Koordinat GPS saat ini              |
+  | `longitude`    | Numeric       | ✅ Ya    | Koordinat GPS saat ini              |
+  | `photo`        | File (Image)  | ❌ Tidak | Foto selfie (jpeg/png, max 2MB)     |
+  | `is_dinas_luar`| Integer (0/1) | ❌ Tidak | `1` jika sedang dinas luar          |
+  | `catatan`      | String        | ❌ Tidak | Wajib jika `is_dinas_luar = 1`      |
+
+- **Response 201 Created:**
   ```json
   {
     "message": "Berhasil absen masuk.",
@@ -198,11 +496,37 @@ Setiap *request* yang membutuhkan autentikasi harus mengirimkan header:
     }
   }
   ```
-- **Response Gagal (422 Unprocessable Entity):** (Misal di luar radius atau *fake* GPS jika divalidasi backend).
+- **Response 422:** `{ "message": "Anda sudah melakukan absen masuk hari ini." }`
 
-**3. GET `/api/v1/absensi/history?month=09&year=2026`**
-- **Tujuan:** Mendapatkan riwayat absen bulanan.
-- **Response Sukses (200 OK):**
+---
+
+**POST `/api/v1/absensi/clock-out`** — Absen Pulang
+- **Header:** `Content-Type: multipart/form-data`
+- **Payload (Form Data):**
+
+  | Field       | Tipe          | Wajib | Keterangan                      |
+  |-------------|---------------|-------|---------------------------------|
+  | `latitude`  | Numeric       | ✅ Ya | Koordinat GPS saat ini          |
+  | `longitude` | Numeric       | ✅ Ya | Koordinat GPS saat ini          |
+  | `photo`     | File (Image)  | ❌    | Foto selfie (jpeg/png, max 2MB) |
+
+- **Response 200 OK:**
+  ```json
+  {
+    "message": "Berhasil absen pulang.",
+    "data": {
+      "id": 10,
+      "clock_out": "17:00:00"
+    }
+  }
+  ```
+- **Response 422:** `{ "message": "Anda belum absen masuk hari ini." }`
+
+---
+
+**GET `/api/v1/absensi/history?month=09&year=2026`** — Histori Absensi Bulanan
+- **Query Params:** `month` (01–12), `year` (YYYY). Default ke bulan & tahun berjalan.
+- **Response 200 OK:**
   ```json
   {
     "data": [
@@ -212,16 +536,25 @@ Setiap *request* yang membutuhkan autentikasi harus mengirimkan header:
         "clock_in": "08:00:00",
         "clock_out": "17:00:00",
         "status": "Hadir"
+      },
+      {
+        "id": 11,
+        "date": "2026-09-24",
+        "clock_in": null,
+        "clock_out": null,
+        "status": "Alpa"
       }
     ]
   }
   ```
 
+---
+
 ### 6.3. Cuti (Leave) Module
 
-**1. GET `/api/v1/cuti/jenis`**
-- **Tujuan:** Data untuk mengisi *dropdown* pilihan form cuti.
-- **Response Sukses (200 OK):**
+**GET `/api/v1/cuti/jenis`** — Dropdown Jenis Cuti
+- **Tujuan:** Mengisi dropdown pilihan di form pengajuan cuti.
+- **Response 200 OK:**
   ```json
   {
     "data": [
@@ -230,20 +563,28 @@ Setiap *request* yang membutuhkan autentikasi harus mengirimkan header:
         "nama_cuti": "Cuti Tahunan",
         "kuota_default": 12,
         "wajib_lampiran": false
+      },
+      {
+        "id": 2,
+        "nama_cuti": "Cuti Sakit",
+        "kuota_default": 12,
+        "wajib_lampiran": true
       }
     ]
   }
   ```
+  > Jika `wajib_lampiran: true`, tampilkan area upload surat dokter di form.
 
-**2. GET `/api/v1/cuti/balances`**
-- **Tujuan:** Menampilkan sisa cuti berjalan.
-- **Response Sukses (200 OK):**
+---
+
+**GET `/api/v1/cuti/balances`** — Saldo Cuti Berjalan
+- **Response 200 OK:**
   ```json
   {
     "data": [
       {
         "id": 1,
-        "jenis_cuti_id": 2,
+        "jenis_cuti_id": 1,
         "jenis_cuti": "Cuti Tahunan",
         "saldo_awal": 12,
         "saldo_terpakai": 2,
@@ -253,15 +594,44 @@ Setiap *request* yang membutuhkan autentikasi harus mengirimkan header:
   }
   ```
 
-**3. POST `/api/v1/cuti/request`**
-- **Header Khusus:** `Content-Type: multipart/form-data`
+---
+
+**GET `/api/v1/cuti/requests`** — Histori Pengajuan Cuti
+- **Response 200 OK:**
+  ```json
+  {
+    "data": [
+      {
+        "id": 5,
+        "jenis_cuti": "Cuti Tahunan",
+        "tgl_mulai": "2026-10-01",
+        "tgl_selesai": "2026-10-02",
+        "jumlah_hari": 2,
+        "alasan": "Urusan keluarga",
+        "status": "Pending",
+        "lampiran": null,
+        "created_at": "2026-09-27 08:00:00"
+      }
+    ]
+  }
+  ```
+  > Nilai `status` bisa: `"Pending"` | `"Approved"` | `"Rejected"`
+
+---
+
+**POST `/api/v1/cuti/request`** — Submit Pengajuan Cuti
+- **Header:** `Content-Type: multipart/form-data`
 - **Payload (Form Data):**
-  - `jenis_cuti_id` (Int) - Wajib
-  - `tgl_mulai` (String format `YYYY-MM-DD`) - Wajib
-  - `tgl_selesai` (String format `YYYY-MM-DD`) - Wajib
-  - `keterangan` (String) - Wajib
-  - `attachment` (File PDF/Img) - Opsional (Wajib jika tipe cutinya `wajib_lampiran: true`)
-- **Response Sukses (201 Created):**
+
+  | Field           | Tipe         | Wajib    | Keterangan                                          |
+  |-----------------|--------------|----------|-----------------------------------------------------|
+  | `jenis_cuti_id` | Integer      | ✅ Ya    | ID dari endpoint `/cuti/jenis`                      |
+  | `tgl_mulai`     | String       | ✅ Ya    | Format: `YYYY-MM-DD`                                |
+  | `tgl_selesai`   | String       | ✅ Ya    | Format: `YYYY-MM-DD`. Harus ≥ `tgl_mulai`          |
+  | `keterangan`    | String       | ✅ Ya    | Alasan pengajuan (max 500 karakter)                 |
+  | `attachment`    | File         | ⚠️ Lihat | Wajib jika `wajib_lampiran: true`. Mimes: jpg,png,pdf. Max 2MB |
+
+- **Response 201 Created:**
   ```json
   {
     "message": "Pengajuan cuti berhasil dibuat",
@@ -271,6 +641,54 @@ Setiap *request* yang membutuhkan autentikasi harus mengirimkan header:
     }
   }
   ```
+- **Response 422:** Jika validasi gagal (misal tanggal salah, lampiran kurang).
 
 ---
+
+### 6.4. Approval Module (Khusus Manager/HR)
+
+**GET `/api/v1/cuti/approvals`** — Daftar Pengajuan Menunggu Persetujuan
+- **Akses:** Hanya role `Manajer Departemen`, `HR Manager`, `HR Staff`, `Super Admin`.
+- **Response 200 OK:**
+  ```json
+  {
+    "data": [
+      {
+        "id": 5,
+        "nama_karyawan": "Jane Smith",
+        "nip": "54321",
+        "departemen": "IT",
+        "jenis_cuti": "Cuti Tahunan",
+        "tgl_mulai": "2026-10-01",
+        "tgl_selesai": "2026-10-02",
+        "jumlah_hari": 2,
+        "alasan": "Urusan keluarga",
+        "lampiran": null,
+        "status": "Pending",
+        "created_at": "2026-09-27 08:00:00"
+      }
+    ]
+  }
+  ```
+- **Response 403:** `{ "message": "Anda tidak memiliki akses untuk melihat data ini." }`
+
+---
+
+**POST `/api/v1/cuti/approve/{id}`** — Setujui / Tolak Pengajuan
+- **Payload (JSON):**
+  ```json
+  {
+    "status": "Approved",
+    "catatan": "Disetujui, silakan koordinasi dengan tim."
+  }
+  ```
+  > `status` hanya boleh: `"Approved"` atau `"Rejected"`
+- **Response 200 OK:** `{ "message": "Pengajuan berhasil approved" }`
+- **Response 403:** Jika bukan approver.
+- **Response 404:** Jika ID tidak ditemukan.
+- **Response 422:** `{ "message": "Pengajuan ini sudah diproses." }` (jika sudah bukan Pending)
+
+---
+
 *Document prepared for Mobile Engineering Team (Flutter).*
+*Last updated: 2026-09-27*

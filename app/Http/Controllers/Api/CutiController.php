@@ -140,37 +140,49 @@ class CutiController extends Controller
     }
 
     /**
-     * Get pending approvals (For Managers).
+     * Get pending approvals (For Managers) - filtered by same departemen.
      */
     public function pendingApprovals(Request $request)
     {
-        $karyawan = $request->user()->karyawan;
+        $user = $request->user();
+        $karyawan = $user->karyawan;
+
         if (!$karyawan) {
             return response()->json(['message' => 'Data karyawan tidak ditemukan.'], 403);
         }
 
-        // Asumsi: approver adalah manager departemen (ini bisa disesuaikan dengan rule approval yang dipakai)
-        // Untuk saat ini kita return data dummy kosongan jika bukan approver, 
-        // atau return pengajuan dari departemen yang sama.
-        
-        // This is a placeholder for actual approval logic retrieval
-        $approvals = PengajuanCuti::with(['karyawan', 'jenisCuti'])
-            ->where('status', 'Pending')
-            // ->whereHas('karyawan', function($q) use ($karyawan) {
-            //     $q->where('id_departemen', $karyawan->id_departemen);
-            // })
-            ->get();
+        // Only managers / HR Staff can access approvals
+        if (!$user->hasAnyRole(['Manajer Departemen', 'HR Manager', 'HR Staff', 'Super Admin'])) {
+            return response()->json(['message' => 'Anda tidak memiliki akses untuk melihat data ini.'], 403);
+        }
+
+        $query = PengajuanCuti::with(['karyawan', 'jenisCuti'])
+            ->where('status', 'Pending');
+
+        // Manajer Departemen hanya melihat bawahan di departemennya
+        if ($user->hasRole('Manajer Departemen') && $karyawan->id_departemen) {
+            $query->whereHas('karyawan', function ($q) use ($karyawan) {
+                $q->where('id_departemen', $karyawan->id_departemen);
+            });
+        }
+
+        $approvals = $query->orderBy('created_at', 'asc')->get();
 
         return response()->json([
             'data' => $approvals->map(function ($cuti) {
                 return [
-                    'id' => $cuti->id,
-                    'nama_karyawan' => $cuti->karyawan?->first_name . ' ' . $cuti->karyawan?->last_name,
-                    'jenis_cuti' => $cuti->jenisCuti?->nama_cuti,
-                    'tgl_mulai' => $cuti->tgl_mulai,
-                    'tgl_selesai' => $cuti->tgl_selesai,
-                    'alasan' => $cuti->alasan,
-                    'status' => $cuti->status,
+                    'id'           => $cuti->id,
+                    'nama_karyawan' => trim($cuti->karyawan?->first_name . ' ' . $cuti->karyawan?->last_name),
+                    'nip'          => $cuti->karyawan?->nip,
+                    'departemen'   => $cuti->karyawan?->departemen?->nama_departemen,
+                    'jenis_cuti'   => $cuti->jenisCuti?->nama_cuti,
+                    'tgl_mulai'    => $cuti->tgl_mulai,
+                    'tgl_selesai'  => $cuti->tgl_selesai,
+                    'jumlah_hari'  => $cuti->jumlah_hari,
+                    'alasan'       => $cuti->alasan,
+                    'lampiran'     => $cuti->lampiran_path ? asset('storage/' . $cuti->lampiran_path) : null,
+                    'status'       => $cuti->status,
+                    'created_at'   => $cuti->created_at?->toDateTimeString(),
                 ];
             })
         ], 200);
