@@ -111,20 +111,166 @@ Karena tujuan utama aplikasi native ini adalah **menggagalkan kecurangan**, tera
 
 ## 6. API Structure Reference (V1)
 Semua koneksi ke backend harus menggunakan `https` (Wajib SSL) dengan awalan `/api/v1/...`
-Struktur lengkap *request* dan *response* JSON dapat dilihat pada modul dokumentasi admin di: `Admin Dashboard > System Settings > API Documentation`.
+Setiap *request* yang membutuhkan autentikasi harus mengirimkan header:
+`Authorization: Bearer {token}`
+`Accept: application/json`
 
-**Ringkasan Endpoint:**
-- `POST /api/v1/login` - Mendapatkan Token
-- `POST /api/v1/logout` - Menghanguskan Token
-- `GET /api/v1/user` - Mengambil Profil & Metadata Geofencing
-- `GET /api/v1/absensi/today` - Cek jam masuk/pulang hari ini
-- `POST /api/v1/absensi/clock-in` - Eksekusi absen masuk (Kirim koordinat & foto via Multipart)
-- `POST /api/v1/absensi/clock-out` - Eksekusi absen pulang
-- `GET /api/v1/absensi/history` - Histori absen
-- `GET /api/v1/cuti/jenis` - Dropdown Jenis Cuti
-- `GET /api/v1/cuti/balances` - Saldo cuti berjalan
-- `GET /api/v1/cuti/requests` - Histori pengajuan
-- `POST /api/v1/cuti/request` - Submit pengajuan baru (Multipart)
+### 6.1. Authentication (Login & Profile)
+
+**1. POST `/api/v1/login`**
+- **Payload (JSON):**
+  ```json
+  {
+    "email": "user@persija.id",
+    "password": "password123"
+  }
+  ```
+- **Response Sukses (200 OK):** Mengembalikan token Sanctum.
+  ```json
+  {
+    "data": {
+      "token": "1|xyz123...",
+      "user": {
+        "id": 1,
+        "name": "John Doe",
+        "email": "user@persija.id",
+        "role": "Staf"
+      }
+    }
+  }
+  ```
+
+**2. GET `/api/v1/user`**
+- **Tujuan:** Mendapatkan metadata profil dan parameter *Geofencing* untuk mengunci tombol absen.
+- **Response Sukses (200 OK):**
+  ```json
+  {
+    "data": {
+      "id": 1,
+      "name": "John Doe",
+      "karyawan": {
+        "nip": "12345",
+        "nama_lengkap": "John Doe",
+        "jabatan": "Staff IT",
+        "departemen": "IT",
+        "is_strict_location": true,
+        "lokasi_kantor": {
+          "nama": "Kantor Pusat",
+          "latitude": -6.2088,
+          "longitude": 106.8456,
+          "radius": 50
+        }
+      }
+    }
+  }
+  ```
+
+### 6.2. Absensi (Attendance) Module
+
+**1. GET `/api/v1/absensi/today`**
+- **Tujuan:** Mengecek status absen hari ini untuk merubah warna/status tombol di *Dashboard*.
+- **Response Sukses (200 OK):**
+  ```json
+  {
+    "data": {
+      "clock_in": "08:00:00",
+      "clock_out": null,
+      "status": "Hadir"
+    }
+  }
+  ```
+
+**2. POST `/api/v1/absensi/clock-in` & `/api/v1/absensi/clock-out`**
+- **Header Khusus:** `Content-Type: multipart/form-data`
+- **Payload (Form Data):**
+  - `latitude` (Double/Numeric) - Wajib
+  - `longitude` (Double/Numeric) - Wajib
+  - `photo` (File/Image) - Opsional (Sesuai kebijakan)
+  - `is_dinas_luar` (Boolean/Int `1` atau `0`) - Opsional (Jika dicentang)
+  - `catatan` (String) - Opsional (Wajib jika dinas luar)
+- **Response Sukses (201 Created):**
+  ```json
+  {
+    "message": "Berhasil absen masuk.",
+    "data": {
+      "id": 10,
+      "clock_in": "08:00:00"
+    }
+  }
+  ```
+- **Response Gagal (422 Unprocessable Entity):** (Misal di luar radius atau *fake* GPS jika divalidasi backend).
+
+**3. GET `/api/v1/absensi/history?month=09&year=2026`**
+- **Tujuan:** Mendapatkan riwayat absen bulanan.
+- **Response Sukses (200 OK):**
+  ```json
+  {
+    "data": [
+      {
+        "id": 10,
+        "date": "2026-09-25",
+        "clock_in": "08:00:00",
+        "clock_out": "17:00:00",
+        "status": "Hadir"
+      }
+    ]
+  }
+  ```
+
+### 6.3. Cuti (Leave) Module
+
+**1. GET `/api/v1/cuti/jenis`**
+- **Tujuan:** Data untuk mengisi *dropdown* pilihan form cuti.
+- **Response Sukses (200 OK):**
+  ```json
+  {
+    "data": [
+      {
+        "id": 1,
+        "nama_cuti": "Cuti Tahunan",
+        "kuota_default": 12,
+        "wajib_lampiran": false
+      }
+    ]
+  }
+  ```
+
+**2. GET `/api/v1/cuti/balances`**
+- **Tujuan:** Menampilkan sisa cuti berjalan.
+- **Response Sukses (200 OK):**
+  ```json
+  {
+    "data": [
+      {
+        "id": 1,
+        "jenis_cuti_id": 2,
+        "jenis_cuti": "Cuti Tahunan",
+        "saldo_awal": 12,
+        "saldo_terpakai": 2,
+        "saldo_akhir": 10
+      }
+    ]
+  }
+  ```
+
+**3. POST `/api/v1/cuti/request`**
+- **Header Khusus:** `Content-Type: multipart/form-data`
+- **Payload (Form Data):**
+  - `jenis_cuti_id` (Int) - Wajib
+  - `tgl_mulai` (String format `YYYY-MM-DD`) - Wajib
+  - `tgl_selesai` (String format `YYYY-MM-DD`) - Wajib
+  - `keterangan` (String) - Wajib
+  - `attachment` (File PDF/Img) - Opsional (Wajib jika tipe cutinya `wajib_lampiran: true`)
+- **Response Sukses (201 Created):**
+  ```json
+  {
+    "message": "Pengajuan cuti berhasil dibuat",
+    "data": {
+      "id": 5,
+      "status": "Pending"
+    }
+  }
+  ```
 
 ---
 *Document prepared for Mobile Engineering Team (Flutter).*
