@@ -62,7 +62,7 @@ class AbsensiController extends Controller
         $absensi = \App\Models\Absensi::updateOrCreate(
             ['id_karyawan' => $karyawan->id, 'tanggal' => $today],
             [
-                'waktu_masuk' => date('H:i:s'),
+                'waktu_masuk' => now(),
                 'lat_masuk' => $request->latitude,
                 'lng_masuk' => $request->longitude,
                 'foto_masuk' => $fotoPath,
@@ -114,7 +114,7 @@ class AbsensiController extends Controller
         }
 
         $absensi->update([
-            'waktu_keluar' => date('H:i:s'),
+            'waktu_keluar' => now(),
             'lat_keluar' => $request->latitude,
             'lng_keluar' => $request->longitude,
             'foto_keluar' => $fotoPath
