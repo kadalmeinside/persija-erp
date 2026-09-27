@@ -16,11 +16,11 @@ class KaryawanResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'nip' => $this->nip,
-            'nama_lengkap' => $this->first_name . ' ' . $this->last_name,
+            'nip' => $this->nomor_induk_karyawan,
+            'nama_lengkap' => $this->nama_lengkap,
             'jabatan' => $this->jabatan,
             'departemen' => $this->departemen ? $this->departemen->nama_departemen : null,
-            'foto' => $this->foto_profil ? asset('storage/' . $this->foto_profil) : null,
+            'foto' => $this->foto_url,
             'face_descriptor' => $this->face_descriptor,
             'is_strict_location' => (bool) $this->is_strict_location,
             'lokasi_kantor' => $this->lokasiKantor ? [
