@@ -31,6 +31,8 @@ class AuthController extends Controller
         // Create new token
         $token = $user->createToken('mobile-app')->plainTextToken;
 
+        $user->load('karyawan.lokasiKantor');
+
         return response()->json([
             'data' => [
                 'token' => $token,
