@@ -18,9 +18,10 @@ class KaryawanResource extends JsonResource
             'id' => $this->id,
             'nip' => $this->nip,
             'nama_lengkap' => $this->first_name . ' ' . $this->last_name,
-            'jabatan' => $this->jabatan?->nama_jabatan, // Assuming relation exists
-            'departemen' => $this->departemen?->nama_departemen, // Assuming relation exists
+            'jabatan' => $this->jabatan ? $this->jabatan->nama_jabatan : null,
+            'departemen' => $this->departemen ? $this->departemen->nama_departemen : null,
             'foto' => $this->foto_profil ? asset('storage/' . $this->foto_profil) : null,
+            'face_descriptor' => $this->face_descriptor,
             'is_strict_location' => (bool) $this->is_strict_location,
             'lokasi_kantor' => $this->lokasiKantor ? [
                 'nama' => $this->lokasiKantor->nama_kantor,
