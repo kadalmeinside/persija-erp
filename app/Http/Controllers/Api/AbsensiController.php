@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Services\AbsensiService;
 
 class AbsensiController extends Controller
 {
@@ -33,7 +34,7 @@ class AbsensiController extends Controller
     /**
      * Handle Clock In from Mobile App.
      */
-    public function clockIn(Request $request)
+    public function clockIn(Request $request, AbsensiService $service)
     {
         $request->validate([
             'latitude' => 'required|numeric',
@@ -44,40 +45,26 @@ class AbsensiController extends Controller
         ]);
 
         $karyawan = $request->user()->karyawan;
-        $today = date('Y-m-d');
+        $isDinasLuar = filter_var($request->input('is_dinas_luar', false), FILTER_VALIDATE_BOOLEAN);
 
-        $exists = \App\Models\Absensi::where('id_karyawan', $karyawan->id)
-            ->where('tanggal', $today)
-            ->first();
-
-        if ($exists && $exists->waktu_masuk) {
-            return response()->json(['message' => 'Anda sudah melakukan absen masuk hari ini.'], 422);
-        }
-
-        $fotoPath = null;
-        if ($request->hasFile('photo')) {
-            $fotoPath = $request->file('photo')->store('absensi/' . date('Y/m'), 'public');
-        }
-
-        $absensi = \App\Models\Absensi::updateOrCreate(
-            ['id_karyawan' => $karyawan->id, 'tanggal' => $today],
-            [
-                'waktu_masuk' => now(),
-                'lat_masuk' => $request->latitude,
-                'lng_masuk' => $request->longitude,
-                'foto_masuk' => $fotoPath,
-                'status_kehadiran' => 'Hadir',
-                'is_dinas_luar' => $request->is_dinas_luar ?? false,
-                'catatan' => $request->catatan,
-                'id_lokasi_kantor' => $karyawan->id_lokasi_kantor,
-            ]
+        $result = $service->processClockIn(
+            $karyawan,
+            $request->latitude,
+            $request->longitude,
+            $request->file('photo'),
+            $isDinasLuar,
+            $request->catatan
         );
 
+        if (!$result['success']) {
+            return response()->json(['message' => $result['message']], 422);
+        }
+
         return response()->json([
-            'message' => 'Berhasil absen masuk.',
+            'message' => $result['message'],
             'data' => [
-                'id' => $absensi->id,
-                'clock_in' => $absensi->waktu_masuk
+                'id' => $result['data']->id,
+                'clock_in' => $result['data']->waktu_masuk
             ]
         ], 201);
     }
@@ -85,7 +72,7 @@ class AbsensiController extends Controller
     /**
      * Handle Clock Out from Mobile App.
      */
-    public function clockOut(Request $request)
+    public function clockOut(Request $request, AbsensiService $service)
     {
         $request->validate([
             'latitude' => 'required|numeric',
@@ -94,37 +81,23 @@ class AbsensiController extends Controller
         ]);
 
         $karyawan = $request->user()->karyawan;
-        $today = date('Y-m-d');
 
-        $absensi = \App\Models\Absensi::where('id_karyawan', $karyawan->id)
-            ->where('tanggal', $today)
-            ->first();
+        $result = $service->processClockOut(
+            $karyawan,
+            $request->latitude,
+            $request->longitude,
+            $request->file('photo')
+        );
 
-        if (!$absensi || !$absensi->waktu_masuk) {
-            return response()->json(['message' => 'Anda belum absen masuk hari ini.'], 422);
+        if (!$result['success']) {
+            return response()->json(['message' => $result['message']], 422);
         }
-
-        if ($absensi->waktu_keluar) {
-            return response()->json(['message' => 'Anda sudah melakukan absen pulang hari ini.'], 422);
-        }
-
-        $fotoPath = null;
-        if ($request->hasFile('photo')) {
-            $fotoPath = $request->file('photo')->store('absensi/' . date('Y/m'), 'public');
-        }
-
-        $absensi->update([
-            'waktu_keluar' => now(),
-            'lat_keluar' => $request->latitude,
-            'lng_keluar' => $request->longitude,
-            'foto_keluar' => $fotoPath
-        ]);
 
         return response()->json([
-            'message' => 'Berhasil absen pulang.',
+            'message' => $result['message'],
             'data' => [
-                'id' => $absensi->id,
-                'clock_out' => $absensi->waktu_keluar
+                'id' => $result['data']->id,
+                'clock_out' => $result['data']->waktu_keluar
             ]
         ], 200);
     }
