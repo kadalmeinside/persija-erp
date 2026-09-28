@@ -120,10 +120,8 @@ class AbsensiController extends Controller
             ->whereMonth('tanggal', $month)
             ->whereYear('tanggal', $year)
             ->orderBy('tanggal', 'desc')
-            ->get();
+            ->paginate(10);
 
-        return response()->json([
-            'data' => \App\Http\Resources\AbsensiResource::collection($history)
-        ], 200);
+        return \App\Http\Resources\AbsensiResource::collection($history);
     }
 }
