@@ -133,6 +133,13 @@ class CutiController extends Controller
             'status' => 'Pending'
         ]);
 
+        // Generate Approval Workflow
+        try {
+            app(\App\Services\ApprovalService::class)->initApproval($pengajuan);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Gagal memproses workflow cuti: ' . $e->getMessage());
+        }
+
         return response()->json([
             'message' => 'Pengajuan cuti berhasil dibuat',
             'data' => [
@@ -147,35 +154,27 @@ class CutiController extends Controller
      */
     public function pendingApprovals(Request $request)
     {
-        $user = $request->user();
-        $karyawan = $user->karyawan;
+        $karyawan = $request->user()->karyawan;
 
         if (!$karyawan) {
             return response()->json(['message' => 'Data karyawan tidak ditemukan.'], 403);
         }
 
-        // Only managers / HR Staff can access approvals
-        if (!$user->hasAnyRole(['Manajer Departemen', 'HR Manager', 'HR Staff', 'Super Admin'])) {
-            return response()->json(['message' => 'Anda tidak memiliki akses untuk melihat data ini.'], 403);
-        }
-
-        $query = PengajuanCuti::with(['karyawan', 'jenisCuti'])
-            ->where('status', 'Pending');
-
-        // Manajer Departemen hanya melihat bawahan di departemennya
-        if ($user->hasRole('Manajer Departemen') && $karyawan->id_departemen) {
-            $query->whereHas('karyawan', function ($q) use ($karyawan) {
-                $q->where('id_departemen', $karyawan->id_departemen);
-            });
-        }
-
-        $approvals = $query->orderBy('created_at', 'asc')->get();
+        // Ambil data dari ApprovalProcess yang menunggu tindakan (target) karyawan ini
+        $approvals = \App\Models\ApprovalProcess::with(['cuti.karyawan.departemen', 'cuti.jenisCuti'])
+            ->where('id_karyawan_target', $karyawan->id)
+            ->where('status', 'Pending')
+            ->whereNotNull('id_cuti')
+            ->orderBy('created_at', 'asc')
+            ->get();
 
         return response()->json([
-            'data' => $approvals->map(function ($cuti) {
+            'data' => $approvals->map(function ($process) {
+                $cuti = $process->cuti;
                 return [
-                    'id'           => $cuti->id,
-                    'nama_karyawan' => trim($cuti->karyawan?->first_name . ' ' . $cuti->karyawan?->last_name),
+                    'id_approval'  => $process->id,
+                    'id_pengajuan' => $cuti->id,
+                    'nama_karyawan'=> trim($cuti->karyawan?->first_name . ' ' . $cuti->karyawan?->last_name),
                     'nip'          => $cuti->karyawan?->nip,
                     'departemen'   => $cuti->karyawan?->departemen?->nama_departemen,
                     'jenis_cuti'   => $cuti->jenisCuti?->nama_cuti,
@@ -184,8 +183,10 @@ class CutiController extends Controller
                     'jumlah_hari'  => $cuti->jumlah_hari,
                     'alasan'       => $cuti->alasan,
                     'lampiran'     => $cuti->lampiran_path ? asset('storage/' . $cuti->lampiran_path) : null,
-                    'status'       => $cuti->status,
+                    'status'       => $process->status,
                     'created_at'   => $cuti->created_at?->toDateTimeString(),
+                    'level_order'  => $process->level_order,
+                    'label_aksi'   => $process->label_aksi,
                 ];
             })
         ], 200);
@@ -206,33 +207,21 @@ class CutiController extends Controller
             return response()->json(['message' => 'Pengajuan tidak ditemukan.'], 404);
         }
 
-        if ($pengajuan->status !== 'Pending') {
-            return response()->json(['message' => 'Pengajuan ini sudah diproses.'], 422);
-        }
+        $karyawanIdAction = $request->user()->karyawan?->id;
+        $approvalService = app(\App\Services\ApprovalService::class);
 
-        $pengajuan->update([
-            'status' => $request->status,
-            'catatan_approval' => $request->catatan,
-            'id_approver' => $request->user()->karyawan?->id
-        ]);
-
-        // Jika approved, update saldo cuti
-        if ($request->status === 'Approved') {
-            $saldo = SaldoCuti::where('id_karyawan', $pengajuan->id_karyawan)
-                ->where('id_jenis_cuti', $pengajuan->id_jenis_cuti)
-                ->where('tahun_periode', date('Y', strtotime($pengajuan->tgl_mulai)))
-                ->first();
-
-            if ($saldo) {
-                $saldo->update([
-                    'saldo_terpakai' => $saldo->saldo_terpakai + $pengajuan->jumlah_hari,
-                    'saldo_akhir' => $saldo->saldo_akhir - $pengajuan->jumlah_hari,
-                ]);
+        try {
+            if ($request->status === 'Approved') {
+                $approvalService->approve($pengajuan, $karyawanIdAction, $request->catatan);
+            } else {
+                $approvalService->reject($pengajuan, $karyawanIdAction, $request->catatan);
             }
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
         }
 
         return response()->json([
-            'message' => 'Pengajuan berhasil ' . strtolower($request->status)
+            'message' => 'Persetujuan berhasil diproses.'
         ], 200);
     }
 }
