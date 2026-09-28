@@ -64,4 +64,33 @@ class AuthController extends Controller
             'message' => 'Successfully logged out'
         ], 200);
     }
+
+    /**
+     * Update user password.
+     */
+    public function updatePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required',
+            'new_password' => 'required|min:8|confirmed', // Must match new_password_confirmation
+        ]);
+
+        $user = $request->user();
+
+        // Cek apakah password lama sesuai
+        if (!\Illuminate\Support\Facades\Hash::check($request->current_password, $user->password)) {
+            return response()->json([
+                'message' => 'Password lama yang Anda masukkan salah.'
+            ], 422);
+        }
+
+        // Update password baru
+        $user->update([
+            'password' => \Illuminate\Support\Facades\Hash::make($request->new_password)
+        ]);
+
+        return response()->json([
+            'message' => 'Password berhasil diperbarui.'
+        ], 200);
+    }
 }
