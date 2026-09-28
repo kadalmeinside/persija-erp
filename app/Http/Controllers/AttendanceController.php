@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
 use App\Services\AbsensiService;
+
+class AttendanceController extends Controller
 {
     /**
      * Tampilkan halaman Clock In / Clock Out untuk karyawan
