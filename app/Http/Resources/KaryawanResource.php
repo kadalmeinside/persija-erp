@@ -20,6 +20,8 @@ class KaryawanResource extends JsonResource
             'nama_lengkap' => $this->nama_lengkap,
             'jabatan' => $this->jabatan,
             'departemen' => $this->departemen ? $this->departemen->nama_departemen : null,
+            'tgl_bergabung' => $this->tgl_bergabung,
+            'status' => $this->status_karyawan,
             'foto' => $this->foto_url,
             'face_descriptor' => $this->face_descriptor,
             'is_strict_location' => (bool) $this->is_strict_location,
