@@ -25,6 +25,9 @@ class CutiController extends Controller
                     'nama_cuti' => $j->nama_cuti,
                     'kuota_default' => $j->kuota_default,
                     'wajib_lampiran' => (bool) $j->wajib_lampiran,
+                    'bisa_mundur' => (bool) $j->bisa_mundur,
+                    'khusus_perempuan' => (bool) $j->khusus_perempuan,
+                    'is_unlimited' => (bool) $j->is_unlimited,
                 ];
             })
         ], 200);
