@@ -107,6 +107,11 @@ class AbsensiController extends Controller
      */
     public function history(Request $request)
     {
+        $request->validate([
+            'month' => 'nullable|integer|between:1,12',
+            'year' => 'nullable|integer|digits:4',
+        ]);
+
         $karyawan = $request->user()->karyawan;
         $month = $request->query('month', date('m'));
         $year = $request->query('year', date('Y'));
@@ -118,15 +123,7 @@ class AbsensiController extends Controller
             ->get();
 
         return response()->json([
-            'data' => $history->map(function ($item) {
-                return [
-                    'id' => $item->id,
-                    'date' => $item->tanggal,
-                    'clock_in' => $item->waktu_masuk,
-                    'clock_out' => $item->waktu_keluar,
-                    'status' => $item->status_kehadiran
-                ];
-            })
+            'data' => \App\Http\Resources\AbsensiResource::collection($history)
         ], 200);
     }
 }
