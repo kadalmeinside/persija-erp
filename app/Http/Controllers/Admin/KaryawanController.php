@@ -201,7 +201,7 @@ class KaryawanController extends Controller
             );
         }
 
-        if ($karyawan->user) {
+        if ($karyawan->user && $request->has('nama_lengkap')) {
             $karyawan->user->update(['name' => $request->nama_lengkap]);
         }
 
