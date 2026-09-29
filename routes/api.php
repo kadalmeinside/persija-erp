@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AbsensiController;
 use App\Http\Controllers\Api\CutiController;
+use App\Http\Controllers\Api\DashboardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -24,6 +25,9 @@ Route::prefix('v1')->group(function () {
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/user', [AuthController::class, 'profile']);
         Route::post('/update-password', [AuthController::class, 'updatePassword']);
+
+        // Dashboard (BFF Pattern)
+        Route::get('/dashboard/home', [DashboardController::class, 'home']);
 
         // Absensi (Attendance) Module
         Route::prefix('absensi')->group(function () {
