@@ -102,26 +102,9 @@ class ImportKaryawan extends Command
                     continue;
                 }
 
-                // 7. Buat User Login
-                $cleanNik = preg_replace('/[^a-zA-Z0-9]/', '', $nik);
-                $email = strtolower($cleanNik) . '@persijadevelopment.id';
-                $user = User::firstOrCreate(
-                    ['email' => $email],
-                    [
-                        'name' => $nama,
-                        'password' => Hash::make('persija123'),
-                        'pin' => Hash::make('123456'), // PIN Default
-                    ]
-                );
-
-                // Assign Role 'User'
-                if (method_exists($user, 'hasRole') && !$user->hasRole('User')) {
-                    $user->assignRole('User');
-                }
-
-                // 8. Buat Karyawan
+                // 7. Buat Karyawan (User login akan dibuat oleh HR secara manual nanti)
                 $karyawan = Karyawan::create([
-                    'user_id' => $user->id,
+                    'user_id' => null,
                     'id_departemen' => $idDepartemen,
                     'nomor_induk_karyawan' => $nik,
                     'nama_lengkap' => $nama,
