@@ -52,7 +52,8 @@ class ImportKaryawan extends Command
                 }
                 
                 $noKontrak = $row[1] ?? '';
-                $nama = trim($row[2]);
+                $namaRaw = trim($row[2]);
+                $nama = ucwords(strtolower($namaRaw)); // Merubah "ARIS" menjadi "Aris"
                 $nik = trim($row[3]);
                 $jenisKelaminText = trim($row[4]);
                 $ttl = trim($row[5]);
