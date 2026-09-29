@@ -69,9 +69,9 @@ class GenerateMissingUsers extends Command
                     ]
                 );
 
-                // Berikan Role 'User'
-                if (method_exists($user, 'hasRole') && !$user->hasRole('User')) {
-                    $user->assignRole('User');
+                // Berikan Role 'Karyawan'
+                if (method_exists($user, 'hasRole') && !$user->hasRole('Karyawan')) {
+                    $user->assignRole('Karyawan');
                 }
 
                 // Update Karyawan dengan user_id

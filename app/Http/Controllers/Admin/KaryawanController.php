@@ -230,7 +230,7 @@ class KaryawanController extends Controller
                 'pin' => Hash::make('123456'), // PIN Default
             ]);
             
-            $user->assignRole('User');
+            $user->assignRole('Karyawan');
             $karyawan->update(['user_id' => $user->id]);
         });
         
