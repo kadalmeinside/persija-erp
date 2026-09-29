@@ -208,6 +208,35 @@ class KaryawanController extends Controller
         return redirect()->back()->with('success', 'Data Karyawan berhasil diperbarui.');
     }
 
+    public function generateUser(Karyawan $karyawan)
+    {
+        if ($karyawan->user_id) {
+            return redirect()->back()->with('error', 'Karyawan ini sudah memiliki akun login.');
+        }
+
+        $namaParts = explode(' ', trim($karyawan->nama_lengkap));
+        $namaDepan = strtolower(preg_replace('/[^a-zA-Z]/', '', $namaParts[0]));
+        if (empty($namaDepan)) {
+            $namaDepan = 'user';
+        }
+
+        $email = "{$namaDepan}.{$karyawan->id}@persijadevelopment.id";
+        
+        DB::transaction(function () use ($karyawan, $email) {
+            $user = User::create([
+                'name' => $karyawan->nama_lengkap,
+                'email' => $email,
+                'password' => Hash::make('persija123'),
+                'pin' => Hash::make('123456'), // PIN Default
+            ]);
+            
+            $user->assignRole('User');
+            $karyawan->update(['user_id' => $user->id]);
+        });
+        
+        return redirect()->back()->with('success', "Akun login berhasil dibuat (Email: {$email}, Password: persija123).");
+    }
+
     public function destroy(Karyawan $karyawan)
     {
         try {

@@ -5,7 +5,8 @@ import { ref } from 'vue';
 import { 
     UserCircleIcon, BriefcaseIcon, MapPinIcon, CalendarIcon, 
     BanknotesIcon, PencilSquareIcon, ArrowLeftIcon, ChevronRightIcon,
-    IdentificationIcon, CheckBadgeIcon, AtSymbolIcon, BuildingOfficeIcon, CameraIcon
+    IdentificationIcon, CheckBadgeIcon, AtSymbolIcon, BuildingOfficeIcon, CameraIcon,
+    UserPlusIcon, CheckCircleIcon
 } from '@heroicons/vue/24/outline';
 import CareerHistoryModal from '@/Components/CareerHistoryModal.vue';
 import EditProfileModal from '@/Components/Employee/EditProfileModal.vue';
@@ -182,6 +183,22 @@ const handlePhotoUpload = (event) => {
                                             <p class="text-xs text-gray-400 uppercase tracking-wider">Lokasi</p>
                                             <p class="font-medium text-gray-900 dark:text-white line-clamp-2">{{ karyawan.alamat || '-' }}</p>
                                         </div>
+                                    </div>
+                                </div>
+
+                                <!-- User Account Info -->
+                                <div class="mt-6 pt-6 border-t border-gray-100 dark:border-gray-700/50">
+                                    <div v-if="karyawan.user">
+                                        <p class="text-xs text-gray-400 uppercase tracking-wider mb-2">Akun Login</p>
+                                        <div class="flex items-center text-sm font-medium text-green-600 dark:text-green-400">
+                                            <CheckCircleIcon class="w-5 h-5 mr-1.5" /> Terhubung ({{ karyawan.user.email }})
+                                        </div>
+                                    </div>
+                                    <div v-else class="text-center">
+                                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">Karyawan belum memiliki akun login ESS.</p>
+                                        <Link :href="route('admin.karyawan.generate-user', karyawan.id)" method="post" as="button" preserve-scroll class="w-full justify-center inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold text-sm transition-colors shadow-sm shadow-indigo-200 dark:shadow-none">
+                                            <UserPlusIcon class="w-4 h-4 mr-2" /> Buat Akun Login
+                                        </Link>
                                     </div>
                                 </div>
                             </div>

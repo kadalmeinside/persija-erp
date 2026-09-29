@@ -15,6 +15,7 @@ Route::middleware(['role:Super Admin|HR Manager|HR Staff'])->group(function () {
 
     // Karyawan Management
     Route::resource('karyawan', KaryawanController::class)->withTrashed(['show', 'edit', 'update', 'destroy']);
+    Route::post('karyawan/{karyawan}/generate-user', [KaryawanController::class, 'generateUser'])->name('karyawan.generate-user')->withTrashed();
     Route::resource('lokasi-kantor', \App\Http\Controllers\Admin\LokasiKantorController::class)->except(['create', 'show', 'edit']);
     Route::post('karyawan/{karyawan}/riwayat-karir', [RiwayatKarirController::class, 'store'])->name('karyawan.riwayat-karir.store')->withTrashed();
     Route::delete('riwayat-karir/{riwayatKarir}', [RiwayatKarirController::class, 'destroy'])->name('karyawan.riwayat-karir.destroy');
