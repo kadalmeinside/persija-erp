@@ -55,9 +55,9 @@ class DashboardController extends Controller
                     'foto_url' => $karyawan->foto_url,
                 ],
                 'attendance_today' => [
-                    'status' => $absensiHariIni ? $absensiHariIni->status : 'Belum Absen',
-                    'jam_masuk' => $absensiHariIni?->jam_masuk,
-                    'jam_keluar' => $absensiHariIni?->jam_keluar,
+                    'status' => $absensiHariIni ? $absensiHariIni->status_kehadiran : 'Belum Absen',
+                    'jam_masuk' => $absensiHariIni?->waktu_masuk,
+                    'jam_keluar' => $absensiHariIni?->waktu_keluar,
                 ],
                 'leave_balance' => [
                     'annual_leave_remaining' => $saldoCutiTahunan ? $saldoCutiTahunan->saldo_akhir : 0,
