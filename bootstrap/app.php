@@ -46,11 +46,17 @@ return Application::configure(basePath: dirname(__DIR__))
                 // Arahkan ke halaman login admin
                 return route('admin.login');
             }
-            // Jika tidak, arahkan ke halaman login biasa
-            return route('login');
+            // Jika tidak, jadikan login admin sebagai fallback
+            return route('admin.login');
         });
     })
 
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        $exceptions->shouldRenderJsonWhen(function (Request $request, \Throwable $e) {
+            if ($request->is('api/*')) {
+                return true;
+            }
+            
+            return $request->expectsJson();
+        });
     })->create();
