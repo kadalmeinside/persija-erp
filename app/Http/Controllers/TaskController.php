@@ -32,6 +32,7 @@ class TaskController extends Controller
 
         // Base Query
         $query = Task::with(['creator', 'assignee', 'departemen', 'programKerja'])
+            ->activeKanban()
             ->orderBy('order_index', 'asc')
             ->orderBy('created_at', 'desc');
 
@@ -160,5 +161,14 @@ class TaskController extends Controller
     {
         $task->delete();
         return redirect()->back()->with('success', 'Tugas berhasil dihapus.');
+    }
+
+    /**
+     * Archive the specified task so it no longer shows on the active Kanban board.
+     */
+    public function archive(Task $task)
+    {
+        $task->update(['archived_at' => Carbon::now()]);
+        return redirect()->back()->with('success', 'Tugas berhasil diarsipkan.');
     }
 }

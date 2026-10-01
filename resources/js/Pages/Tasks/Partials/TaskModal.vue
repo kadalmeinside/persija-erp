@@ -1,7 +1,7 @@
 <script setup>
 import { watch } from 'vue';
 import { useForm } from '@inertiajs/vue3';
-import { XMarkIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import { XMarkIcon, TrashIcon, ArchiveBoxIcon } from '@heroicons/vue/24/outline';
 import Modal from '@/Components/Modal.vue';
 
 const props = defineProps({
@@ -59,8 +59,17 @@ const submit = () => {
 };
 
 const destroy = () => {
-    if (confirm('Apakah Anda yakin ingin menghapus tugas ini?')) {
+    if (confirm('Apakah Anda yakin ingin menghapus tugas ini secara permanen?')) {
         form.delete(route('admin.tasks.destroy', props.task.id), {
+            preserveScroll: true,
+            onSuccess: () => emit('close')
+        });
+    }
+};
+
+const archive = () => {
+    if (confirm('Arsipkan tugas ini? Tugas akan dihilangkan dari papan Kanban.')) {
+        form.post(route('admin.tasks.archive', props.task.id), {
             preserveScroll: true,
             onSuccess: () => emit('close')
         });
@@ -154,9 +163,12 @@ const destroy = () => {
 
                 <!-- Footer Actions -->
                 <div class="flex items-center justify-between pt-4 mt-2 border-t border-gray-100">
-                    <div>
+                    <div class="flex items-center gap-4">
+                        <button type="button" v-if="task && task.status === 'Done'" @click="archive" class="flex items-center text-amber-600 hover:text-amber-800 text-sm font-medium transition-colors">
+                            <ArchiveBoxIcon class="w-4 h-4 mr-1" /> Arsipkan
+                        </button>
                         <button type="button" v-if="task" @click="destroy" class="flex items-center text-red-600 hover:text-red-800 text-sm font-medium transition-colors">
-                            <TrashIcon class="w-4 h-4 mr-1" /> Hapus Tugas
+                            <TrashIcon class="w-4 h-4 mr-1" /> Hapus
                         </button>
                     </div>
                     <div class="flex gap-3">

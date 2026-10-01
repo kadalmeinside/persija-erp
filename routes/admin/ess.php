@@ -109,6 +109,7 @@ Route::middleware(["role:{$essRoles}"])->group(function () {
     // Task Management (Manajemen Tugas)
     // ----------------------------------------------------------------
     Route::post('tasks/{task}/status', [\App\Http\Controllers\TaskController::class, 'updateStatus'])->name('tasks.updateStatus');
+    Route::post('tasks/{task}/archive', [\App\Http\Controllers\TaskController::class, 'archive'])->name('tasks.archive');
     Route::resource('tasks', \App\Http\Controllers\TaskController::class)->except(['create', 'show', 'edit']);
     // ----------------------------------------------------------------
     // Absensi (Attendance)
