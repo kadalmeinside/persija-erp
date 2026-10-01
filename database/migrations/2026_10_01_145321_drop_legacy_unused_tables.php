@@ -11,10 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Disable FK checks if necessary, or simply drop in correct order (child first)
+        Schema::dropIfExists('tbl_penerimaan_bayar');
         Schema::dropIfExists('tbl_faktur_jual_detail');
         Schema::dropIfExists('tbl_faktur_jual_header');
         Schema::dropIfExists('tbl_faktur_vendor');
-        Schema::dropIfExists('tbl_penerimaan_bayar');
         Schema::dropIfExists('tbl_customer');
         Schema::dropIfExists('tbl_aset_depresiasi_log');
         Schema::dropIfExists('tbl_aset_master');
