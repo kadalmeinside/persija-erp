@@ -213,7 +213,6 @@ class TaskController extends Controller
             'filters' => $request->only(['search'])
         ]);
     }
-}
 
     /**
      * Archive the specified task so it no longer shows on the active Kanban board.
