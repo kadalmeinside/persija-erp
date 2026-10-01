@@ -212,7 +212,21 @@ Menggunakan `DB::transaction` + `lockForUpdate()` untuk mencegah nomor duplikat 
 
 ---
 
-## 11. AbsensiService
+## 11. PeriodClosingService
+
+**File:** `app/Services/PeriodClosingService.php`
+
+**Tanggung jawab:** Mengelola penutupan dan pembukaan kembali periode akuntansi bulanan. Ini adalah versi baru yang menggantikan logika lama di `AccountingPeriodController`.
+
+| Method | Deskripsi |
+|---|---|
+| `checkClosed($dateString, $moduleName)` | Melempar Exception jika tanggal transaksi berada di bulan yang sudah ditutup |
+| `closePeriod($bulan, $tahun, $catatan)` | Menutup periode, memblokir transaksi baru (jurnal, pembayaran, dsb) |
+| `reopenPeriod($bulan, $tahun, $catatan)` | Membuka kembali periode yang sudah ditutup, menyertakan catatan reopen |
+
+---
+
+## 12. AbsensiService
 
 **File:** `app/Services/AbsensiService.php`
 

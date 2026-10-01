@@ -231,3 +231,27 @@ Dikelola via `FinanceSettingController` → halaman `/admin/finance-settings`.
 | `2026_04_08_050722_add_skipped_to_approval_process_status.php` | Menambah status `Skipped` dan `Revision` ke enum status; mengaktifkan Auto-Skip |
 | `2026_04_08_065901_add_id_pinjaman_to_tbl_approval_process.php` | Menambah `id_pinjaman` agar Pinjaman masuk ke central approval |
 | `2026_02_11_032724_add_uuid_to_approval_tables.php` | Menambah kolom `uuid` ke `tbl_approval_process` untuk verifikasi digital |
+
+---
+
+## 7. Model Tambahan (Under Development / Legacy)
+
+Model-model berikut terdeteksi di dalam folder `app/Models` namun tidak (atau belum) digunakan secara aktif/penuh di sistem UI saat ini:
+
+| Model / Modul | Deskripsi | Status / Keterangan |
+|---|---|---|
+| **Inventory & Purchasing** | | |
+| `GrnHeader`, `GrnDetail` | Goods Receipt Note | Struktur dasar pengadaan barang |
+| `PoHeader`, `PoDetail` | Purchase Order | Sistem order barang ke vendor |
+| `Gudang`, `Item` | Master Gudang dan Item | Data barang dan gudang |
+| `InventarisStok`, `InventarisKeluar` | Stok inventaris | Pencatatan mutasi barang |
+| **Sales / Invoicing Alternatif** | | |
+| `FakturJualHeader`, `FakturJualDetail` | Faktur Penjualan | Kemungkinan rancangan awal sebelum Invoice |
+| `FakturVendor` | Tagihan vendor | Modul hutang dagang |
+| **Lain-lain** | | |
+| `GajiKomponen` | Komponen Gaji | Setup rinci payroll (gaji pokok, tunjangan, dsb) |
+| `RiwayatKarir` | Histori jabatan karyawan | Track perubahan jabatan (tersedia Controller, UI terbatas) |
+| `Penyusutan` | Depresiasi Aset | Mungkin legacy dari `AsetDepresiasiLog` |
+| `AccountingPeriod` | Periode Akuntansi | **Deprecated**, diganti oleh `PeriodeClosing` |
+| `Task` | Task Management | Fitur Internal Tasks (To-Do List ERP) |
+

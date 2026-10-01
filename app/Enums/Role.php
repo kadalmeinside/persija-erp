@@ -25,14 +25,11 @@ enum Role: string
     case DIREKTUR            = 'Direktur';
     case FINANCE             = 'Finance';
     case HR_STAFF            = 'HR Staff';
-    case IT_SUPPORT          = 'IT Support';
-
-    // =========================================================================
-    // Planned / Future Roles (Not yet in Database — reserved for expansion)
-    // =========================================================================
-
-    case FINANCE_MANAGER     = 'Finance Manager';
     case HR_MANAGER          = 'HR Manager';
+    case IT_SUPPORT          = 'IT Support';
+    case FINANCE_MANAGER     = 'Finance Manager';
+    case FINANCE_STAFF       = 'Finance Staff'; // Alias role, ada di database prod
+    case KARYAWAN            = 'Karyawan';       // Mobile App ESS only (absensi, cuti, profil)
 
     // =========================================================================
     // Helper: Role Groups (kembalikan array of string value)

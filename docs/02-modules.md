@@ -272,8 +272,87 @@ if (!$user->hasRole(Role::itRoles())) { abort(403); }
 ```
 PJH-ERP
 ├── [SYSTEM]  Users, Roles, Permissions, Settings, Logs
-├── [HR]      Karyawan, JenisCuti, Payroll, Pinjaman, CompanyEvents
-├── [FINANCE] Dept, Vendors, Budget, GL, Kas/Bank, Tax, Invoice, Aset
-└── [ESS]     Calendar, HariLibur, Cuti, Pengajuan, Settlement,
-              ApprovalRules, Tickets
+├── [HR]      Karyawan (+ generateUser, Import CSV), JenisCuti, Absensi (Web), Payroll, Pinjaman, CompanyEvents
+├── [FINANCE] Dept, Vendors, Budget, GL, Kas/Bank, Tax, Invoice, InternalTransfer, PettyCash, Aset, PeriodClosing
+└── [ESS]     Calendar, HariLibur, Cuti, Pengajuan (+ Settlement),
+              ApprovalRules, Tickets, Tasks, Absensi (Web Clock),
+              [MOBILE API] → Dashboard/Home, Absensi, Cuti
 ```
+
+---
+
+## 6. Modul Tambahan yang Aktif di Sistem
+
+Modul-modul berikut sudah ada di codebase tapi belum sepenuhnya terdokumentasi karena statusnya yang masih berkembang:
+
+### 6.1 Task Management (`routes/admin/ess.php`)
+
+| Controller | Method | Deskripsi |
+|---|---|---|
+| `TaskController` | `index, store, update, destroy, updateStatus` | Manajemen tugas internal |
+
+### 6.2 Web Absensi (`routes/admin/ess.php`)
+
+Selain Mobile API, ada modul absensi berbasis web untuk HR dan karyawan yang login via browser:
+
+| Endpoint | Deskripsi |
+|---|---|
+| `admin.absensi.clock` | Halaman & form clock-in/out via browser |
+| `admin.absensi.register-face` | Daftar wajah (Face ID) karyawan |
+| `admin.absensi.my-attendance` | Riwayat absensi karyawan sendiri |
+| `admin.absensi.rekap` | Rekapitulasi absensi semua karyawan (HR) |
+| `admin.absensi.print` | Cetak rekap absensi |
+
+### 6.3 Internal Transfer (`routes/admin/finance.php`)
+
+Transfer dana antar kas/bank internal perusahaan.
+
+| Endpoint | Deskripsi |
+|---|---|
+| `admin.internal-transfers.index` | Daftar transfer |
+| `admin.internal-transfers.store` | Buat transfer baru |
+| `admin.internal-transfers.approve` | Setujui transfer |
+| `admin.internal-transfers.cancel` | Batalkan transfer |
+
+### 6.4 Period Closing (`routes/admin/finance.php`)
+
+Sistem penutupan periode akuntansi yang **menggantikan** `AccountingPeriod` lama:
+
+| Endpoint | Deskripsi |
+|---|---|
+| `admin.period-closings.index` | Daftar status periode |
+| `admin.period-closings.close` | Tutup periode (tidak bisa transaksi) |
+| `admin.period-closings.reopen` | Buka kembali periode |
+
+> **Note:** `AccountingPeriodController` masih ada di codebase (deprecated) — akan dihapus di iterasi berikutnya.
+
+### 6.5 Petty Cash Report (`routes/admin/finance.php`)
+
+| Endpoint | Deskripsi |
+|---|---|
+| `admin.petty-cash-report.index` | Laporan kas kecil |
+
+### 6.6 Riwayat Karir (`routes/admin/hr.php`)
+
+Melacak histori jabatan dan departemen karyawan.
+
+| Endpoint | Deskripsi |
+|---|---|
+| `admin.karyawan.riwayat-karir.store` | Tambah entri riwayat karir |
+| `admin.karyawan.riwayat-karir.destroy` | Hapus entri riwayat karir |
+
+### 6.7 Modul Planned (Model Tersedia, UI Belum)
+
+Model-model berikut sudah ada di database tapi belum memiliki UI/Controller lengkap:
+
+| Model | Tabel | Keterangan |
+|---|---|---|
+| `GrnHeader`, `GrnDetail` | `tbl_grn_*` | Goods Receipt Note (penerimaan barang) |
+| `PoHeader`, `PoDetail` | `tbl_po_*` | Purchase Order |
+| `Gudang`, `Item` | `tbl_gudang`, `tbl_item` | Master inventaris |
+| `InventarisStok`, `InventarisKeluar` | `tbl_inventaris_*` | Manajemen stok keluar/masuk |
+| `FakturJualHeader`, `FakturJualDetail` | `tbl_faktur_jual_*` | Faktur penjualan (terpisah dari Invoice) |
+| `FakturVendor` | `tbl_faktur_vendor` | Faktur dari vendor |
+| `GajiKomponen` | — | Komponen gaji karyawan |
+| `Penyusutan` | — | Penyusutan aset (paralel dengan AsetDepresiasiLog) |
+

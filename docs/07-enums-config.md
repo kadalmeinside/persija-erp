@@ -41,6 +41,7 @@ Seluruh role yang digunakan di sistem.
 
 ```php
 enum Role: string {
+    // Active Roles
     case SUPER_ADMIN        = 'Super Admin';
     case MANAJER_DEPARTEMEN = 'Manajer Departemen';
     case STAF_FINANCE       = 'Staf Finance';
@@ -48,9 +49,11 @@ enum Role: string {
     case DIREKTUR           = 'Direktur';
     case FINANCE            = 'Finance';
     case HR_STAFF           = 'HR Staff';
+    case HR_MANAGER         = 'HR Manager';
     case IT_SUPPORT         = 'IT Support';
-    case FINANCE_MANAGER    = 'Finance Manager'; // Planned
-    case HR_MANAGER         = 'HR Manager';      // Planned
+    case FINANCE_MANAGER    = 'Finance Manager';
+    case FINANCE_STAFF      = 'Finance Staff'; // alias di database
+    case KARYAWAN           = 'Karyawan';      // Mobile App ESS only
 }
 ```
 
@@ -111,11 +114,14 @@ Status cicilan pinjaman per bulan.
 
 ### 1.7 `PengajuanType` (Tipe Pengajuan)
 
-| Value | Deskripsi |
-|---|---|
-| `Langsung` | Pembayaran langsung — tanpa settlement |
-| `UangMuka` | Uang muka — harus ada laporan settlement |
-| `Reimburse` | Penggantian biaya — bayar ke karyawan |
+| Value | Label | Deskripsi | Direct GL Posting? |
+|---|---|---|---|
+| `Langsung` | Pembayaran Langsung | Pembayaran langsung ke vendor/karyawan — tanpa settlement | ❌ (via payment schedule) |
+| `UangMuka` | Uang Muka (Cash Advance) | Uang muka — harus ada laporan settlement setelahnya | ❌ (via settlement) |
+| `Reimburse` | Reimbursement | Penggantian biaya — bayar ke karyawan | ❌ (via payment schedule) |
+| `PettyCash` | Petty Cash (Kas Kecil) | Dari kas kecil — GL langsung diposting saat approved | ✅ (`isDirectPosting() = true`) |
+
+> **Catatan `PettyCash`:** Karena sifatnya langsung dari kas kecil, GL Posting terjadi otomatis saat status `Approved` tanpa melalui `PaymentController`.
 
 ---
 
