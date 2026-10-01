@@ -57,5 +57,10 @@ Route::prefix('v1')->group(function () {
             Route::get('/history', [TaskController::class, 'history']); // all tasks (archived + active)
             Route::post('/{id}/status', [TaskController::class, 'updateStatus']); // change status
         });
+
+        // Calendar Module
+        Route::prefix('calendar')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\CalendarController::class, 'index']);
+        });
     });
 });
