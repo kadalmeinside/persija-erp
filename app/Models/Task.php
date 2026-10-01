@@ -4,12 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 
 class Task extends Model
 {
-    use HasFactory, LogsActivity;
+    use HasFactory, LogsActivity, SoftDeletes;
 
     protected $table = 'tbl_tasks';
 
@@ -24,10 +25,12 @@ class Task extends Model
         'priority',
         'due_date',
         'order_index',
+        'archived_at',
     ];
     
     protected $casts = [
         'due_date' => 'date',
+        'archived_at' => 'datetime',
     ];
 
     public function getActivitylogOptions(): LogOptions
@@ -57,5 +60,21 @@ class Task extends Model
     public function programKerja()
     {
         return $this->belongsTo(ProgramKerja::class, 'id_program_kerja');
+    }
+
+    /**
+     * Scope a query to only include active (non-archived) Kanban tasks.
+     */
+    public function scopeActiveKanban($query)
+    {
+        return $query->whereNull('archived_at');
+    }
+
+    /**
+     * Scope a query to only include archived Kanban tasks.
+     */
+    public function scopeArchived($query)
+    {
+        return $query->whereNotNull('archived_at');
     }
 }
