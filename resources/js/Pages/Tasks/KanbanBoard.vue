@@ -117,6 +117,7 @@ const onDrop = (status, event) => {
                         <PlusIcon class="w-5 h-5" /> Buat Tugas Baru
                     </button>
                 </div>
+            </div>
         </template>
 
         <!-- Main Kanban Container -->
