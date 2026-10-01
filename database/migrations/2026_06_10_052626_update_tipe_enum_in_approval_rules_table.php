@@ -13,7 +13,9 @@ return new class extends Migration
     public function up(): void
     {
         // Using raw DB statement because changing ENUM values in Laravel can be tricky
-        DB::statement("ALTER TABLE tbl_approval_rules MODIFY COLUMN tipe ENUM('Pengajuan', 'Cuti', 'Pinjaman', 'Invoice') DEFAULT 'Pengajuan'");
+        if (DB::getDriverName() !== 'sqlite') {
+            DB::statement("ALTER TABLE tbl_approval_rules MODIFY COLUMN tipe ENUM('Pengajuan', 'Cuti', 'Pinjaman', 'Invoice') DEFAULT 'Pengajuan'");
+        }
     }
 
     /**

@@ -206,8 +206,9 @@ Pinjaman
 | Primary key | `id` (auto-increment) |
 | Foreign key | `id_nama_relasi` (cth: `id_departemen`) |
 | Timestamps | `created_at`, `updated_at` (Laravel default) |
-| Soft delete | Tidak digunakan (hard delete) |
+| **Soft Delete** | Wajib untuk tabel finansial & user (`deleted_at`). Model: `User`, `InvoiceHeader`, `PengajuanHeader`, `JurnalHeader`, `Karyawan` |
 | Polimorfik | `owner_type`, `owner_id` (untuk `RekeningBank`) |
+| **Integritas** | FK menggunakan `ON DELETE RESTRICT/SET NULL`. Cegah duplikat via `UNIQUE` (cth: `tbl_absensi` id_karyawan+tanggal) |
 
 ---
 

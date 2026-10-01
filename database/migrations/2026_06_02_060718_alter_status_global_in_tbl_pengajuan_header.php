@@ -12,7 +12,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        DB::statement("ALTER TABLE tbl_pengajuan_header MODIFY COLUMN status_global ENUM('Draft', 'Pending Approval', 'Approved', 'Paid', 'Verification', 'Rejected', 'Settled', 'Revision', 'Cancelled') NOT NULL DEFAULT 'Draft'");
+        if (DB::getDriverName() !== 'sqlite') {
+            DB::statement("ALTER TABLE tbl_pengajuan_header MODIFY COLUMN status_global ENUM('Draft', 'Pending Approval', 'Approved', 'Paid', 'Verification', 'Rejected', 'Settled', 'Revision', 'Cancelled') NOT NULL DEFAULT 'Draft'");
+        }
     }
 
     /**

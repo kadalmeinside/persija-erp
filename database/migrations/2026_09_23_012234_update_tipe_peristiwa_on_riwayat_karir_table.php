@@ -12,7 +12,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        DB::statement("ALTER TABLE tbl_riwayat_karir MODIFY COLUMN tipe_peristiwa ENUM('Pengangkatan Awal', 'Perpanjangan Kontrak', 'Pengangkatan Tetap', 'Promosi', 'Demosi', 'Mutasi', 'Penyesuaian Gaji', 'Lainnya', 'Resign', 'PHK', 'Habis Kontrak') NOT NULL");
+        if (DB::getDriverName() !== 'sqlite') {
+            DB::statement("ALTER TABLE tbl_riwayat_karir MODIFY COLUMN tipe_peristiwa ENUM('Pengangkatan Awal', 'Perpanjangan Kontrak', 'Pengangkatan Tetap', 'Promosi', 'Demosi', 'Mutasi', 'Penyesuaian Gaji', 'Lainnya', 'Resign', 'PHK', 'Habis Kontrak') NOT NULL");
+        }
     }
 
     /**
