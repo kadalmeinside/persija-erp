@@ -9,10 +9,11 @@ use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles; // Pastikan Spatie Trait ada
 use Laravel\Sanctum\HasApiTokens;
 use App\Models\Karyawan; // <-- TAMBAHKAN INI
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, HasRoles; // <-- Pastikan HasRoles ada
+    use HasApiTokens, HasFactory, Notifiable, HasRoles, SoftDeletes; // <-- Pastikan HasRoles ada
 
     /**
      * The attributes that are mass assignable.

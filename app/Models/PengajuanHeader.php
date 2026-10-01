@@ -6,10 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Spatie\Activitylog\LogOptions;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class PengajuanHeader extends Model
 {
-    use HasFactory; 
+    use HasFactory, SoftDeletes; 
 
     protected $table = 'tbl_pengajuan_header';
 
