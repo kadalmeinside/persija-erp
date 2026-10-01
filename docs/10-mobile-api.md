@@ -359,7 +359,99 @@ Semua endpoint mengembalikan JSON bahkan saat error (tidak pernah HTML):
 
 ---
 
-## 5. Troubleshooting Mobile API
+## 5. Task (Kanban) Module
+
+### 5.1 List Active Tasks (Kanban Board)
+
+- **Endpoint:** `GET /tasks`
+- **Auth:** Bearer Token
+- **Deskripsi:** Mengambil semua tugas aktif yang terkait dengan user saat ini (baik sebagai creator maupun assignee).
+- **Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Berhasil mengambil data tugas aktif",
+  "data": [
+    {
+      "id": 1,
+      "title": "Perbaiki UI Dashboard",
+      "description": "Sesuaikan warna dengan tema baru",
+      "priority": "High",
+      "status": "To Do",
+      "due_date": "2026-10-15",
+      "order_index": 0,
+      "id_karyawan_creator": 1,
+      "id_karyawan_assignee": 5,
+      "creator": {
+        "id": 1,
+        "nama_lengkap": "System Admin"
+      },
+      "assignee": {
+        "id": 5,
+        "nama_lengkap": "Aris Budiman"
+      }
+    }
+  ]
+}
+```
+
+### 5.2 Task History (Tugas Aktif & Arsip)
+
+- **Endpoint:** `GET /tasks/history?page=1`
+- **Auth:** Bearer Token
+- **Deskripsi:** Mengambil riwayat tugas dengan pagination (cocok untuk Table/List View di Mobile).
+- **Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Berhasil mengambil riwayat tugas",
+  "data": {
+    "current_page": 1,
+    "data": [
+      {
+        "id": 2,
+        "title": "Buat Laporan Bulanan",
+        "status": "Done",
+        "archived_at": "2026-10-01T15:00:00.000000Z"
+      }
+    ],
+    "last_page": 2
+  }
+}
+```
+
+### 5.3 Buat Tugas Baru
+
+- **Endpoint:** `POST /tasks`
+- **Auth:** Bearer Token
+- **Payload:**
+```json
+{
+  "title": "Review Kontrak Sponsor",
+  "description": "Harap cek draft kontrak PT XYZ",
+  "priority": "High",
+  "due_date": "2026-10-10",
+  "id_karyawan_assignee": 5
+}
+```
+> *Catatan: Jika `id_karyawan_assignee` dikosongkan, tugas akan di-assign ke pembuat tugas secara otomatis.*
+
+### 5.4 Update Status / Arsipkan Tugas
+
+- **Endpoint:** `POST /tasks/{id}/status`
+- **Auth:** Bearer Token
+- **Payload:**
+```json
+{
+  "status": "In Progress",
+  "archive": false
+}
+```
+> *Catatan: Set `"archive": true` untuk mengarsipkan tugas.*
+
+---
+
+## 6. Troubleshooting Mobile API
 
 | Masalah | Penyebab | Solusi |
 |---|---|---|
@@ -372,7 +464,7 @@ Semua endpoint mengembalikan JSON bahkan saat error (tidak pernah HTML):
 
 ---
 
-## 6. Catatan Khusus untuk Developer
+## 7. Catatan Khusus untuk Developer
 
 ### Pembuatan Akun Karyawan
 Akun login karyawan **tidak dibuat otomatis saat import**. HR membuat akun secara selektif melalui:

@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue';
-import { Head, router } from '@inertiajs/vue3';
+import { Head, router, Link } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { PlusIcon } from '@heroicons/vue/24/outline';
 import TaskCard from './Partials/TaskCard.vue';
@@ -109,10 +109,14 @@ const onDrop = (status, event) => {
                     </h2>
                     <p class="hidden sm:block text-sm text-gray-500 mt-1">Kelola dan pantau progres tugas harian tim Anda.</p>
                 </div>
-                <button @click="openCreateModal('To Do')" class="hidden sm:flex bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-100 text-white px-5 py-2.5 rounded-xl text-sm font-semibold items-center justify-center gap-2 shadow-sm shadow-indigo-200 transition-all">
-                    <PlusIcon class="w-5 h-5" /> Buat Tugas Baru
-                </button>
-            </div>
+                <div class="flex gap-2">
+                    <Link :href="route('admin.tasks.history')" class="hidden sm:flex bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2.5 rounded-xl text-sm font-semibold items-center justify-center gap-2 shadow-sm transition-all">
+                        Riwayat Tugas
+                    </Link>
+                    <button @click="openCreateModal('To Do')" class="hidden sm:flex bg-indigo-600 hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-100 text-white px-5 py-2.5 rounded-xl text-sm font-semibold items-center justify-center gap-2 shadow-sm shadow-indigo-200 transition-all">
+                        <PlusIcon class="w-5 h-5" /> Buat Tugas Baru
+                    </button>
+                </div>
         </template>
 
         <!-- Main Kanban Container -->

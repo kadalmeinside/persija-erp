@@ -48,5 +48,13 @@ Route::prefix('v1')->group(function () {
             Route::get('/approvals', [CutiController::class, 'pendingApprovals']);
             Route::post('/approve/{id}', [CutiController::class, 'approveRequest']);
         });
+
+        // Task Management Module
+        Route::prefix('tasks')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\TaskController::class, 'index']); // active kanban
+            Route::post('/', [\App\Http\Controllers\Api\TaskController::class, 'store']); // create new task
+            Route::get('/history', [\App\Http\Controllers\Api\TaskController::class, 'history']); // all tasks (archived + active)
+            Route::post('/{id}/status', [\App\Http\Controllers\Api\TaskController::class, 'updateStatus']); // change status
+        });
     });
 });

@@ -164,6 +164,58 @@ class TaskController extends Controller
     }
 
     /**
+     * Display a table view of all tasks (History/Archive).
+     */
+    public function history(Request $request)
+    {
+        $user = Auth::user();
+        $karyawan = Karyawan::where('user_id', $user->id)->first();
+
+        if (!$karyawan) {
+            abort(403, 'Anda belum terdaftar sebagai Karyawan.');
+        }
+
+        $isHead = Departemen::where('id_karyawan_kepala', $karyawan->id)->exists();
+        $isAdmin = $user->hasRole(['super-admin', 'admin']);
+
+        // Query all tasks (both active and archived)
+        $query = Task::with(['creator', 'assignee', 'departemen', 'programKerja'])
+            ->orderBy('created_at', 'desc');
+
+        if (!$isAdmin) {
+            if ($isHead) {
+                $departemenIds = Departemen::where('id_karyawan_kepala', $karyawan->id)->pluck('id')->toArray();
+                $karyawanIds = Karyawan::whereIn('id_departemen', $departemenIds)->pluck('id')->toArray();
+                $karyawanIds[] = $karyawan->id;
+
+                $query->where(function ($q) use ($karyawanIds, $karyawan) {
+                    $q->whereIn('id_karyawan_assignee', $karyawanIds)
+                      ->orWhere('id_karyawan_creator', $karyawan->id);
+                });
+            } else {
+                $query->where(function ($q) use ($karyawan) {
+                    $q->where('id_karyawan_assignee', $karyawan->id)
+                      ->orWhere('id_karyawan_creator', $karyawan->id);
+                });
+            }
+        }
+
+        // Search filter
+        if ($request->has('search') && $request->search != '') {
+            $query->where('title', 'like', '%' . $request->search . '%');
+        }
+
+        // Pagination
+        $tasks = $query->paginate(15)->withQueryString();
+
+        return Inertia::render('Tasks/History', [
+            'tasks' => $tasks,
+            'filters' => $request->only(['search'])
+        ]);
+    }
+}
+
+    /**
      * Archive the specified task so it no longer shows on the active Kanban board.
      */
     public function archive(Task $task)
