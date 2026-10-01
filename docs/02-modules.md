@@ -42,7 +42,26 @@ PJH-ERP dibagi menjadi **4 domain route** utama, masing-masing memiliki kendali 
 - Kepegawaian: tanggal bergabung, status karyawan (Tetap/Kontrak/Magang)
 - Rekening bank (polimorfik, via `tbl_rekening_bank`)
 
-### 2.2 Cuti
+**Fitur tambahan `KaryawanController`:**
+- `generateUser` (`POST /admin/karyawan/{id}/generate-user`) — Buat akun login ESS untuk karyawan secara selektif langsung dari halaman Detail Karyawan. Karyawan yang belum punya `user_id` akan mendapatkan akun dengan email format `namadepan.{id}@persijadevelopment.id` dan role `Karyawan`. Tombol hanya tampil jika karyawan belum punya akun.
+
+**Import Masal Karyawan:**
+- `ImportKaryawan` Artisan Command: `php artisan import:karyawan {path/to/file.csv}` — Import karyawan dari CSV, dengan auto-mapping departemen dan proper-case nama.
+
+### 2.2 Absensi
+
+| Controller | Method | Deskripsi |
+|---|---|---|
+| `AbsensiController` (API) | `today, clockIn, clockOut, history` | Absensi mobile via REST API |
+
+**Fitur Absensi:**
+- Clock-in dan clock-out via Mobile App dengan GPS validasi
+- Dukungan mode **Dinas Luar** (tanpa validasi radius)
+- Foto selfie otomatis terunggah ke `storage/absensi/`
+- Riwayat absensi ter-paginate (Infinite Scroll) per bulan
+- Semua logika diproses via `AbsensiService`
+
+### 2.3 Cuti
 
 | Controller | Method | Deskripsi |
 |---|---|---|
@@ -51,7 +70,7 @@ PJH-ERP dibagi menjadi **4 domain route** utama, masing-masing memiliki kendali 
 **Konfigurasi Jenis Cuti:**
 - Jumlah hari per periode, apakah bisa mundur (carry over), batasan gender
 
-### 2.3 Payroll
+### 2.4 Payroll
 
 | Controller | Method | Deskripsi |
 |---|---|---|
@@ -63,7 +82,7 @@ PJH-ERP dibagi menjadi **4 domain route** utama, masing-masing memiliki kendali 
 3. Approve oleh HR Manager
 4. Posting ke GL otomatis via `PayrollService`
 
-### 2.4 Pinjaman Karyawan
+### 2.5 Pinjaman Karyawan
 
 | Controller | Method | Deskripsi |
 |---|---|---|

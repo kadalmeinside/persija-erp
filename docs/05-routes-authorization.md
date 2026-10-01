@@ -52,9 +52,10 @@ Menggunakan `spatie/laravel-permission`. Role didefinisikan dalam enum `App\Enum
 | `FINANCE` | `Finance` | ✅ Aktif | Finance + ESS |
 | `STAF` | `Staf` | ✅ Aktif | ESS |
 | `HR_STAFF` | `HR Staff` | ✅ Aktif | HR + ESS |
+| `HR_MANAGER` | `HR Manager` | ✅ Aktif | HR + ESS |
+| `FINANCE_MANAGER` | `Finance Manager` | ✅ Aktif | Finance + ESS |
 | `IT_SUPPORT` | `IT Support` | ✅ Aktif | ESS (termasuk kelola tiket) |
-| `FINANCE_MANAGER` | `Finance Manager` | 🔜 Planned | Finance + ESS |
-| `HR_MANAGER` | `HR Manager` | 🔜 Planned | HR + ESS |
+| `KARYAWAN` | `Karyawan` | ✅ Aktif | **Mobile App ESS only** (absensi, cuti, profil) |
 
 ### 3.2 Role Groups (Helper Methods)
 
@@ -190,3 +191,52 @@ const url = route('admin.pengajuan.show', { pengajuan: id });
 ```
 
 Konfigurasi Ziggy ada di `vite.config.js` dan di-inject via `AppServiceProvider`.
+
+---
+
+## 8. REST API Routes (Mobile App)
+
+> Lihat **[10-mobile-api.md](./10-mobile-api.md)** untuk spesifikasi lengkap request/response.
+
+Semua endpoint API diawali dengan `/api/v1`. Autentikasi via **Bearer Token (Sanctum)**.
+
+### HR — Karyawan (Tambahan Web Admin)
+
+| Name | Method | URI | Deskripsi |
+|---|---|---|---|
+| `admin.karyawan.generate-user` | POST | `/admin/karyawan/{id}/generate-user` | Buat akun login untuk karyawan |
+
+### Mobile API — Auth
+
+| Endpoint | Method | Auth | Deskripsi |
+|---|---|---|---|
+| `/api/v1/login` | POST | Public | Login, dapatkan Bearer Token |
+| `/api/v1/logout` | POST | Bearer | Hapus token |
+| `/api/v1/user` | GET | Bearer | Detail profil karyawan |
+| `/api/v1/update-password` | POST | Bearer | Ganti password |
+
+### Mobile API — Dashboard (BFF)
+
+| Endpoint | Method | Auth | Deskripsi |
+|---|---|---|---|
+| `/api/v1/dashboard/home` | GET | Bearer | **Agregasi data Home Screen** (user + absensi hari ini + saldo cuti tahunan + pending approvals) |
+
+### Mobile API — Absensi
+
+| Endpoint | Method | Auth | Deskripsi |
+|---|---|---|---|
+| `/api/v1/absensi/today` | GET | Bearer | Status absensi hari ini |
+| `/api/v1/absensi/clock-in` | POST | Bearer | Absen masuk (GPS + foto) |
+| `/api/v1/absensi/clock-out` | POST | Bearer | Absen pulang (GPS + foto) |
+| `/api/v1/absensi/history` | GET | Bearer | Riwayat per bulan (paginate) |
+
+### Mobile API — Cuti
+
+| Endpoint | Method | Auth | Deskripsi |
+|---|---|---|---|
+| `/api/v1/cuti/jenis` | GET | Bearer | Daftar jenis cuti |
+| `/api/v1/cuti/balances` | GET | Bearer | Saldo cuti per tipe |
+| `/api/v1/cuti/requests` | GET | Bearer | Riwayat pengajuan cuti saya |
+| `/api/v1/cuti/request` | POST | Bearer | Buat pengajuan cuti baru |
+| `/api/v1/cuti/approvals` | GET | Bearer | List cuti pending (khusus approver) |
+| `/api/v1/cuti/approve/{id}` | POST | Bearer | Approve/reject cuti (khusus approver) |

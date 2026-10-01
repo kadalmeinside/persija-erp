@@ -297,3 +297,51 @@ numprocs=2
 | Invoice tidak bisa dicatat pembayaran | Akuntansi Periode sudah ditutup | Buka kembali periode via `/admin/accounting-periods` |
 | Notifikasi tidak terkirim | Queue worker tidak jalan | Jalankan `php artisan queue:listen` |
 | `N+1 query` di halaman listing | Relasi tidak di-eager load | Tambahkan `with([...])` di query |
+| `Route [login] not defined` di log prod | API endpoint diakses tanpa token, Laravel coba redirect ke route 'login' yang tidak ada | Sudah diperbaiki di `bootstrap/app.php` — pastikan kode terbaru sudah di-pull |
+
+---
+
+## 10. Cara Menambah Endpoint Mobile API
+
+### Langkah-langkah
+
+```bash
+# 1. Buat Controller
+php artisan make:controller Api/NamaController
+
+# 2. Tambahkan route di routes/api.php
+# (dalam group auth:sanctum yang sudah ada)
+
+# 3. Gunakan response()->json() untuk output
+# (bukan Inertia::render atau redirect)
+```
+
+### Checklist Endpoint Baru
+
+- [ ] Controller di `app/Http/Controllers/Api/`
+- [ ] Route di `routes/api.php` dalam grup `middleware('auth:sanctum')`
+- [ ] Response selalu `return response()->json([...], $statusCode)`
+- [ ] Cek karyawan ada: `$karyawan = $request->user()->karyawan; if (!$karyawan) return 403`
+- [ ] Kolom DB sesuai: cek nama kolom di Model/Migrasi sebelum pakai
+- [ ] Dokumen di `docs/10-mobile-api.md`
+
+### Cara Cek Kolom DB Sebelum Coding
+
+```bash
+php artisan tinker
+# Cek kolom/attribute model:
+Schema::getColumnListing('tbl_absensi');
+# atau:
+(new App\Models\Absensi)->getFillable();
+```
+
+> ⚠️ **Jangan asumsikan nama kolom.** Selalu cek migrasi atau model sebelum menggunakan atribut. Ini penyebab utama bug `null` di API (contoh: `waktu_masuk` bukan `jam_masuk`).
+
+---
+
+## 11. Artisan Commands Khusus
+
+| Command | Deskripsi |
+|---|---|
+| `php artisan import:karyawan {file.csv}` | Import data karyawan masal dari CSV |
+| `php artisan user:generate-for-karyawan` | Generate akun user untuk semua karyawan yang belum punya `user_id` |

@@ -5,7 +5,9 @@
 | Layer | Teknologi |
 |---|---|
 | **Backend Framework** | Laravel 12.x (PHP ≥ 8.2) |
-| **Frontend** | Inertia.js v2 + Vue.js (SSR-ready) |
+| **Frontend Web (Admin)** | Inertia.js v2 + Vue.js (SSR-ready) |
+| **Mobile App** | Flutter (Native Android/iOS) |
+| **Mobile Auth** | Laravel Sanctum (Token-based) |
 | **Database** | MySQL (development & production) |
 | **Antrian Pekerjaan** | Laravel Queue (`database` driver) |
 | **Notifikasi Real-time** | Pusher (via `pusher/pusher-php-server`) |
@@ -50,7 +52,8 @@ persija-erp/
 │   ├── js/                # Vue.js/Inertia frontend
 │   └── views/             # Blade templates (minimal)
 ├── routes/
-│   ├── web.php            # Entry point routing
+│   ├── web.php            # Entry point routing web admin
+│   ├── api.php            # REST API untuk Mobile App (Sanctum)
 │   └── admin/             # Routes terpisah per domain
 │       ├── system.php     # Super Admin only
 │       ├── hr.php         # HR & Payroll
@@ -89,11 +92,17 @@ Semua validasi input tersentralisasi di `app/Http/Requests/`:
 - `Pengajuan/StorePengajuanRequest` — validasi pembuatan pengajuan baru
 - `Pengajuan/UpdatePengajuanRequest` — validasi pembaruan pengajuan
 
-### 3.3 Inertia.js Full-Stack
+### 3.3 Inertia.js Full-Stack (Web Admin)
 
 Backend me-render halaman dengan `Inertia::render('Admin/ComponentName', ['data' => ...])`.
 Frontend Vue menerima data tersebut sebagai `props`.
-Tidak ada REST API terpisah — data mengalir melalui Inertia SSR.
+Data web admin mengalir melalui Inertia SSR.
+
+### 3.4 REST API (Mobile App — BFF Pattern)
+
+Seluruh endpoint untuk Mobile App berada di `routes/api.php` dengan prefix `/api/v1`.
+Autentikasi menggunakan **Laravel Sanctum** (token-based, bukan session).
+Endpoint dashboard menggunakan **BFF (Backend for Frontend) Pattern**: satu endpoint agregasi (`GET /api/v1/dashboard/home`) menggantikan banyak panggilan terpisah, mempercepat load awal aplikasi mobile.
 
 ### 3.4 Queued Jobs & Events
 
@@ -106,33 +115,34 @@ Notifikasi dikirim secara **asynchronous** melalui Laravel Queue:
 ## 4. Diagram Arsitektur High-Level
 
 ```
-┌──────────────────────────────────────────────┐
-│                  Browser (Vue.js)            │
-│         Inertia.js — SPA Navigation          │
-└──────────────────┬───────────────────────────┘
-                   │ HTTP / Inertia XHR
-┌──────────────────▼───────────────────────────┐
-│             Laravel Backend                  │
-│  ┌────────────┐    ┌───────────────────────┐ │
-│  │   Routes   │ →  │    Controllers        │ │
-│  └────────────┘    │  (Http/Controllers)   │ │
-│                    └──────────┬────────────┘ │
-│                               │              │
-│                    ┌──────────▼────────────┐ │
-│                    │    Services Layer      │ │
-│                    │  (app/Services)        │ │
-│                    └──────────┬────────────┘ │
-│                               │              │
-│  ┌───────────────┐  ┌─────────▼───────────┐ │
-│  │   Queue/Jobs  │  │   Eloquent Models   │ │
-│  │ (Notifikasi)  │  │   (app/Models)      │ │
-│  └───────────────┘  └─────────┬───────────┘ │
-└────────────────────────────── │ ─────────────┘
-                                │
-              ┌─────────────────▼──────────────┐
-              │      MySQL (dev & production)  │
-              │  SQLite :memory: (testing only)│
-              └────────────────────────────────┘
+┌──────────────────┐       ┌────────────────────────┐
+│   Browser        │       │   Mobile App (Flutter) │
+│   (Vue.js)       │       │   Android / iOS        │
+│   Inertia.js     │       │   JWT via Sanctum      │
+└────────┬─────────┘       └───────────┬────────────┘
+         │ Inertia XHR                 │ REST API
+         │ (Cookie/Session)            │ (Bearer Token)
+┌────────▼─────────────────────────────▼────────────┐
+│                   Laravel Backend                  │
+│                                                    │
+│  routes/web.php ──→ Admin Controllers (Inertia)    │
+│  routes/api.php ──→ Api Controllers (JSON)         │
+│                           │                        │
+│              ┌────────────▼────────────────┐       │
+│              │       Services Layer        │       │
+│              │     (app/Services/)         │       │
+│              └────────────┬────────────────┘       │
+│                           │                        │
+│  ┌────────────────┐  ┌────▼─────────────────────┐  │
+│  │  Queue / Jobs  │  │    Eloquent Models       │  │
+│  │ (Notifikasi)   │  │    (app/Models/)         │  │
+│  └────────────────┘  └────┬─────────────────────┘  │
+└───────────────────────────│────────────────────────┘
+                            │
+          ┌─────────────────▼──────────────┐
+          │       MySQL (dev & prod)       │
+          │  SQLite :memory: (tests only)  │
+          └────────────────────────────────┘
 ```
 
 > **Catatan SQLite:** SQLite **hanya digunakan saat menjalankan test** (`php artisan test`).

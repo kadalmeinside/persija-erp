@@ -212,7 +212,32 @@ Menggunakan `DB::transaction` + `lockForUpdate()` untuk mencegah nomor duplikat 
 
 ---
 
-## Diagram Dependensi Services
+## 11. AbsensiService
+
+**File:** `app/Services/AbsensiService.php`
+
+**Tanggung jawab:** Memproses logika Clock-In dan Clock-Out karyawan dari Mobile App.
+
+| Method | Deskripsi |
+|---|---|
+| `processClockIn($karyawan, $lat, $lng, $photo, $isDinasLuar, $catatan)` | Validasi GPS, cek duplikasi, unggah foto, simpan record absensi |
+| `processClockOut($karyawan, $lat, $lng, $photo)` | Validasi GPS, update `waktu_keluar` dan `foto_keluar` |
+
+**Logika utama `processClockIn()`:**
+```
+1. Cek apakah sudah clock-in hari ini → return error jika sudah
+2. Jika is_dinas_luar → skip validasi radius GPS
+3. Jika bukan dinas luar → hitung jarak dari lokasi kantor (Haversine formula)
+   └── Jika > radius → return error "Lokasi diluar radius"
+4. Unggah foto selfie ke storage/absensi/
+5. Tentukan status_kehadiran: 'Hadir' / 'Terlambat' (jika setelah jam_masuk lokasi)
+6. Simpan record ke tbl_absensi
+7. Return ['success' => true, 'data' => $absensi]
+```
+
+---
+
+## Diagram Dependensi Services (Diperbarui)
 
 ```
 PengajuanController
@@ -230,4 +255,11 @@ InvoiceController
 PayrollController
   └── PayrollService
         └── GLService
+
+AbsensiController (API Mobile)
+  └── AbsensiService
+        └── (langsung ke Model Absensi)
+
+DashboardController (API Mobile — BFF)
+  └── (Query langsung: Absensi, SaldoCuti — tanpa service)
 ```
