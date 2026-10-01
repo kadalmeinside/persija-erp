@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AbsensiController;
 use App\Http\Controllers\Api\CutiController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\TaskController;
 
 /*
 |--------------------------------------------------------------------------
@@ -51,10 +52,10 @@ Route::prefix('v1')->group(function () {
 
         // Task Management Module
         Route::prefix('tasks')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Api\TaskController::class, 'index']); // active kanban
-            Route::post('/', [\App\Http\Controllers\Api\TaskController::class, 'store']); // create new task
-            Route::get('/history', [\App\Http\Controllers\Api\TaskController::class, 'history']); // all tasks (archived + active)
-            Route::post('/{id}/status', [\App\Http\Controllers\Api\TaskController::class, 'updateStatus']); // change status
+            Route::get('/', [TaskController::class, 'index']); // active kanban
+            Route::post('/', [TaskController::class, 'store']); // create new task
+            Route::get('/history', [TaskController::class, 'history']); // all tasks (archived + active)
+            Route::post('/{id}/status', [TaskController::class, 'updateStatus']); // change status
         });
     });
 });
