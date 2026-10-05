@@ -100,8 +100,30 @@ class TaskController extends Controller
             'id_karyawan_assignee' => 'nullable|exists:tbl_karyawan,id', 
         ]);
 
+        $assigneeId = $validated['id_karyawan_assignee'] ?? $karyawan->id;
+        if ($assigneeId !== $karyawan->id && !$this->canAssignToOthers($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin untuk menugaskan tugas kepada karyawan lain.',
+            ], 403);
+        }
+
+        $assignee = Karyawan::whereKey($assigneeId)
+            ->whereNull('deleted_at')
+            ->where(function ($query) {
+                $query->whereNull('status_karyawan')
+                    ->orWhereNotIn('status_karyawan', ['Nonaktif', 'Resign', 'Terminated']);
+            })
+            ->first();
+        if (!$assignee) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Karyawan penerima tugas tidak aktif atau tidak ditemukan.',
+            ], 422);
+        }
+
         $validated['id_karyawan_creator'] = $karyawan->id;
-        $validated['id_karyawan_assignee'] = $validated['id_karyawan_assignee'] ?? $karyawan->id;
+        $validated['id_karyawan_assignee'] = $assigneeId;
         $validated['status'] = 'To Do';
 
         $task = Task::create($validated);
@@ -110,6 +132,16 @@ class TaskController extends Controller
             'success' => true,
             'message' => 'Tugas berhasil dibuat',
             'data' => $task
+        ]);
+    }
+
+    private function canAssignToOthers($user): bool
+    {
+        return $user->hasAnyRole([
+            'Super Admin',
+            'HR Manager',
+            'Direktur',
+            'Manajer Departemen',
         ]);
     }
 

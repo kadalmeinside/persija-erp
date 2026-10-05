@@ -32,7 +32,7 @@ return new class extends Migration
             $table->foreignId('id_karyawan_target')->constrained('tbl_karyawan');
             
             // Snapshot: Siapa yang AKTUAL melakukan approve (Realisasi - bisa sama atau beda jika ada fitur delegation)
-            $table->unsignedBigInteger('id_karyawan_action')->nullable(); // User yang klik tombol
+            $table->foreignId('id_karyawan_action')->nullable()->constrained('tbl_karyawan')->nullOnDelete(); // User yang klik tombol
             
             $table->string('label_aksi');
             $table->enum('status', ['Waiting', 'Pending', 'Approved', 'Rejected'])->default('Waiting');

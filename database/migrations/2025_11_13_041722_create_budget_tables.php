@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -87,8 +88,11 @@ return new class extends Migration
             $table->timestamps();
             
             // Index untuk pencarian cepat
-            $table->index(['id_budget_master', 'bulan', 'tahun']);
+            $table->unique(['id_budget_master', 'bulan', 'tahun'], 'budget_detail_unique');
         });
+
+        DB::statement('ALTER TABLE tbl_budget_detail ADD CONSTRAINT budget_detail_month_check CHECK (bulan BETWEEN 1 AND 12)');
+        DB::statement('ALTER TABLE tbl_budget_detail ADD CONSTRAINT budget_detail_amount_check CHECK (nominal_pacing >= 0)');
     }
 
     public function down(): void

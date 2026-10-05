@@ -33,6 +33,7 @@ Route::prefix('v1')->group(function () {
         // Absensi (Attendance) Module
         Route::prefix('absensi')->group(function () {
             Route::get('/today', [AbsensiController::class, 'today']);
+            Route::post('/challenge', [AbsensiController::class, 'challenge']);
             Route::post('/clock-in', [AbsensiController::class, 'clockIn']);
             Route::post('/clock-out', [AbsensiController::class, 'clockOut']);
             Route::get('/history', [AbsensiController::class, 'history']);

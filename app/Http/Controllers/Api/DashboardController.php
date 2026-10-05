@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Absensi;
+use App\Models\ApprovalProcess;
 use App\Models\SaldoCuti;
 use Illuminate\Support\Carbon;
 
@@ -42,7 +43,7 @@ class DashboardController extends Controller
         // This is useful to show a red dot/badge on the dashboard
         $pendingApprovals = 0;
         if (in_array($user->roles->first()?->name, ['HR Manager', 'Direktur', 'Manajer Departemen'])) {
-            $pendingApprovals = \App\Models\ApprovalProcess::where('approver_id', $user->id)
+            $pendingApprovals = ApprovalProcess::where('id_karyawan_target', $karyawan->id)
                 ->where('status', 'Pending')
                 ->count();
         }

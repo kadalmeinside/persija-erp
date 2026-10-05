@@ -20,7 +20,10 @@ class JurnalHeader extends Model
         'status',
         'created_by',
         'sumber_modul',
-        'id_referensi_sumber'
+        'id_referensi_sumber',
+        'source_type',
+        'source_event',
+        'posting_batch_id',
     ];
 
     public function detail()

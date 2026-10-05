@@ -28,8 +28,8 @@ class GLService
         \App\Services\PeriodClosingService::checkClosed($date, 'Jurnal Umum / Transaksi Otomatis');
 
         // Validate Balance
-        $totalDebit = collect($details)->sum('debit');
-        $totalCredit = collect($details)->sum('kredit');
+        $totalDebit = collect($details)->sum(fn (array $detail) => (float) ($detail['debit'] ?? 0));
+        $totalCredit = collect($details)->sum(fn (array $detail) => (float) ($detail['kredit'] ?? 0));
 
         if (abs($totalDebit - $totalCredit) > 0.01) {
             throw new \Exception("Journal Unbalanced: Debit $totalDebit != Credit $totalCredit");
@@ -44,16 +44,25 @@ class GLService
                 'status' => 'Posted',
                 'created_by' => Auth::id() ?? 1, // Fallback to system user if no auth
                 'sumber_modul' => $sourceModule,
-                'id_referensi_sumber' => $sourceRefId
+                'id_referensi_sumber' => $sourceRefId,
+                'source_type' => $sourceRefId ? self::sourceType($sourceModule) : null,
+                'source_event' => $transactionType,
+                'posting_batch_id' => (string) \Illuminate\Support\Str::uuid(),
             ]);
 
             foreach ($details as $detail) {
-                if ($detail['debit'] > 0 || $detail['kredit'] > 0) {
+                $debit = (float) ($detail['debit'] ?? 0);
+                $credit = (float) ($detail['kredit'] ?? 0);
+                if ($debit < 0 || $credit < 0 || ($debit > 0 && $credit > 0)) {
+                    throw new \InvalidArgumentException('Each journal line must have non-negative values and only one side populated.');
+                }
+
+                if ($debit > 0 || $credit > 0) {
                     JurnalDetail::create([
                         'id_jurnal' => $header->id,
                         'id_akun' => $detail['id_akun'],
-                        'debit' => $detail['debit'],
-                        'kredit' => $detail['kredit'],
+                        'debit' => $debit,
+                        'kredit' => $credit,
                         'keterangan_baris' => $detail['keterangan'] ?? null
                     ]);
                 }
@@ -61,5 +70,17 @@ class GLService
 
             return $header;
         });
+    }
+
+    private static function sourceType(string $sourceModule): string
+    {
+        return match ($sourceModule) {
+            'AP' => 'pengajuan',
+            'AR' => 'invoice',
+            'FA' => 'aset',
+            'HR' => 'payroll',
+            'INV' => 'inventory',
+            default => 'journal',
+        };
     }
 }

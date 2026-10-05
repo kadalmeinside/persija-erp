@@ -26,6 +26,21 @@ return new class extends Migration
             $table->enum('status_kehadiran', ['Hadir', 'Terlambat', 'Lupa Checkout', 'Luar Kantor', 'Tidak Hadir'])->default('Hadir');
             $table->text('catatan')->nullable();
             $table->timestamps();
+            $table->unique(['id_karyawan', 'tanggal'], 'absensi_karyawan_tanggal_unique');
+        });
+
+        Schema::create('attendance_challenges', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->string('action', 20);
+            $table->string('request_id', 36);
+            $table->string('nonce_hash', 64)->unique();
+            $table->json('security_metadata')->nullable();
+            $table->timestamp('expires_at');
+            $table->timestamp('consumed_at')->nullable();
+            $table->timestamps();
+            $table->unique(['user_id', 'request_id']);
+            $table->index(['user_id', 'action', 'expires_at']);
         });
     }
 
@@ -35,5 +50,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('tbl_absensi');
+        Schema::dropIfExists('attendance_challenges');
     }
 };

@@ -12,12 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('tbl_absensi', function (Blueprint $table) {
-            $table->unique(['id_karyawan', 'tanggal'], 'absensi_karyawan_tanggal_unique');
             $table->foreign('id_lokasi_kantor')->references('id')->on('tbl_lokasi_kantor')->onDelete('set null');
-        });
-
-        Schema::table('tbl_budget_detail', function (Blueprint $table) {
-            $table->unique(['id_budget_master', 'bulan', 'tahun'], 'budget_detail_unique');
         });
 
         Schema::table('tbl_approval_process', function (Blueprint $table) {
@@ -29,11 +24,6 @@ return new class extends Migration
     {
         Schema::table('tbl_absensi', function (Blueprint $table) {
             $table->dropForeign(['id_lokasi_kantor']);
-            $table->dropUnique('absensi_karyawan_tanggal_unique');
-        });
-
-        Schema::table('tbl_budget_detail', function (Blueprint $table) {
-            $table->dropUnique('budget_detail_unique');
         });
 
         Schema::table('tbl_approval_process', function (Blueprint $table) {

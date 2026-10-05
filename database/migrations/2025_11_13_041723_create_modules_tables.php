@@ -151,7 +151,7 @@ return new class extends Migration
         Schema::create('tbl_karyawan', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->id();
-            $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('set null');
+            $table->foreignId('user_id')->nullable()->unique()->constrained('users')->onDelete('set null');
             
             $table->foreignId('id_departemen')->constrained('tbl_departemen');
             $table->string('nomor_induk_karyawan', 100)->unique();

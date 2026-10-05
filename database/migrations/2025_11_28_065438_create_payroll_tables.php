@@ -34,6 +34,7 @@ return new class extends Migration
             $table->string('status', 50)->default('Draft'); // Draft, Approved, Paid
             $table->foreignId('approved_by')->nullable()->constrained('users');
             $table->timestamps();
+            $table->unique('bulan_periode', 'payroll_period_unique');
         });
 
         // 3. Payroll Detail (Per Karyawan)
@@ -48,6 +49,7 @@ return new class extends Migration
             $table->decimal('gaji_bersih', 15, 2);
             $table->json('rincian_komponen'); // JSON storing specific component values for snapshot
             $table->timestamps();
+            $table->unique(['id_payroll', 'id_karyawan'], 'payroll_employee_unique');
         });
     }
 
