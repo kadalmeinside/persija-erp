@@ -13,6 +13,7 @@ class Penyusutan extends Model
 
     protected $fillable = [
         'id_aset',
+        'id_jurnal',
         'tgl_penyusutan',
         'nilai_buku_awal',
         'nilai_penyusutan',
@@ -24,5 +25,10 @@ class Penyusutan extends Model
     public function aset()
     {
         return $this->belongsTo(Aset::class, 'id_aset');
+    }
+
+    public function jurnal()
+    {
+        return $this->belongsTo(JurnalHeader::class, 'id_jurnal');
     }
 }

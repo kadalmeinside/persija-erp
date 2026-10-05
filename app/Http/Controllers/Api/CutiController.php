@@ -344,4 +344,54 @@ class CutiController extends Controller
             'message' => 'Persetujuan berhasil diproses.'
         ], 200);
     }
+
+    public function cancelRequest(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'reason' => 'required|string|max:500',
+        ]);
+        $karyawan = $request->user()->karyawan;
+        if (!$karyawan) {
+            return response()->json(['message' => 'Data karyawan tidak ditemukan.'], 403);
+        }
+
+        try {
+            DB::transaction(function () use ($request, $id, $karyawan, $validated) {
+                $cuti = PengajuanCuti::where('id', $id)
+                    ->where('id_karyawan', $karyawan->id)
+                    ->lockForUpdate()
+                    ->first();
+                if (!$cuti) {
+                    throw new \DomainException('Pengajuan cuti tidak ditemukan.');
+                }
+                if (!in_array($cuti->status, ['Pending', 'Approved'], true)) {
+                    throw new \DomainException('Pengajuan cuti tidak dapat dibatalkan pada status ini.');
+                }
+                if (Carbon::parse($cuti->tgl_mulai)->isPast()) {
+                    throw new \DomainException('Cuti yang sudah dimulai tidak dapat dibatalkan.');
+                }
+
+                $saldo = SaldoCuti::where([
+                    'id_karyawan' => $cuti->id_karyawan,
+                    'id_jenis_cuti' => $cuti->id_jenis_cuti,
+                    'tahun_periode' => Carbon::parse($cuti->tgl_mulai)->year,
+                ])->lockForUpdate()->first();
+                if ($saldo && !$cuti->jenisCuti->is_unlimited) {
+                    $saldo->decrement('saldo_terpakai', $cuti->jumlah_hari);
+                    $saldo->increment('saldo_akhir', $cuti->jumlah_hari);
+                }
+
+                $cuti->update([
+                    'status' => 'Cancelled',
+                    'cancelled_at' => now(),
+                    'cancelled_by' => $request->user()->id,
+                    'cancellation_reason' => $validated['reason'],
+                ]);
+            });
+        } catch (\DomainException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
+
+        return response()->json(['message' => 'Pengajuan cuti berhasil dibatalkan.']);
+    }
 }

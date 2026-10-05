@@ -11,12 +11,19 @@ class PengajuanCuti extends Model
 
     protected $table = 'tbl_pengajuan_cuti';
 
+    protected $fillable = [
+        'id_karyawan', 'id_jenis_cuti', 'tgl_mulai', 'tgl_selesai',
+        'jumlah_hari', 'alasan', 'lampiran_path', 'status',
+        'cancelled_at', 'cancelled_by', 'cancellation_reason',
+    ];
+
     protected $guarded = ['id'];
 
     protected $casts = [
         'tgl_mulai' => 'date',
         'tgl_selesai' => 'date',
-        'jumlah_hari' => 'integer'
+        'jumlah_hari' => 'integer',
+        'cancelled_at' => 'datetime',
     ];
 
     public function karyawan()

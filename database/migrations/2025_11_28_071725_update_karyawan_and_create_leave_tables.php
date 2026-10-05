@@ -54,10 +54,15 @@ return new class extends Migration
             $table->date('tgl_selesai');
             $table->integer('jumlah_hari');
             $table->text('alasan');
-            $table->enum('status', ['Pending', 'Approved', 'Rejected'])->default('Pending');
+            $table->enum('status', ['Pending', 'Approved', 'Rejected', 'Cancelled'])->default('Pending');
+            $table->timestamp('cancelled_at')->nullable();
+            $table->foreignId('cancelled_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->text('cancellation_reason')->nullable();
             $table->foreignId('id_approver')->nullable()->constrained('users'); // User yang menyetujui
             $table->text('catatan_approval')->nullable();
             $table->timestamps();
+            $table->index(['tgl_mulai', 'tgl_selesai']);
+            $table->index(['id_karyawan', 'status']);
         });
     }
 

@@ -44,7 +44,8 @@ return new class extends Migration
             $table->decimal('nilai_penyusutan', 15, 2);
             $table->decimal('nilai_buku_akhir', 15, 2);
             $table->boolean('is_posted')->default(false);
-            $table->string('jurnal_ref', 100)->nullable(); // Reference to GL Journal
+            $table->foreignId('id_jurnal')->nullable()->constrained('tbl_jurnal_header')->nullOnDelete();
+            $table->string('jurnal_ref', 100)->nullable(); // Legacy/display journal number
             $table->timestamps();
         });
     }

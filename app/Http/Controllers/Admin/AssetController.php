@@ -176,7 +176,7 @@ class AssetController extends Controller
                         ]
                     ];
 
-                    GLService::createJournal(
+                    $journal = GLService::createJournal(
                         $date->format('Y-m-d'),
                         'Penyusutan Aset ' . $asset->kode_aset,
                         $glDetails,
@@ -184,6 +184,10 @@ class AssetController extends Controller
                         $asset->id,
                         'Depreciation'
                     );
+                    $penyusutan->update([
+                        'id_jurnal' => $journal->id,
+                        'jurnal_ref' => $journal->nomor_jurnal,
+                    ]);
 
                     $count++;
                 }

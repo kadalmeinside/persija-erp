@@ -30,6 +30,10 @@ Clock-in juga menerima `is_dinas_luar` dan `catatan`.
 
 `POST /cuti/request` menerima jenis cuti, tanggal mulai/selesai, keterangan, dan lampiran opsional/required sesuai jenis cuti.
 
+`POST /cuti/cancel/{id}` menerima `reason`. User hanya dapat membatalkan pengajuannya sendiri sebelum tanggal mulai. Pembatalan mengembalikan saldo non-unlimited secara atomic dan hanya dapat dilakukan sekali.
+
+Login mobile memakai kebijakan single-device: login baru mencabut seluruh token Sanctum lama untuk user yang sama.
+
 ## Face matching
 
 Mobile melakukan ekstraksi dan matching descriptor secara on-device menggunakan model TFLite. Descriptor database berasal dari profile user. Backend belum melakukan verifikasi descriptor server-side.

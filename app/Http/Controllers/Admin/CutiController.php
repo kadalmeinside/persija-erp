@@ -321,9 +321,6 @@ class CutiController extends Controller
                     if (!$cuti->jenisCuti->is_unlimited) {
                         $saldo->decrement('saldo_terpakai', $cuti->jumlah_hari);
                         $saldo->increment('saldo_akhir', $cuti->jumlah_hari);
-                    } else {
-                        // Untuk unlimited, kita hanya mengurangi saldo_terpakai
-                        $saldo->decrement('saldo_terpakai', $cuti->jumlah_hari);
                     }
                 }
 

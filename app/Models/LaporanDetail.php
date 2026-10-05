@@ -30,7 +30,9 @@ class LaporanDetail extends Model
         'id_departemen_beban',
         'id_program_beban',
         'id_akun_beban',
-        'id_pajak',
+        'id_tax_type',
+        'rate_pajak',
+        'nominal_pajak',
         'bukti_path'
     ];
 
@@ -73,9 +75,9 @@ class LaporanDetail extends Model
     /**
      * Relasi ke Pajak.
      */
-    public function pajak()
+    public function taxType()
     {
-        return $this->belongsTo(Pajak::class, 'id_pajak');
+        return $this->belongsTo(TaxType::class, 'id_tax_type');
     }
 
     public function getActivitylogOptions(): LogOptions

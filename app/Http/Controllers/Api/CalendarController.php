@@ -14,21 +14,23 @@ class CalendarController extends Controller
 {
     public function index(Request $request)
     {
-        $month = $request->query('month', Carbon::now()->month);
-        $year = $request->query('year', Carbon::now()->year);
+        $validated = $request->validate([
+            'month' => 'nullable|integer|between:1,12',
+            'year' => 'nullable|integer|digits:4',
+        ]);
+        $month = (int) ($validated['month'] ?? Carbon::now()->month);
+        $year = (int) ($validated['year'] ?? Carbon::now()->year);
+        $periodStart = Carbon::create($year, $month, 1)->startOfMonth();
+        $periodEnd = $periodStart->copy()->endOfMonth();
 
         $karyawan = $request->user()->karyawan;
         $karyawanId = $karyawan ? $karyawan->id : null;
         $departemenId = $karyawan ? $karyawan->id_departemen : null;
 
         // 1. Events
-        $events = CompanyEvent::where(function ($query) use ($month, $year) {
-            $query->whereMonth('start_date', $month)
-                  ->whereYear('start_date', $year);
-        })->orWhere(function ($query) use ($month, $year) {
-            $query->whereMonth('end_date', $month)
-                  ->whereYear('end_date', $year);
-        })->get()->map(function ($event) {
+        $events = CompanyEvent::where('start_date', '<=', $periodEnd)
+            ->where('end_date', '>=', $periodStart)
+            ->limit(500)->get()->map(function ($event) {
             return [
                 'id' => $event->id,
                 'title' => $event->title,
@@ -44,9 +46,8 @@ class CalendarController extends Controller
         });
 
         // 2. Holidays
-        $holidays = HariLibur::whereMonth('tanggal', $month)
-                             ->whereYear('tanggal', $year)
-                             ->get()->map(function ($holiday) {
+        $holidays = HariLibur::whereBetween('tanggal', [$periodStart, $periodEnd])
+                             ->limit(500)->get()->map(function ($holiday) {
             return [
                 'id' => $holiday->id,
                 'title' => $holiday->keterangan,
@@ -71,14 +72,9 @@ class CalendarController extends Controller
             });
         }
 
-        $leaves = $leavesQuery->where(function ($query) use ($month, $year) {
-                $query->whereMonth('tgl_mulai', $month)
-                      ->whereYear('tgl_mulai', $year)
-                      ->orWhere(function ($q) use ($month, $year) {
-                          $q->whereMonth('tgl_selesai', $month)
-                            ->whereYear('tgl_selesai', $year);
-                      });
-            })->get()->map(function ($cuti) use ($karyawanId) {
+        $leaves = $leavesQuery->where('tgl_mulai', '<=', $periodEnd)
+            ->where('tgl_selesai', '>=', $periodStart)
+            ->limit(500)->get()->map(function ($cuti) use ($karyawanId) {
                 // If it's not the user's own leave, only show if it's Approved
                 if ($cuti->id_karyawan !== $karyawanId && $cuti->status !== 'Approved') {
                     return null;
@@ -87,7 +83,7 @@ class CalendarController extends Controller
                 $isMyLeave = $cuti->id_karyawan === $karyawanId;
                 $title = $isMyLeave 
                     ? "Cuti Saya ({$cuti->status})" 
-                    : "Cuti: " . ($cuti->karyawan ? $cuti->karyawan->nama_lengkap ?? $cuti->karyawan->first_name : 'Karyawan');
+                    : 'Cuti: ' . ($cuti->karyawan?->nama_lengkap ?? 'Karyawan');
 
                 // Orange for my leave, Gray for others' approved leaves
                 $color = $isMyLeave ? '#fd7e14' : '#6c757d'; 
@@ -116,7 +112,7 @@ class CalendarController extends Controller
                           ->whereYear('due_date', $year);
                 })
                 ->activeKanban() // Only active tasks
-                ->get()->map(function ($task) {
+                ->limit(500)->get()->map(function ($task) {
                     return [
                         'id' => $task->id,
                         'title' => "Tugas: {$task->title}",

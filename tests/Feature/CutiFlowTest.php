@@ -204,6 +204,42 @@ class CutiFlowTest extends TestCase
         $this->assertEquals(12, $saldo->saldo_akhir);
     }
 
+    public function test_api_pending_approvals_returns_employee_identity_fields(): void
+    {
+        $this->actingAs($this->approverUser, 'sanctum');
+        $this->test_karyawan_bisa_mengajukan_cuti_dan_memotong_saldo_terpakai();
+        $this->actingAs($this->approverUser, 'sanctum');
+
+        $response = $this->getJson('/api/v1/cuti/approvals');
+
+        $response->assertOk()
+            ->assertJsonPath('data.0.nama_karyawan', 'Pengaju')
+            ->assertJsonPath('data.0.nip', '1001');
+    }
+
+    public function test_api_owner_can_cancel_pending_leave_and_restore_balance(): void
+    {
+        $this->actingAs($this->pengajuUser, 'sanctum');
+        $this->test_karyawan_bisa_mengajukan_cuti_dan_memotong_saldo_terpakai();
+        $cuti = PengajuanCuti::latest('id')->firstOrFail();
+
+        $response = $this->postJson("/api/v1/cuti/cancel/{$cuti->id}", [
+            'reason' => 'Perubahan rencana',
+        ]);
+
+        $response->assertOk();
+        $this->assertDatabaseHas('tbl_pengajuan_cuti', [
+            'id' => $cuti->id,
+            'status' => 'Cancelled',
+            'cancellation_reason' => 'Perubahan rencana',
+        ]);
+        $this->assertDatabaseHas('tbl_saldo_cuti', [
+            'id_karyawan' => $this->karyawanPengaju->id,
+            'saldo_terpakai' => 0,
+            'saldo_akhir' => 12,
+        ]);
+    }
+
     public function test_gagal_cuti_jika_saldo_habis()
     {
         SaldoCuti::where('id_karyawan', $this->karyawanPengaju->id)->update([

@@ -375,7 +375,6 @@ class ApprovalService
     {
         if ($meta['isCuti']) {
             $model->update(['status' => 'Approved']);
-            $this->deductLeaveBalance($model);
             return;
         }
 

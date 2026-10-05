@@ -28,6 +28,10 @@ return new class extends Migration
             $table->decimal('rate_pajak', 5, 2)->default(0)->after('id_tax_type'); // Snapshot rate
             $table->decimal('nominal_pajak', 15, 2)->default(0)->after('rate_pajak');
         });
+
+        Schema::table('tbl_laporan_detail', function (Blueprint $table) {
+            $table->foreign('id_tax_type')->references('id')->on('tbl_tax_types')->nullOnDelete();
+        });
     }
 
     public function down(): void
@@ -38,6 +42,9 @@ return new class extends Migration
             
             // Restore old (optional, but good for rollback)
             $table->foreignId('id_pajak')->nullable()->constrained('tbl_pajak');
+        });
+        Schema::table('tbl_laporan_detail', function (Blueprint $table) {
+            $table->dropForeign(['id_tax_type']);
         });
     }
 };

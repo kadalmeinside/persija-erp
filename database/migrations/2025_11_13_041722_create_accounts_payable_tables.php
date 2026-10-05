@@ -111,7 +111,9 @@ return new class extends Migration
             $table->foreignId('id_program_beban')->constrained('tbl_program_kerja');
             $table->foreignId('id_akun_beban')->constrained('tbl_akun_gl');
             
-            $table->foreignId('id_pajak')->nullable()->constrained('tbl_pajak');
+            $table->unsignedBigInteger('id_tax_type')->nullable();
+            $table->decimal('rate_pajak', 5, 2)->default(0);
+            $table->decimal('nominal_pajak', 15, 2)->default(0);
             
             $table->timestamps();
         });

@@ -25,6 +25,10 @@ users 1---N attendance_challenges
 - Jurnal detail menolak nilai negatif dan debit+kredit sekaligus.
 - Jurnal header memiliki `source_type`, `source_event`, dan `posting_batch_id`.
 - Attendance challenge memiliki nonce hash unique, expiry, consumed state, dan request ID per user unique.
+- `tbl_penyusutan.id_jurnal` menjadi FK ke jurnal depresiasi; `jurnal_ref` dipertahankan untuk display/legacy.
+- `tbl_laporan_detail` menyimpan `id_tax_type`, rate snapshot, dan nominal pajak per item settlement.
+- `tbl_pengajuan_cuti` menyimpan status `Cancelled`, actor, waktu, dan alasan pembatalan.
+- Kalender memiliki index tanggal pada event dan cuti; API membatasi query satu bulan dan maksimal 500 item per tipe.
 
 Saldo cuti unlimited ditentukan oleh `tbl_jenis_cuti.is_unlimited`; API saldo mengirim `is_unlimited` agar client tidak menampilkan angka kuota.
 

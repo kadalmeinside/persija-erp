@@ -21,6 +21,8 @@ return new class extends Migration
             $table->string('color')->default('purple'); // To distinguish from holidays (red) and leaves (green/blue)
             $table->foreignId('created_by')->constrained('users')->onDelete('cascade');
             $table->timestamps();
+            $table->index('start_date');
+            $table->index('end_date');
         });
     }
 

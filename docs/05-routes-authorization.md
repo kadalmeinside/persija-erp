@@ -18,6 +18,7 @@ Prefix utama API adalah `/api/v1`. Endpoint penting:
 | GET | `/cuti/jenis` | Jenis cuti |
 | GET | `/cuti/balances` | Saldo cuti |
 | POST | `/cuti/request` | Mengajukan cuti |
+| POST | `/cuti/cancel/{id}` | Membatalkan cuti milik user sebelum dimulai |
 | GET | `/cuti/requests` | Riwayat pengajuan user |
 | GET | `/cuti/approvals` | Approval yang menjadi target user |
 

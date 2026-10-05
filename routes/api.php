@@ -45,6 +45,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/balances', [CutiController::class, 'balances']);
             Route::get('/requests', [CutiController::class, 'requests']);
             Route::post('/request', [CutiController::class, 'submitRequest']);
+            Route::post('/cancel/{id}', [CutiController::class, 'cancelRequest']);
             
             // Optional Manager Approvals
             Route::get('/approvals', [CutiController::class, 'pendingApprovals']);

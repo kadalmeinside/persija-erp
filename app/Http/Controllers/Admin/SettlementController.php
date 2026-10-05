@@ -117,6 +117,9 @@ class SettlementController extends Controller
             // Validasi tambahan: Pastikan program/akun yang dipilih valid
             'items.*.id_program' => 'required|integer|exists:tbl_program_kerja,id', 
             'items.*.id_akun' => 'required|integer|exists:tbl_akun_gl,id',
+            'items.*.id_tax_type' => 'nullable|integer|exists:tbl_tax_types,id',
+            'items.*.rate_pajak' => 'nullable|numeric|min:0|max:100',
+            'items.*.nominal_pajak' => 'nullable|numeric|min:0',
             'items.*.file_bukti' => 'required|file|mimes:jpg,png,pdf|max:2048', 
             'bukti_pengembalian' => 'nullable|file|mimes:jpg,png,pdf|max:2048',
         ]);
@@ -195,6 +198,9 @@ class SettlementController extends Controller
                         'id_departemen_beban' => $pengajuan->id_departemen, 
                         'id_program_beban' => $item['id_program'],
                         'id_akun_beban' => $item['id_akun'],
+                        'id_tax_type' => $item['id_tax_type'] ?? null,
+                        'rate_pajak' => $item['rate_pajak'] ?? 0,
+                        'nominal_pajak' => $item['nominal_pajak'] ?? 0,
                         'bukti_path' => $pathBuktiItem, 
                     ]);
 
@@ -462,6 +468,9 @@ class SettlementController extends Controller
             'items.*.nominal_bon' => 'required|numeric|min:0',
             'items.*.id_program' => 'required|integer|exists:tbl_program_kerja,id', 
             'items.*.id_akun' => 'required|integer|exists:tbl_akun_gl,id',
+            'items.*.id_tax_type' => 'nullable|integer|exists:tbl_tax_types,id',
+            'items.*.rate_pajak' => 'nullable|numeric|min:0|max:100',
+            'items.*.nominal_pajak' => 'nullable|numeric|min:0',
             'items.*.file_bukti' => 'nullable', // Bisa file atau string (path lama)
             'bukti_pengembalian' => 'nullable',
         ]);
@@ -533,6 +542,9 @@ class SettlementController extends Controller
                         'id_departemen_beban' => $pengajuan->id_departemen, 
                         'id_program_beban' => $item['id_program'],
                         'id_akun_beban' => $item['id_akun'],
+                        'id_tax_type' => $item['id_tax_type'] ?? null,
+                        'rate_pajak' => $item['rate_pajak'] ?? 0,
+                        'nominal_pajak' => $item['nominal_pajak'] ?? 0,
                         'bukti_path' => $pathBuktiItem, 
                     ]);
 

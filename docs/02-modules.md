@@ -25,6 +25,7 @@
 5. Approver approve/reject dengan autentikasi PIN.
 6. Reject mengembalikan saldo yang sebelumnya di-reserve.
 7. Jenis cuti unlimited tidak mengurangi saldo.
+8. User dapat membatalkan pengajuan Pending/Approved sebelum tanggal mulai; pembatalan idempotent mengembalikan saldo non-unlimited.
 
 ## Alur attendance mobile
 
