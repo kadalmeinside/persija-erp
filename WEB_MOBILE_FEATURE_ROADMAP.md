@@ -162,7 +162,7 @@ Status proses yang perlu dipahami mobile:
   dokumen, employee target, status `Pending`, dan step aktif.
 - [x] Pastikan user non-target selalu ditolak walaupun mengetahui ID pengajuan.
 - [x] Pastikan pengaju tidak dapat menyetujui pengajuannya sendiri.
-- [ ] Pastikan approval yang sudah selesai, ditolak, dibatalkan, atau dilewati
+- [x] Pastikan approval yang sudah selesai, ditolak, dibatalkan, atau dilewati
   tidak dapat diproses ulang.
 - [ ] Tambahkan test untuk employee approver tanpa role manager.
 - [ ] Tambahkan test bahwa employee lain tidak dapat approve request tersebut.
@@ -260,8 +260,8 @@ Status proses yang perlu dipahami mobile:
 - [ ] Notification preference.
 - [ ] Deep link untuk approval, task, cuti, dan absensi.
 - [ ] Loading, empty, error, retry, timeout, dan session-expired state yang
-  konsisten.
-- [ ] Cache dashboard dan data baca dengan timestamp last sync.
+  konsisten (Sebagian selesai di Mobile).
+- [x] Cache dashboard dan data baca dengan timestamp last sync (Offline caching profil & saldo cuti di Mobile).
 - [ ] Retry upload yang aman dan idempotent.
 - [ ] Jangan menganggap approval, clock-in/out, atau submit berhasil hanya
   karena request masuk queue lokal.
@@ -371,16 +371,13 @@ Dashboard Direktur juga harus mengecualikan dari daftar “belum hadir”:
 
 ## Prioritas kerja berikutnya
 
-1. Hapus role gate pada pending approval.
-2. Tambahkan test employee-based approval lintas departemen.
-3. Pastikan inbox dan badge mobile berdasarkan assignment employee.
-4. Audit dan samakan approval center web dengan aturan employee-based.
-5. Bangun Approval Center mobile dari endpoint yang memiliki scope employee.
-6. Tambahkan detail dan timeline approval yang tidak mengasumsikan jabatan pada
-   web dan mobile.
-7. Tambahkan push/in-app notification ke employee target.
-8. Perkuat offline mobile, error handling web/mobile, security, dan integration
-   test.
+1. Tambahkan test employee-based approval lintas departemen.
+2. Tambahkan test bahwa employee lain tidak dapat approve request tersebut.
+3. Bangun Approval Center web yang tersinkronisasi penuh dengan versi mobile.
+4. Tambahkan push/in-app notification ke employee target menggunakan Firebase Cloud Messaging (FCM).
+5. Kembangkan modul Employee Self-Service lanjutan (Riwayat Pembatalan Cuti, Koreksi Absensi).
+6. Tambahkan deep link dari notifikasi ke detail approval.
+7. Bangun modul Payslip untuk Mobile (Read-only) dan pengajuan dinas luar.
 
 ## Catatan pembaruan
 
@@ -393,3 +390,4 @@ Dashboard Direktur juga harus mengecualikan dari daftar “belum hadir”:
 | 2026-10-06 | Implementasi fitur registrasi wajah di mobile | Selesai |
 | 2026-10-06 | Perbaikan bug bottom overflowed pada modul tugas (mobile) | Selesai |
 | 2026-10-06 | Implementasi Dashboard/Ringkasan Direktur di mobile dan web | Selesai |
+| 2026-10-06 | Penyelesaian P0 & P1 Hasil Audit (Keamanan, Biometrik, Bug Approval, Caching, UX) | Selesai |
