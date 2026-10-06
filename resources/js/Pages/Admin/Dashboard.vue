@@ -223,8 +223,10 @@ const greeting = computed(() => {
                                 </div>
                                 <ArrowRightIcon class="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
-                            <h4 class="text-3xl font-black text-gray-900 dark:text-white mb-1">{{ director_overview.today_tasks.length }}</h4>
-                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Tugas Hari Ini</p>
+                            <div class="flex items-baseline gap-2">
+                                <h4 class="text-3xl font-black text-gray-900 dark:text-white">{{ director_overview.today_tasks.length }}</h4>
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Tugas Hari Ini</p>
+                            </div>
                         </Link>
                         
                         <Link :href="route('admin.tasks.index')" class="bg-gradient-to-br from-red-50 to-white dark:from-red-900/40 dark:to-gray-800 rounded-2xl p-5 shadow-sm border border-red-100 dark:border-red-800/50 hover:shadow-md transition group">
@@ -234,8 +236,10 @@ const greeting = computed(() => {
                                 </div>
                                 <ArrowRightIcon class="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
-                            <h4 class="text-3xl font-black text-gray-900 dark:text-white mb-1">{{ director_overview.overdue_tasks.length }}</h4>
-                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Tugas Terlambat</p>
+                            <div class="flex items-baseline gap-2">
+                                <h4 class="text-3xl font-black text-gray-900 dark:text-white">{{ director_overview.overdue_tasks.length }}</h4>
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Tugas Terlambat</p>
+                            </div>
                         </Link>
                         
                         <Link :href="route('admin.hr.cuti.index')" class="bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-900/40 dark:to-gray-800 rounded-2xl p-5 shadow-sm border border-emerald-100 dark:border-emerald-800/50 hover:shadow-md transition group">
@@ -245,8 +249,10 @@ const greeting = computed(() => {
                                 </div>
                                 <ArrowRightIcon class="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
-                            <h4 class="text-3xl font-black text-gray-900 dark:text-white mb-1">{{ director_overview.on_leave_today.length }}</h4>
-                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Sedang Cuti</p>
+                            <div class="flex items-baseline gap-2">
+                                <h4 class="text-3xl font-black text-gray-900 dark:text-white">{{ director_overview.on_leave_today.length }}</h4>
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Sedang Cuti</p>
+                            </div>
                         </Link>
                         
                         <div class="bg-gradient-to-br from-amber-50 to-white dark:from-amber-900/40 dark:to-gray-800 rounded-2xl p-5 shadow-sm border border-amber-100 dark:border-amber-800/50 hover:shadow-md transition">
@@ -255,8 +261,10 @@ const greeting = computed(() => {
                                     <UserGroupIcon class="w-6 h-6" />
                                 </div>
                             </div>
-                            <h4 class="text-3xl font-black text-gray-900 dark:text-white mb-1">{{ director_overview.absent_today.length }}</h4>
-                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Belum Hadir</p>
+                            <div class="flex items-baseline gap-2">
+                                <h4 class="text-3xl font-black text-gray-900 dark:text-white">{{ director_overview.absent_today.length }}</h4>
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Belum Hadir</p>
+                            </div>
                         </div>
                     </div>
                 </div>
