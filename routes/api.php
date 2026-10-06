@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\AbsensiController;
 use App\Http\Controllers\Api\CutiController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\TaskController;
+use App\Http\Controllers\Api\ApprovalCenterController;
 
 /*
 |--------------------------------------------------------------------------
@@ -29,6 +30,9 @@ Route::prefix('v1')->group(function () {
 
         // Dashboard (BFF Pattern)
         Route::get('/dashboard/home', [DashboardController::class, 'home']);
+        Route::get('/approvals', [ApprovalCenterController::class, 'index']);
+        Route::get('/approvals/{approval}', [ApprovalCenterController::class, 'show']);
+        Route::post('/approvals/{approval}/action', [ApprovalCenterController::class, 'action']);
 
         // Absensi (Attendance) Module
         Route::prefix('absensi')->group(function () {

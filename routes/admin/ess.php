@@ -32,7 +32,9 @@ Route::middleware(["role:{$essRoles}"])->group(function () {
     // ----------------------------------------------------------------
     Route::prefix('cuti')->name('cuti.')->controller(CutiController::class)->group(function () {
         Route::get('my-requests', 'myRequests')->name('my-requests');
-        Route::get('approvals', 'approvals')->name('approvals');
+        Route::get('approvals', 'approvals')
+            ->withoutMiddleware(\Spatie\Permission\Middleware\RoleMiddleware::class)
+            ->name('approvals');
         Route::get('management', 'management')->name('management');
         Route::post('generate', 'generate')->name('generate');
         Route::put('balances/{id}', 'updateBalance')->name('update-balance');
@@ -53,8 +55,12 @@ Route::middleware(["role:{$essRoles}"])->group(function () {
         Route::get('{pengajuan}/print-voucher', [PengajuanReportController::class, 'printVoucher'])->name('print-voucher');
 
         // Approval Flow
-        Route::get('approvals', [PengajuanApprovalController::class, 'index'])->name('approvals');
-        Route::post('{pengajuan}/action', [PengajuanApprovalController::class, 'action'])->name('action');
+        Route::get('approvals', [PengajuanApprovalController::class, 'index'])
+            ->withoutMiddleware(\Spatie\Permission\Middleware\RoleMiddleware::class)
+            ->name('approvals');
+        Route::post('{pengajuan}/action', [PengajuanApprovalController::class, 'action'])
+            ->withoutMiddleware(\Spatie\Permission\Middleware\RoleMiddleware::class)
+            ->name('action');
 
         // Pembayaran
         Route::get('payment-schedule', [PengajuanPaymentController::class, 'schedule'])->name('payment-schedule');

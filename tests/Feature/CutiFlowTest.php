@@ -217,6 +217,74 @@ class CutiFlowTest extends TestCase
             ->assertJsonPath('data.0.nip', '1001');
     }
 
+    public function test_employee_approver_without_manager_role_receives_pending_count(): void
+    {
+        $this->actingAs($this->pengajuUser, 'sanctum');
+        $this->test_karyawan_bisa_mengajukan_cuti_dan_memotong_saldo_terpakai();
+
+        $this->actingAs($this->approverUser, 'sanctum');
+        $response = $this->getJson('/api/v1/dashboard/home');
+
+        $response->assertOk()
+            ->assertJsonPath('data.tasks.pending_approvals', 1);
+    }
+
+    public function test_generic_approval_center_is_scoped_to_target_employee(): void
+    {
+        $this->actingAs($this->pengajuUser, 'sanctum');
+        $this->test_karyawan_bisa_mengajukan_cuti_dan_memotong_saldo_terpakai();
+
+        $this->actingAs($this->approverUser, 'sanctum');
+        $response = $this->getJson('/api/v1/approvals');
+
+        $response->assertOk()
+            ->assertJsonPath('data.0.type', 'Cuti')
+            ->assertJsonPath('data.0.status', 'Pending')
+            ->assertJsonPath('data.0.target_employee', 'Approver')
+            ->assertJsonPath('data.0.applicant', 'Pengaju');
+    }
+
+    public function test_non_target_employee_cannot_process_generic_approval(): void
+    {
+        $this->actingAs($this->pengajuUser, 'sanctum');
+        $this->test_karyawan_bisa_mengajukan_cuti_dan_memotong_saldo_terpakai();
+        $approval = ApprovalProcess::where('status', 'Pending')->firstOrFail();
+
+        $this->actingAs($this->hrUser, 'sanctum');
+        $response = $this->postJson("/api/v1/approvals/{$approval->id}/action", [
+            'status' => 'Approved',
+            'pin' => '123456',
+        ]);
+
+        $response->assertForbidden();
+        $this->assertDatabaseHas('tbl_approval_process', [
+            'id' => $approval->id,
+            'status' => 'Pending',
+        ]);
+    }
+
+    public function test_generic_approval_center_can_process_assigned_leave_with_pin(): void
+    {
+        $this->approverUser->update(['pin' => '123456']);
+        $this->actingAs($this->pengajuUser, 'sanctum');
+        $this->test_karyawan_bisa_mengajukan_cuti_dan_memotong_saldo_terpakai();
+        $approval = ApprovalProcess::where('status', 'Pending')->firstOrFail();
+
+        $this->actingAs($this->approverUser, 'sanctum');
+        $response = $this->postJson("/api/v1/approvals/{$approval->id}/action", [
+            'status' => 'Approved',
+            'pin' => '123456',
+            'catatan' => 'Diproses dari approval center',
+        ]);
+
+        $response->assertOk();
+        $this->assertDatabaseHas('tbl_approval_process', [
+            'id' => $approval->id,
+            'status' => 'Approved',
+            'id_karyawan_action' => $this->karyawanApprover->id,
+        ]);
+    }
+
     public function test_api_owner_can_cancel_pending_leave_and_restore_balance(): void
     {
         $this->actingAs($this->pengajuUser, 'sanctum');

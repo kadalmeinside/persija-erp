@@ -7,6 +7,9 @@ use Illuminate\Http\Request;
 use App\Models\Absensi;
 use App\Models\ApprovalProcess;
 use App\Models\SaldoCuti;
+use App\Models\Karyawan;
+use App\Models\PengajuanCuti;
+use App\Models\Task;
 use Illuminate\Support\Carbon;
 
 class DashboardController extends Controller
@@ -39,35 +42,71 @@ class DashboardController extends Controller
             })
             ->first();
 
-        // 3. (Optional) Check pending approvals if user is a manager
-        // This is useful to show a red dot/badge on the dashboard
-        $pendingApprovals = 0;
-        if (in_array($user->roles->first()?->name, ['HR Manager', 'Direktur', 'Manajer Departemen'])) {
-            $pendingApprovals = ApprovalProcess::where('id_karyawan_target', $karyawan->id)
-                ->where('status', 'Pending')
-                ->count();
+        // Pending approval is assigned to an employee, not inferred from role.
+        $roles = $user->getRoleNames();
+        $pendingApprovals = ApprovalProcess::where('id_karyawan_target', $karyawan->id)
+            ->where('status', 'Pending')
+            ->count();
+
+        $data = [
+            'user' => [
+                'name' => $karyawan->nama_lengkap,
+                'jabatan' => $karyawan->jabatan,
+                'foto_url' => $karyawan->foto_url,
+            ],
+            'attendance_today' => [
+                'status' => $absensiHariIni ? $absensiHariIni->status_kehadiran : 'Belum Absen',
+                'jam_masuk' => $absensiHariIni?->waktu_masuk,
+                'jam_keluar' => $absensiHariIni?->waktu_keluar,
+            ],
+            'leave_balance' => [
+                'annual_leave_remaining' => $saldoCutiTahunan ? $saldoCutiTahunan->saldo_akhir : 0,
+                'total_annual_leave' => $saldoCutiTahunan ? $saldoCutiTahunan->saldo_awal : 0,
+            ],
+            'tasks' => [
+                'pending_approvals' => $pendingApprovals,
+            ],
+        ];
+
+        if ($roles->contains('Direktur')) {
+            $today = Carbon::today();
+            $todayTasks = Task::with('assignee:id,nama_lengkap')
+                ->activeKanban()
+                ->whereDate('due_date', $today)
+                ->orderBy('priority')
+                ->get(['id', 'title', 'status', 'priority', 'due_date', 'id_karyawan_assignee']);
+            $overdueTasks = Task::with('assignee:id,nama_lengkap')
+                ->activeKanban()
+                ->whereDate('due_date', '<', $today)
+                ->where('status', '!=', 'Done')
+                ->orderBy('due_date')
+                ->get(['id', 'title', 'status', 'priority', 'due_date', 'id_karyawan_assignee']);
+            $onLeave = PengajuanCuti::with('karyawan:id,nama_lengkap')
+                ->where('status', 'Approved')
+                ->whereDate('tgl_mulai', '<=', $today)
+                ->whereDate('tgl_selesai', '>=', $today)
+                ->get(['id', 'id_karyawan', 'tgl_mulai', 'tgl_selesai', 'id_jenis_cuti']);
+            $presentIds = Absensi::whereDate('tanggal', $today)->pluck('id_karyawan');
+            $absent = Karyawan::whereNotIn('id', $presentIds)
+                ->whereNotIn('status_karyawan', ['Resign', 'Nonaktif', 'Terminated'])
+                ->orderBy('nama_lengkap')
+                ->get(['id', 'nama_lengkap', 'jabatan', 'id_departemen']);
+
+            $data['director_overview'] = [
+                'today_tasks' => $todayTasks,
+                'overdue_tasks' => $overdueTasks,
+                'on_leave_today' => $onLeave->map(fn ($leave) => [
+                    'id' => $leave->id,
+                    'employee_name' => $leave->karyawan?->nama_lengkap,
+                    'start_date' => $leave->tgl_mulai,
+                    'end_date' => $leave->tgl_selesai,
+                ])->values(),
+                'absent_today' => $absent,
+            ];
         }
 
         return response()->json([
-            'data' => [
-                'user' => [
-                    'name' => $karyawan->nama_lengkap,
-                    'jabatan' => $karyawan->jabatan,
-                    'foto_url' => $karyawan->foto_url,
-                ],
-                'attendance_today' => [
-                    'status' => $absensiHariIni ? $absensiHariIni->status_kehadiran : 'Belum Absen',
-                    'jam_masuk' => $absensiHariIni?->waktu_masuk,
-                    'jam_keluar' => $absensiHariIni?->waktu_keluar,
-                ],
-                'leave_balance' => [
-                    'annual_leave_remaining' => $saldoCutiTahunan ? $saldoCutiTahunan->saldo_akhir : 0,
-                    'total_annual_leave' => $saldoCutiTahunan ? $saldoCutiTahunan->saldo_awal : 0,
-                ],
-                'tasks' => [
-                    'pending_approvals' => $pendingApprovals
-                ]
-            ]
+            'data' => $data,
         ], 200);
     }
 }

@@ -217,6 +217,7 @@ class ApprovalService
 
             $currentStep = $this->buildQuery($model, $meta)
                                ->where('status', 'Pending')
+                               ->lockForUpdate()
                                ->orderBy('level_order', 'asc')
                                ->first();
 
@@ -228,6 +229,10 @@ class ApprovalService
             if ($currentStep->id_karyawan_target != $karyawanIdAction) {
                 Log::warning("Identity mismatch: target={$currentStep->id_karyawan_target}, actor={$karyawanIdAction}");
                 throw new \Exception('Anda tidak berwenang menyetujui langkah ini. Silakan hubungi approver yang ditunjuk.');
+            }
+
+            if ($meta['pengajuId'] !== null && $currentStep->id_karyawan_target == $meta['pengajuId']) {
+                throw new \Exception('Pengaju tidak dapat menyetujui dokumennya sendiri.');
             }
 
             // Update step saat ini
@@ -281,6 +286,7 @@ class ApprovalService
 
             $currentStep = $this->buildQuery($model, $meta)
                                ->where('status', 'Pending')
+                               ->lockForUpdate()
                                ->first();
 
             if (!$currentStep) {
@@ -290,6 +296,10 @@ class ApprovalService
             // IDENTITY GUARD
             if ($currentStep->id_karyawan_target != $karyawanIdAction) {
                 throw new \Exception('Anda tidak berwenang menolak langkah ini.');
+            }
+
+            if ($meta['pengajuId'] !== null && $currentStep->id_karyawan_target == $meta['pengajuId']) {
+                throw new \Exception('Pengaju tidak dapat menolak dokumennya sendiri sebagai approver.');
             }
 
             $currentStep->update([
