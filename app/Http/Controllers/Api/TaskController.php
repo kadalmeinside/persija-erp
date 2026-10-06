@@ -26,8 +26,7 @@ class TaskController extends Controller
             ], 403);
         }
 
-        $roles = $user->roles->pluck('name');
-        $isDirektur = $roles->contains('Direktur');
+        $isDirektur = $user->hasAnyRole(['direktur', 'Direktur']);
 
         // Base Query - only active tasks
         $query = Task::with(['creator:id,nama_lengkap', 'assignee:id,nama_lengkap'])
@@ -67,8 +66,7 @@ class TaskController extends Controller
             ], 403);
         }
 
-        $roles = $user->roles->pluck('name');
-        $isDirektur = $roles->contains('Direktur');
+        $isDirektur = $user->hasAnyRole(['direktur', 'Direktur']);
 
         $query = Task::with(['creator:id,nama_lengkap', 'assignee:id,nama_lengkap']);
 
@@ -177,7 +175,10 @@ class TaskController extends Controller
         $user = Auth::user();
         $karyawan = Karyawan::where('user_id', $user->id)->first();
         
-        if (!$karyawan || ($task->id_karyawan_assignee != $karyawan->id && $task->id_karyawan_creator != $karyawan->id)) {
+        $isDirektur = $user->hasAnyRole(['direktur', 'Direktur']);
+        $canUpdate = $karyawan && ($task->id_karyawan_assignee == $karyawan->id || $task->id_karyawan_creator == $karyawan->id || $isDirektur);
+
+        if (!$canUpdate) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized to update this task'

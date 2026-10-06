@@ -108,13 +108,14 @@ class AuthController extends Controller
             return response()->json(['message' => 'Data karyawan tidak ditemukan.'], 404);
         }
 
-        if ($user->karyawan->face_descriptor) {
+        if ($user->karyawan->biometric && $user->karyawan->biometric->face_descriptor) {
             return response()->json(['message' => 'Wajah sudah terdaftar sebelumnya.'], 400);
         }
 
-        $user->karyawan->update([
-            'face_descriptor' => $request->face_descriptor,
-        ]);
+        \App\Models\KaryawanBiometric::updateOrCreate(
+            ['id_karyawan' => $user->karyawan->id],
+            ['face_descriptor' => $request->face_descriptor]
+        );
 
         return response()->json([
             'message' => 'Wajah berhasil didaftarkan.',

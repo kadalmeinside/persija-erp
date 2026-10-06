@@ -84,14 +84,21 @@ class AttendanceController extends Controller
                 return response()->json(['success' => false, 'message' => 'Karyawan tidak ditemukan']);
             }
 
-            $karyawan->face_descriptor = $request->descriptor;
-            $karyawan->save();
+            \App\Models\KaryawanBiometric::updateOrCreate(
+                ['id_karyawan' => $karyawan->id],
+                ['face_descriptor' => $request->descriptor]
+            );
 
             return response()->json(['success' => true, 'message' => 'Wajah berhasil didaftarkan.']);
         }
 
         // View registrasi
-        $karyawan = Karyawan::where('user_id', Auth::id())->first();
+        $karyawan = Karyawan::with('biometric')->where('user_id', Auth::id())->first();
+        // Fallback for frontend that might still expect face_descriptor directly on karyawan
+        if ($karyawan && $karyawan->biometric) {
+            $karyawan->face_descriptor = $karyawan->biometric->face_descriptor;
+        }
+
         return Inertia::render('Admin/Absensi/RegisterFace', [
             'karyawan' => $karyawan
         ]);

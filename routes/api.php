@@ -19,8 +19,8 @@ use App\Http\Controllers\Api\KaryawanController;
 // API V1
 Route::prefix('v1')->group(function () {
     
-    // Public Routes
-    Route::post('/login', [AuthController::class, 'login']);
+    // Public Routes (Rate limited: 5 requests per minute)
+    Route::middleware('throttle:5,1')->post('/login', [AuthController::class, 'login']);
 
     // Protected Routes
     Route::middleware('auth:sanctum')->group(function () {
@@ -39,9 +39,14 @@ Route::prefix('v1')->group(function () {
         // Absensi (Attendance) Module
         Route::prefix('absensi')->group(function () {
             Route::get('/today', [AbsensiController::class, 'today']);
-            Route::post('/challenge', [AbsensiController::class, 'challenge']);
-            Route::post('/clock-in', [AbsensiController::class, 'clockIn']);
-            Route::post('/clock-out', [AbsensiController::class, 'clockOut']);
+            
+            // Rate limit attendance actions: 10 requests per minute
+            Route::middleware('throttle:10,1')->group(function () {
+                Route::post('/challenge', [AbsensiController::class, 'challenge']);
+                Route::post('/clock-in', [AbsensiController::class, 'clockIn']);
+                Route::post('/clock-out', [AbsensiController::class, 'clockOut']);
+            });
+            
             Route::get('/history', [AbsensiController::class, 'history']);
         });
 

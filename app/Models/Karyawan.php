@@ -99,6 +99,14 @@ class Karyawan extends Model
     {
         return $this->morphMany(RekeningBank::class, 'owner');
     }
+
+    /**
+     * Relasi ke data Biometrik.
+     */
+    public function biometric()
+    {
+        return $this->hasOne(KaryawanBiometric::class, 'id_karyawan');
+    }
     
     /**
      * Helper Accessor untuk mengambil rekening utama.

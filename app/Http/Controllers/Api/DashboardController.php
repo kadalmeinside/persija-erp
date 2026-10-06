@@ -73,7 +73,8 @@ class DashboardController extends Controller
             ],
         ];
 
-        if ($roles->contains('Direktur')) {
+        $isDirektur = $user->hasAnyRole(['direktur', 'Direktur']);
+        if ($isDirektur) {
             $today = Carbon::today();
             $todayTasks = Task::with('assignee:id,nama_lengkap')
                 ->activeKanban()
