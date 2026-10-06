@@ -1,5 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import ApprovalTabs from '@/Components/ApprovalTabs.vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3'; // Added router
 import { ref } from 'vue';
 import Modal from '@/Components/Modal.vue';
@@ -116,14 +117,16 @@ const onPinSuccess = () => {
     <AuthenticatedLayout>
         <template #header>
             <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-                Persetujuan Cuti
+                Approval Center
             </h2>
         </template>
 
         <div class="pb-12 pt-4">
-            <div class="max-w-7xl mx-auto">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                
+                <ApprovalTabs activeTab="cuti" />
 
-                <!-- Tabs -->
+                <!-- Inner Tabs (Pending/History) -->
                 <div class="flex border-b border-gray-200 dark:border-gray-700 mb-6 mx-4 md:mx-0">
                     <button 
                         @click="switchView('pending')" 

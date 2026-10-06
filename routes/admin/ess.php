@@ -21,6 +21,11 @@ $essRoles = 'Super Admin|Manajer Departemen|Finance|Staf|Direktur|Karyawan|Staf 
 Route::middleware(["role:{$essRoles}"])->group(function () {
 
     // ----------------------------------------------------------------
+    // Approval Center (Unified Inbox Redirector)
+    // ----------------------------------------------------------------
+    Route::get('approval-center', [\App\Http\Controllers\Admin\ApprovalCenterController::class, 'index'])->name('approval-center.index');
+
+    // ----------------------------------------------------------------
     // Kalender & Hari Libur
     // ----------------------------------------------------------------
     Route::get('calendar', [CalendarController::class, 'index'])->name('calendar.index');

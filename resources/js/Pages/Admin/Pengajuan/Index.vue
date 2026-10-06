@@ -1,6 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import Pagination from '@/Components/Pagination.vue';
+import ApprovalTabs from '@/Components/ApprovalTabs.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { EyeIcon, PencilSquareIcon, PlusIcon, MagnifyingGlassIcon, CheckCircleIcon, XCircleIcon, FunnelIcon } from '@heroicons/vue/24/outline';
 import { ref, watch } from 'vue';
@@ -139,7 +140,7 @@ const statusBadge = (status) => {
 
 const getPageTitle = () => {
     if (props.activeTab === 'my-requests') return 'Pengajuan Saya';
-    if (props.activeTab === 'approvals') return 'Persetujuan Pengajuan';
+    if (props.activeTab === 'approvals') return 'Approval Center';
     return 'Semua Pengajuan';
 };
 </script>
@@ -153,7 +154,9 @@ const getPageTitle = () => {
         </template>
 
         <div class="pb-6 pt-2 sm:pb-12 sm:pt-4">
-            <div class="max-w-7xl mx-auto">
+            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+                <ApprovalTabs v-if="activeTab === 'approvals'" activeTab="pengajuan" />
+
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-3 sm:p-6 text-gray-900">
                         

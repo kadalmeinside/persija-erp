@@ -290,25 +290,14 @@ const sidebarMenu = computed(() => {
         current: 'admin.tickets.my-requests' 
     });
 
-    // Persetujuan Cuti
-    if (isCutiApprover.value) {
+    // Approval Center (Unified Inbox)
+    if (isCutiApprover.value || isPengajuanApprover.value) {
         menu.push({ 
             type: 'link',
-            name: 'Persetujuan Cuti', 
-            route: 'admin.cuti.approvals', 
+            name: 'Approval Center', 
+            route: 'admin.approval-center.index', 
             icon: CheckBadgeIcon, 
-            current: 'admin.cuti.approvals' 
-        });
-    }
-
-    // Persetujuan Pengajuan
-    if (isPengajuanApprover.value) {
-        menu.push({ 
-            type: 'link',
-            name: 'Persetujuan Pengajuan', 
-            route: 'admin.pengajuan.approvals', 
-            icon: CheckBadgeIcon, 
-            current: 'admin.pengajuan.approvals' 
+            current: 'admin.cuti.approvals,admin.pengajuan.approvals,admin.approval-center.*' 
         });
     }
 
