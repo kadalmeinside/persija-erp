@@ -93,4 +93,32 @@ class AuthController extends Controller
             'message' => 'Password berhasil diperbarui.'
         ], 200);
     }
+
+    /**
+     * Register face descriptor for the authenticated user.
+     */
+    public function registerFace(Request $request)
+    {
+        $request->validate([
+            'face_descriptor' => 'required|string',
+        ]);
+
+        $user = $request->user();
+        if (!$user->karyawan) {
+            return response()->json(['message' => 'Data karyawan tidak ditemukan.'], 404);
+        }
+
+        if ($user->karyawan->face_descriptor) {
+            return response()->json(['message' => 'Wajah sudah terdaftar sebelumnya.'], 400);
+        }
+
+        $user->karyawan->update([
+            'face_descriptor' => $request->face_descriptor,
+        ]);
+
+        return response()->json([
+            'message' => 'Wajah berhasil didaftarkan.',
+            'user' => new \App\Http\Resources\UserResource($user->load('karyawan')),
+        ], 200);
+    }
 }

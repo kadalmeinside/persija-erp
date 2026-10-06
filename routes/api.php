@@ -26,6 +26,7 @@ Route::prefix('v1')->group(function () {
         // Auth & Profile
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/user', [AuthController::class, 'profile']);
+        Route::post('/user/register-face', [AuthController::class, 'registerFace']);
         Route::post('/update-password', [AuthController::class, 'updatePassword']);
 
         // Dashboard (BFF Pattern)
