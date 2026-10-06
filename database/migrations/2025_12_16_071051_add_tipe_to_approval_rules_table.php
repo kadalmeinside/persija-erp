@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('tbl_approval_rules', function (Blueprint $table) {
-            $table->enum('tipe', ['Pengajuan', 'Cuti', 'Pinjaman'])->default('Pengajuan')->after('id_departemen');
+            $table->enum('tipe', ['Pengajuan', 'Cuti', 'Pinjaman', 'Invoice'])->default('Pengajuan')->after('id_departemen');
         });
     }
 

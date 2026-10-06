@@ -241,8 +241,7 @@ const greeting = computed(() => {
                                 <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Tugas Terlambat</p>
                             </div>
                         </Link>
-                        
-                        <Link :href="route('admin.hr.cuti.index')" class="bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-900/40 dark:to-gray-800 rounded-2xl p-5 shadow-sm border border-emerald-100 dark:border-emerald-800/50 hover:shadow-md transition group">
+                        <Link :href="route('admin.cuti.management')" class="bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-900/40 dark:to-gray-800 rounded-2xl p-5 shadow-sm border border-emerald-100 dark:border-emerald-800/50 hover:shadow-md transition group">
                             <div class="flex justify-between items-start mb-4">
                                 <div class="bg-emerald-100 dark:bg-emerald-900/50 p-2 rounded-xl text-emerald-600 dark:text-emerald-400">
                                     <CalendarIcon class="w-6 h-6" />
