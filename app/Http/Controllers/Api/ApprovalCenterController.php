@@ -102,6 +102,17 @@ class ApprovalCenterController extends Controller
             return response()->json(['message' => 'PIN salah atau belum diatur.'], 422);
         }
 
+        $model = $approval->cuti ?? $approval->pinjaman ?? $approval->invoice ?? $approval->pengajuan;
+        if (!$model) {
+            return response()->json(['message' => 'Dokumen approval tidak ditemukan.'], 404);
+        }
+
+        $docStatus = $model->status ?? $model->status_global ?? null;
+        // Depending on the enum or string, check if it's already finished
+        if (in_array($docStatus, ['Rejected', 'Cancelled', 'Canceled', 'Approved', \App\Enums\PengajuanStatus::REJECTED->value, \App\Enums\PengajuanStatus::APPROVED->value, \App\Enums\InvoiceStatus::Cancelled->value, \App\Enums\InvoiceStatus::Approved->value])) {
+            return response()->json(['message' => 'Dokumen ini sudah selesai diproses ('.$docStatus.').'], 422);
+        }
+
         $service = app(\App\Services\ApprovalService::class);
         try {
             if ($validated['status'] === 'Rejected' && $approval->id_cuti) {
@@ -119,13 +130,6 @@ class ApprovalCenterController extends Controller
                     $service->reject($cuti, $karyawan->id, $validated['catatan'] ?? null);
                 });
             } else {
-                $model = $approval->cuti
-                    ?? $approval->pinjaman
-                    ?? $approval->invoice
-                    ?? $approval->pengajuan;
-                if (!$model) {
-                    return response()->json(['message' => 'Dokumen approval tidak ditemukan.'], 404);
-                }
                 if ($validated['status'] === 'Approved') {
                     $service->approve($model, $karyawan->id, $validated['catatan'] ?? null);
                 } else {

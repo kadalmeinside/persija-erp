@@ -91,8 +91,12 @@ class DashboardController extends Controller
                 ->whereDate('tgl_mulai', '<=', $today)
                 ->whereDate('tgl_selesai', '>=', $today)
                 ->get(['id', 'id_karyawan', 'tgl_mulai', 'tgl_selesai', 'id_jenis_cuti']);
-            $presentIds = Absensi::whereDate('tanggal', $today)->pluck('id_karyawan');
-            $absent = Karyawan::whereNotIn('id', $presentIds)
+            $onLeaveIds = $onLeave->pluck('id_karyawan')->toArray();
+            $presentIds = Absensi::whereDate('tanggal', $today)->pluck('id_karyawan')->toArray();
+            
+            $excludedIds = array_unique(array_merge($presentIds, $onLeaveIds));
+
+            $absent = Karyawan::whereNotIn('id', $excludedIds)
                 ->whereNotIn('status_karyawan', ['Resign', 'Nonaktif', 'Terminated'])
                 ->orderBy('nama_lengkap')
                 ->get(['id', 'nama_lengkap', 'jabatan', 'id_departemen']);
