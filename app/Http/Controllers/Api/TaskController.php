@@ -16,33 +16,15 @@ class TaskController extends Controller
      */
     public function index(Request $request)
     {
-        $user = Auth::user();
-        $karyawan = Karyawan::where('user_id', $user->id)->first();
-
-        if (!$karyawan) {
+        try {
+            $taskService = app(\App\Services\TaskService::class);
+            $tasks = $taskService->getActiveTasks(Auth::user(), ['creator:id,nama_lengkap', 'assignee:id,nama_lengkap']);
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'User belum terdaftar sebagai Karyawan.'
+                'message' => $e->getMessage()
             ], 403);
         }
-
-        $isDirektur = $user->hasAnyRole(['direktur', 'Direktur']);
-
-        // Base Query - only active tasks
-        $query = Task::with(['creator:id,nama_lengkap', 'assignee:id,nama_lengkap'])
-            ->activeKanban();
-            
-        if (!$isDirektur) {
-            $query->where(function ($q) use ($karyawan) {
-                $q->where('id_karyawan_assignee', $karyawan->id)
-                  ->orWhere('id_karyawan_creator', $karyawan->id);
-            });
-        }
-        
-        $query->orderBy('order_index', 'asc')
-            ->orderBy('created_at', 'desc');
-
-        $tasks = $query->get();
 
         return response()->json([
             'success' => true,
@@ -56,30 +38,15 @@ class TaskController extends Controller
      */
     public function history(Request $request)
     {
-        $user = Auth::user();
-        $karyawan = Karyawan::where('user_id', $user->id)->first();
-
-        if (!$karyawan) {
+        try {
+            $taskService = app(\App\Services\TaskService::class);
+            $tasks = $taskService->getHistoryTasks(Auth::user(), ['creator:id,nama_lengkap', 'assignee:id,nama_lengkap'], 15);
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'User belum terdaftar sebagai Karyawan.'
+                'message' => $e->getMessage()
             ], 403);
         }
-
-        $isDirektur = $user->hasAnyRole(['direktur', 'Direktur']);
-
-        $query = Task::with(['creator:id,nama_lengkap', 'assignee:id,nama_lengkap']);
-
-        if (!$isDirektur) {
-            $query->where(function ($q) use ($karyawan) {
-                $q->where('id_karyawan_assignee', $karyawan->id)
-                  ->orWhere('id_karyawan_creator', $karyawan->id);
-            });
-        }
-
-        $query->orderBy('created_at', 'desc');
-
-        $tasks = $query->paginate(15);
 
         return response()->json([
             'success' => true,

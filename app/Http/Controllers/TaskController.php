@@ -18,45 +18,12 @@ class TaskController extends Controller
      */
     public function index(Request $request)
     {
-        $user = Auth::user();
-        $karyawan = Karyawan::where('user_id', $user->id)->first();
-
-        if (!$karyawan) {
-            abort(403, 'Anda belum terdaftar sebagai Karyawan.');
+        try {
+            $taskService = app(\App\Services\TaskService::class);
+            $tasks = $taskService->getActiveTasks(Auth::user());
+        } catch (\Exception $e) {
+            abort(403, $e->getMessage());
         }
-
-        // 1. Is this employee a Department Head?
-        $isHead = Departemen::where('id_karyawan_kepala', $karyawan->id)->exists();
-        // Or if super admin / direktur
-        $isAdmin = $user->hasRole(['super-admin', 'admin', 'direktur', 'Direktur']);
-
-        // Base Query
-        $query = Task::with(['creator', 'assignee', 'departemen', 'programKerja'])
-            ->activeKanban()
-            ->orderBy('order_index', 'asc')
-            ->orderBy('created_at', 'desc');
-
-        if (!$isAdmin) {
-            if ($isHead) {
-                // Head sees tasks assigned to their department's staff OR created by them
-                $departemenIds = Departemen::where('id_karyawan_kepala', $karyawan->id)->pluck('id')->toArray();
-                $karyawanIds = Karyawan::whereIn('id_departemen', $departemenIds)->pluck('id')->toArray();
-                $karyawanIds[] = $karyawan->id; // Ensure themselves
-
-                $query->where(function ($q) use ($karyawanIds, $karyawan) {
-                    $q->whereIn('id_karyawan_assignee', $karyawanIds)
-                      ->orWhere('id_karyawan_creator', $karyawan->id);
-                });
-            } else {
-                // Regular staff: only tasks they are assigned to or created
-                $query->where(function ($q) use ($karyawan) {
-                    $q->where('id_karyawan_assignee', $karyawan->id)
-                      ->orWhere('id_karyawan_creator', $karyawan->id);
-                });
-            }
-        }
-
-        $tasks = $query->get();
 
         // Dropdown options based on hierarchy
         $assigneeOptions = collect();
