@@ -23,18 +23,20 @@ class ApprovalCenterController extends Controller
         }
 
         // Check Cuti Approver
-        $isCutiApprover = ApprovalRule::where('tipe', 'Cuti')->where('id_karyawan_approver', $karyawanId)->exists() 
-            || ApprovalProcess::whereNotNull('id_cuti')->where('id_karyawan_target', $karyawanId)->where('status', 'Pending')->exists();
+        $isCutiApprover = ApprovalRule::where('tipe', 'Cuti')->where('id_karyawan_approver', $karyawanId)->exists()
+            || ApprovalProcess::whereHas('approvalDocument', fn ($q) => $q->where('document_type', 'Cuti'))
+                ->where('id_karyawan_target', $karyawanId)->where('status', 'Pending')->exists();
 
         if ($isCutiApprover) {
             return redirect()->route('admin.cuti.approvals');
         }
 
         // Check Pengajuan Approver
-        $isPengajuanApprover = ApprovalRule::whereIn('tipe', ['Pengajuan', 'Pinjaman', 'Invoice'])->where('id_karyawan_approver', $karyawanId)->exists() 
-            || ApprovalProcess::where(function($q) {
-                $q->whereNotNull('id_pengajuan')->orWhereNotNull('id_pinjaman')->orWhereNotNull('id_invoice');
-            })->where('id_karyawan_target', $karyawanId)->where('status', 'Pending')->exists();
+        $isPengajuanApprover = ApprovalRule::whereIn('tipe', ['Pengajuan', 'Pinjaman', 'Invoice'])
+            ->where('id_karyawan_approver', $karyawanId)->exists()
+            || ApprovalProcess::whereHas('approvalDocument', fn ($q) => $q
+                ->whereIn('document_type', ['Pengajuan', 'Pinjaman', 'Invoice']))
+                ->where('id_karyawan_target', $karyawanId)->where('status', 'Pending')->exists();
 
         if ($isPengajuanApprover) {
             return redirect()->route('admin.pengajuan.approvals');

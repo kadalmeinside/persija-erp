@@ -82,14 +82,20 @@ class PengajuanRevisionFixTest extends TestCase
 
         // 3. Simulasikan Approval Process — Level 1 Approved, Level 2 Revision
         ApprovalProcess::create([
-            'id_pengajuan'       => $pengajuan->id,
+            'id_approval_document' => \App\Models\ApprovalDocument::firstOrCreate([
+                'document_type' => 'Pengajuan',
+                'document_id' => $pengajuan->id,
+            ])->id,
             'level_order'        => 1,
             'status'             => 'Approved',
             'id_karyawan_target' => $approver1->id,
             'label_aksi'         => 'Approval Manajer',
         ]);
         ApprovalProcess::create([
-            'id_pengajuan'       => $pengajuan->id,
+            'id_approval_document' => \App\Models\ApprovalDocument::firstOrCreate([
+                'document_type' => 'Pengajuan',
+                'document_id' => $pengajuan->id,
+            ])->id,
             'level_order'        => 2,
             'status'             => 'Revision',
             'id_karyawan_target' => $approver2->id,
@@ -158,7 +164,11 @@ class PengajuanRevisionFixTest extends TestCase
 
         // DEBUG: cek berapa rule dan steps di DB
         $ruleCount = \App\Models\ApprovalRule::count();
-        $allSteps  = \App\Models\ApprovalProcess::where('id_pengajuan', $pengajuan->id)->get(['level_order', 'status', 'id_karyawan_target']);
+        $allSteps  = \App\Models\ApprovalProcess::where(
+            'id_approval_document',
+            \App\Models\ApprovalDocument::where('document_type', 'Pengajuan')
+                ->where('document_id', $pengajuan->id)->value('id')
+        )->get(['level_order', 'status', 'id_karyawan_target']);
 
         // 6a. Semua step lama musnah; hanya step dari initApproval yang tersisa (1 step)
         $stepCount = $allSteps->count();

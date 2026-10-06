@@ -7,6 +7,11 @@ use App\Enums\PengajuanStatus;
 use App\Enums\PengajuanType;
 use App\Models\ApprovalProcess;
 use App\Models\ApprovalRule;
+use App\Models\ApprovalDocument;
+use App\Models\ApprovalDocumentCuti;
+use App\Models\ApprovalDocumentInvoice;
+use App\Models\ApprovalDocumentPengajuan;
+use App\Models\ApprovalDocumentPinjaman;
 use App\Models\InvoiceHeader;
 use App\Models\PengajuanHeader;
 use Carbon\Carbon;
@@ -84,11 +89,7 @@ class ApprovalService
     {
         $query = ApprovalProcess::query();
 
-        if ($meta['isCuti'])     return $query->where('id_cuti', $model->id);
-        if ($meta['isPinjaman']) return $query->where('id_pinjaman', $model->id);
-        if ($meta['isInvoice'])  return $query->where('id_invoice', $model->id);
-
-        return $query->where('id_pengajuan', $model->id);
+        return $query->forDocument($meta['tipe'], $model->id);
     }
 
     /**
@@ -96,12 +97,27 @@ class ApprovalService
      */
     private function buildFkData($model, $meta): array
     {
-        return [
-            'id_pengajuan' => (!$meta['isCuti'] && !$meta['isPinjaman'] && !$meta['isInvoice']) ? $model->id : null,
-            'id_cuti'      => $meta['isCuti']     ? $model->id : null,
-            'id_pinjaman'  => $meta['isPinjaman'] ? $model->id : null,
-            'id_invoice'   => $meta['isInvoice']  ? $model->id : null,
-        ];
+        $document = ApprovalDocument::firstOrCreate([
+            'document_type' => $meta['tipe'],
+            'document_id' => $model->id,
+        ]);
+        $link = match ($meta['tipe']) {
+            'Pengajuan' => ApprovalDocumentPengajuan::firstOrCreate([
+                'id_approval_document' => $document->id, 'document_id' => $model->id,
+            ]),
+            'Cuti' => ApprovalDocumentCuti::firstOrCreate([
+                'id_approval_document' => $document->id, 'document_id' => $model->id,
+            ]),
+            'Pinjaman' => ApprovalDocumentPinjaman::firstOrCreate([
+                'id_approval_document' => $document->id, 'document_id' => $model->id,
+            ]),
+            'Invoice' => ApprovalDocumentInvoice::firstOrCreate([
+                'id_approval_document' => $document->id, 'document_id' => $model->id,
+            ]),
+            default => throw new \LogicException("Tipe approval tidak didukung: {$meta['tipe']}"),
+        };
+
+        return ['id_approval_document' => $document->id];
     }
 
     /**
@@ -132,6 +148,12 @@ class ApprovalService
                     ->where('tipe', $meta['tipe'])
                     ->orderBy('level_order', 'asc')
                     ->get();
+
+        if ($rules->contains(fn (ApprovalRule $rule) => $rule->id_karyawan_approver === null)) {
+            throw new \LogicException(
+                "Approval rule tipe {$meta['tipe']} pada departemen {$departemenId} tidak memiliki employee approver."
+            );
+        }
 
         Log::info("Jumlah Rule Ditemukan ({$meta['tipe']}): " . $rules->count());
 

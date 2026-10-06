@@ -259,16 +259,16 @@ class CutiController extends Controller
         }
 
         // Ambil data dari ApprovalProcess yang menunggu tindakan (target) karyawan ini
-        $approvals = \App\Models\ApprovalProcess::with(['cuti.karyawan.departemen', 'cuti.jenisCuti'])
+        $approvals = \App\Models\ApprovalProcess::with(['approvalDocument'])
             ->where('id_karyawan_target', $karyawan->id)
             ->where('status', 'Pending')
-            ->whereNotNull('id_cuti')
+            ->whereHas('approvalDocument', fn ($query) => $query->where('document_type', 'Cuti'))
             ->orderBy('created_at', 'asc')
             ->get();
 
         return response()->json([
             'data' => $approvals->map(function ($process) {
-                $cuti = $process->cuti;
+                $cuti = $process->document();
                 return [
                     'id_approval'  => $process->id,
                     'id_pengajuan' => $cuti->id,

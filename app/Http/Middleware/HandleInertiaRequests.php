@@ -81,7 +81,8 @@ class HandleInertiaRequests extends Middleware
                 if (!$request->user() || !$request->user()->karyawan) return false;
                 $karyawanId = $request->user()->karyawan->id;
                 $hasRule = \App\Models\ApprovalRule::where('tipe', 'Cuti')->where('id_karyawan_approver', $karyawanId)->exists();
-                $hasPending = \App\Models\ApprovalProcess::whereNotNull('id_cuti')->where('id_karyawan_target', $karyawanId)->where('status', 'Pending')->exists();
+                $hasPending = \App\Models\ApprovalProcess::whereHas('approvalDocument', fn ($q) => $q->where('document_type', 'Cuti'))
+                    ->where('id_karyawan_target', $karyawanId)->where('status', 'Pending')->exists();
                 return $hasRule || $hasPending;
             },
             'is_pengajuan_approver' => function () use ($request) {
@@ -89,9 +90,9 @@ class HandleInertiaRequests extends Middleware
                 $karyawanId = $request->user()->karyawan->id;
                 // Pengajuan and Pinjaman and Invoice rules are considered 'pengajuan' approvers
                 $hasRule = \App\Models\ApprovalRule::whereIn('tipe', ['Pengajuan', 'Pinjaman', 'Invoice'])->where('id_karyawan_approver', $karyawanId)->exists();
-                $hasPending = \App\Models\ApprovalProcess::where(function($q) {
-                    $q->whereNotNull('id_pengajuan')->orWhereNotNull('id_pinjaman')->orWhereNotNull('id_invoice');
-                })->where('id_karyawan_target', $karyawanId)->where('status', 'Pending')->exists();
+                $hasPending = \App\Models\ApprovalProcess::whereHas('approvalDocument', fn ($q) => $q
+                    ->whereIn('document_type', ['Pengajuan', 'Pinjaman', 'Invoice']))
+                    ->where('id_karyawan_target', $karyawanId)->where('status', 'Pending')->exists();
                 return $hasRule || $hasPending;
             },
         ]);

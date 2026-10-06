@@ -43,6 +43,14 @@ class PengajuanCuti extends Model
 
     public function approvalProcess()
     {
-        return $this->hasMany(ApprovalProcess::class, 'id_cuti')->orderBy('level_order', 'asc');
+        return $this->hasManyThrough(
+            ApprovalProcess::class,
+            ApprovalDocument::class,
+            'document_id',
+            'id_approval_document',
+            'id',
+            'id'
+        )->where('tbl_approval_documents.document_type', 'Cuti')
+          ->orderBy('level_order', 'asc');
     }
 }

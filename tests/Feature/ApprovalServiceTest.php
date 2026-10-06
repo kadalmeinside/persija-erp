@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\PengajuanStatus;
 use App\Models\ApprovalProcess;
+use App\Models\ApprovalDocument;
 use App\Models\ApprovalRule;
 use App\Models\Departemen;
 use App\Models\Karyawan;
@@ -28,6 +29,13 @@ class ApprovalServiceTest extends TestCase
     protected Karyawan $pengajuKaryawan;
     protected Karyawan $approver1;
     protected Karyawan $approver2;
+
+    protected function approvalDocumentId(string $type, int $documentId): int
+    {
+        return ApprovalDocument::where('document_type', $type)
+            ->where('document_id', $documentId)
+            ->value('id');
+    }
 
     protected function setUp(): void
     {
@@ -88,7 +96,7 @@ class ApprovalServiceTest extends TestCase
         $this->approvalService->initApproval($pengajuan);
 
         $this->assertDatabaseHas('tbl_approval_process', [
-            'id_pengajuan'        => $pengajuan->id,
+            'id_approval_document' => $this->approvalDocumentId('Pengajuan', $pengajuan->id),
             'id_karyawan_target'  => $this->approver1->id,
             'level_order'         => 1,
             'status'              => 'Pending',
@@ -105,7 +113,7 @@ class ApprovalServiceTest extends TestCase
         $this->approvalService->initApproval($pengajuan);
 
         $this->assertDatabaseHas('tbl_approval_process', [
-            'id_pengajuan'        => $pengajuan->id,
+            'id_approval_document' => $this->approvalDocumentId('Pengajuan', $pengajuan->id),
             'id_karyawan_target'  => $this->approver2->id,
             'level_order'         => 2,
             'status'              => 'Waiting',
@@ -166,7 +174,7 @@ class ApprovalServiceTest extends TestCase
 
         // Level 2 harus jadi Pending, pengajuan masih Pending Approval
         $this->assertDatabaseHas('tbl_approval_process', [
-            'id_pengajuan'        => $pengajuan->id,
+            'id_approval_document' => $this->approvalDocumentId('Pengajuan', $pengajuan->id),
             'id_karyawan_target'  => $this->approver2->id,
             'status'              => 'Pending',
         ]);
@@ -200,7 +208,7 @@ class ApprovalServiceTest extends TestCase
         $this->approvalService->initApproval($pengajuan);
         $this->approvalService->approve($pengajuan, $this->approver1->id);
 
-        $step = ApprovalProcess::where('id_pengajuan', $pengajuan->id)->first();
+        $step = ApprovalProcess::where('id_approval_document', $this->approvalDocumentId('Pengajuan', $pengajuan->id))->first();
         $this->assertNotNull($step->uuid, 'Step yang di-approve harus memiliki UUID');
     }
 
@@ -232,7 +240,7 @@ class ApprovalServiceTest extends TestCase
         $this->approvalService->reject($pengajuan, $this->approver1->id, 'Alasan penolakan');
 
         $this->assertDatabaseHas('tbl_approval_process', [
-            'id_pengajuan'       => $pengajuan->id,
+            'id_approval_document' => $this->approvalDocumentId('Pengajuan', $pengajuan->id),
             'id_karyawan_target' => $this->approver1->id,
             'status'             => 'Rejected',
         ]);
@@ -265,7 +273,7 @@ class ApprovalServiceTest extends TestCase
 
         // Step tercatat sebagai 'Skipped'
         $this->assertDatabaseHas('tbl_approval_process', [
-            'id_pengajuan'       => $pengajuan->id,
+            'id_approval_document' => $this->approvalDocumentId('Pengajuan', $pengajuan->id),
             'id_karyawan_target' => $this->pengajuKaryawan->id,
             'status'             => 'Skipped',
         ]);
@@ -287,14 +295,14 @@ class ApprovalServiceTest extends TestCase
         $this->approvalService->initApproval($pengajuan);
 
         $this->assertDatabaseHas('tbl_approval_process', [
-            'id_pengajuan'       => $pengajuan->id,
+            'id_approval_document' => $this->approvalDocumentId('Pengajuan', $pengajuan->id),
             'id_karyawan_target' => $this->pengajuKaryawan->id,
             'status'             => 'Skipped',
         ]);
 
         // Level 2 langsung Pending (bukan Waiting)
         $this->assertDatabaseHas('tbl_approval_process', [
-            'id_pengajuan'       => $pengajuan->id,
+            'id_approval_document' => $this->approvalDocumentId('Pengajuan', $pengajuan->id),
             'id_karyawan_target' => $this->approver1->id,
             'status'             => 'Pending',
         ]);
@@ -361,7 +369,7 @@ class ApprovalServiceTest extends TestCase
         $this->approvalService->revision($pengajuan, $this->approver1->id, 'Data tidak lengkap');
 
         $this->assertDatabaseHas('tbl_approval_process', [
-            'id_pengajuan'       => $pengajuan->id,
+            'id_approval_document' => $this->approvalDocumentId('Pengajuan', $pengajuan->id),
             'id_karyawan_target' => $this->approver1->id,
             'status'             => 'Revision',
             'catatan'            => 'Data tidak lengkap',
@@ -456,7 +464,7 @@ class ApprovalServiceTest extends TestCase
         $this->approvalService->initApproval($pinjaman);
 
         $this->assertDatabaseHas('tbl_approval_process', [
-            'id_pinjaman'         => $pinjaman->id,
+            'id_approval_document' => $this->approvalDocumentId('Pinjaman', $pinjaman->id),
             'id_karyawan_target'  => $this->approver1->id,
             'level_order'         => 1,
             'status'              => 'Pending',

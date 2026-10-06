@@ -204,7 +204,8 @@ class PengajuanFlowTest extends TestCase
         $pengajuan = \App\Models\PengajuanHeader::latest()->first();
 
         $this->assertDatabaseHas('tbl_approval_process', [
-            'id_pengajuan'        => $pengajuan->id,
+            'id_approval_document' => \App\Models\ApprovalDocument::where('document_type', 'Pengajuan')
+                ->where('document_id', $pengajuan->id)->value('id'),
             'id_karyawan_target'  => $this->approverKaryawan->id,
             'status'              => 'Pending',
         ]);

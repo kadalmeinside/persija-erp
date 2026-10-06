@@ -156,7 +156,10 @@ class CutiFlowTest extends TestCase
 
         $cuti = \App\Models\PengajuanCuti::first();
 
-        $step = \App\Models\ApprovalProcess::where('id_cuti', $cuti->id)->where('status', 'Pending')->first();
+        $documentId = \App\Models\ApprovalDocument::where('document_type', 'Cuti')
+            ->where('document_id', $cuti->id)->value('id');
+        $step = \App\Models\ApprovalProcess::where('id_approval_document', $documentId)
+            ->where('status', 'Pending')->first();
         $this->assertNotNull($step, 'Tidak ada step approval Pending ditemukan.');
         $this->assertEquals(
             $this->karyawanApprover->id,

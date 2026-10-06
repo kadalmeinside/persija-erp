@@ -87,12 +87,20 @@ class PengajuanHeader extends Model
 
     public function approvalProcess()
     {
-        return $this->hasMany(ApprovalProcess::class, 'id_pengajuan')->orderBy('level_order', 'asc');
+        return $this->hasManyThrough(
+            ApprovalProcess::class,
+            ApprovalDocument::class,
+            'document_id',
+            'id_approval_document',
+            'id',
+            'id'
+        )->where('tbl_approval_documents.document_type', 'Pengajuan')
+          ->orderBy('level_order', 'asc');
     }
 
     public function currentStep()
     {
-        return $this->hasOne(ApprovalProcess::class, 'id_pengajuan')->where('status', 'Pending');
+        return $this->approvalProcess()->where('status', 'Pending')->one();
     }
 
     public function pembayaran()

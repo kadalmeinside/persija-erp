@@ -19,28 +19,14 @@ class ApprovalProcess extends Model
         'level_order' => 'integer'
     ];
 
-    // Relasi ke Header Pengajuan
-    public function pengajuan()
+    public function approvalDocument()
     {
-        return $this->belongsTo(PengajuanHeader::class, 'id_pengajuan');
+        return $this->belongsTo(ApprovalDocument::class, 'id_approval_document');
     }
 
-    // Relasi ke Pengajuan Cuti
-    public function cuti()
+    public function document()
     {
-        return $this->belongsTo(PengajuanCuti::class, 'id_cuti');
-    }
-
-    // Relasi ke Pinjaman
-    public function pinjaman()
-    {
-        return $this->belongsTo(Pinjaman::class, 'id_pinjaman');
-    }
-
-    // Relasi ke Invoice
-    public function invoice()
-    {
-        return $this->belongsTo(InvoiceHeader::class, 'id_invoice');
+        return $this->approvalDocument?->resolveDocument();
     }
 
     // Relasi ke Target Karyawan (Yang diminta approve sesuai Rule)
@@ -62,5 +48,20 @@ class ApprovalProcess extends Model
         return $this->id_karyawan_action 
             ? $this->belongsTo(Karyawan::class, 'id_karyawan_action')
             : $this->belongsTo(Karyawan::class, 'id_karyawan_target');
+    }
+
+    public function scopeForDocument($query, string $type, int $documentId)
+    {
+        $relation = match ($type) {
+            'Pengajuan' => 'pengajuan',
+            'Cuti' => 'cuti',
+            'Pinjaman' => 'pinjaman',
+            'Invoice' => 'invoice',
+            default => throw new \InvalidArgumentException("Tipe dokumen tidak didukung: {$type}"),
+        };
+
+        return $query->whereHas('approvalDocument', fn ($q) => $q
+            ->where('document_type', $type)
+            ->whereHas($relation, fn ($link) => $link->where('document_id', $documentId)));
     }
 }

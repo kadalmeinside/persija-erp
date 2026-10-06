@@ -32,20 +32,22 @@ class VerificationController extends Controller
         }
 
         // 1. Check ApprovalProcess (for Cuti & PengajuanHeader)
-        $approval = ApprovalProcess::with(['actionKaryawan', 'pengajuan', 'cuti', 'cuti.karyawan'])
+        $approval = ApprovalProcess::with(['actionKaryawan', 'approvalDocument'])
             ->where('uuid', $uuid)
             ->first();
 
         if ($approval) {
-            $refNo = $approval->id_cuti 
-                ? ($approval->cuti->karyawan->nama_lengkap . ' (Cuti)') 
-                : $approval->pengajuan->nomor_pengajuan;
+            $document = $approval->document();
+            $isCuti = $approval->approvalDocument->document_type === 'Cuti';
+            $refNo = $isCuti
+                ? ($document->karyawan->nama_lengkap . ' (Cuti)')
+                : $document->nomor_pengajuan;
 
             $data = [
                 'isValid' => true,
                 'approverName' => $this->maskName($approval->actionKaryawan->nama_lengkap ?? 'Unknown'),
                 'approvedAt' => $approval->tgl_aksi ? $approval->tgl_aksi->format('d F Y H:i') : '-',
-                'requestType' => $approval->id_cuti ? 'Pengajuan Cuti' : 'Pengajuan Dana',
+                'requestType' => $isCuti ? 'Pengajuan Cuti' : 'Pengajuan Dana',
                 'requestNo' => $this->maskRef($refNo),
                 'status' => $approval->status
             ];

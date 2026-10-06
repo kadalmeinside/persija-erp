@@ -280,6 +280,16 @@ Status proses yang perlu dipahami mobile:
   audit trail.
 - [ ] Acting approver dan escalation berbasis SLA.
 - [ ] Reassign approval dengan audit trail approver asli dan pengganti.
+- [ ] Tambahkan versioning approval rule agar perubahan rule tidak mengubah
+  histori process yang sudah berjalan.
+- [ ] Tambahkan audit trail immutable untuk perubahan rule, target, status,
+  saldo, invoice, payroll, dan koreksi absensi.
+- [ ] Tambahkan rekonsiliasi saldo kas/bank dan idempotency transaksi finansial.
+- [ ] Ganti referensi jurnal depresiasi berbasis `jurnal_ref` dengan FK
+  `id_jurnal`.
+- [ ] Tambahkan `reference_type` formal untuk traceability jurnal lintas modul.
+- [x] Registry dokumen approval memiliki subtype table per tipe dengan FK
+  native ke tabel `Pengajuan`, `Cuti`, `Pinjaman`, dan `Invoice`.
 - [ ] Approval priority.
 - [ ] Bulk approval terbatas dengan konfirmasi dan guard finansial.
 - [ ] Purchase request dan procurement ringan.
@@ -379,6 +389,52 @@ Dashboard Direktur juga harus mengecualikan dari daftar “belum hadir”:
 6. Tambahkan deep link dari notifikasi ke detail approval.
 7. Bangun modul Payslip untuk Mobile (Read-only) dan pengajuan dinas luar.
 
+## Scalability dan migration-safety
+
+### Kondisi saat ini
+
+- `tbl_approval_process` memiliki satu FK wajib
+  `id_approval_document`; empat FK dokumen nullable sudah dihapus.
+- `tbl_approval_documents` memiliki unique `(document_type, document_id)`,
+  subtype table per tipe, dan menjadi registry tunggal untuk timeline/process.
+- `id_karyawan_target` dan `id_karyawan_approver` wajib.
+- Approval process memakai row locking pada action sehingga concurrent approval
+  tidak boleh memproses step yang sama dua kali.
+- Pengembangan fitur baru dapat menambah `document_type` dan resolver tanpa
+  menambah kolom nullable baru pada process.
+
+### Batas integritas yang masih ada
+
+`document_id` pada registry adalah nilai denormalisasi untuk query cepat, tetapi
+integritas referensi dijaga oleh subtype table berikut:
+
+- `tbl_approval_document_pengajuan`;
+- `tbl_approval_document_cuti`;
+- `tbl_approval_document_pinjaman`;
+- `tbl_approval_document_invoice`.
+
+Masing-masing subtype memiliki primary key ke registry dan foreign key native ke
+tabel dokumen. Service membuat atau mengambil registry dan subtype secara
+idempotent dalam flow approval.
+
+### Aturan perubahan agar tidak merusak integrity
+
+Semua perubahan schema berikutnya wajib mengikuti pola:
+
+1. **Expand**: tambah tabel/kolom/constraint baru tanpa menghapus kontrak aktif.
+2. **Backfill atau fresh reset**: validasi semua row development dan hentikan
+   migration jika ada data invalid; jangan memakai silent fallback.
+3. **Switch**: pindahkan service, controller, query, UI, dan test ke struktur
+   baru dalam satu kontrak terverifikasi.
+4. **Validate**: jalankan migration fresh, backend test, mobile test, dan
+   `git diff --check`.
+5. **Contract**: hanya setelah seluruh consumer berpindah, hapus kolom atau
+   tabel legacy.
+
+Pada fase development saat ini, `migrate:fresh --seed` adalah jalur reset yang
+disetujui. Untuk production nanti, migration destructive tidak boleh dipakai
+tanpa backup, preflight validation, dan rollback plan.
+
 ## Catatan pembaruan
 
 | Tanggal | Perubahan | Status |
@@ -391,3 +447,57 @@ Dashboard Direktur juga harus mengecualikan dari daftar “belum hadir”:
 | 2026-10-06 | Perbaikan bug bottom overflowed pada modul tugas (mobile) | Selesai |
 | 2026-10-06 | Implementasi Dashboard/Ringkasan Direktur di mobile dan web | Selesai |
 | 2026-10-06 | Penyelesaian P0 & P1 Hasil Audit (Keamanan, Biometrik, Bug Approval, Caching, UX) | Selesai |
+
+## Audit rating terbaru - 2026-10-06
+
+Rating ini didasarkan pada implementasi dan hasil test aktual, bukan hanya
+checkbox roadmap.
+
+| Area | Rating | Penilaian |
+|---|---:|---|
+| Arsitektur aplikasi | 8.3/10 | Pemisahan backend/web/mobile dan service approval sudah baik; generic approval masih perlu disatukan di web. |
+| Desain database/ERD | 8.9/10 | Registry approval memiliki FK process wajib, subtype table dengan FK native per tipe dokumen, unique constraint, preflight/backfill migration, dan approver/target wajib. Audit history, delegasi, dan reconciliation masih perlu diperkuat. |
+| Flow bisnis ERP | 8.0/10 | Cuti, approval, task, absensi, dan dashboard direktur sudah memiliki alur yang jelas; self-service dan finance mobile masih terbatas. |
+| Integritas finansial | 7.5/10 | Reversal cuti, GL traceability, tax settlement, dan period control membaik; idempotency dan reconciliation end-to-end belum lengkap. |
+| Security & authorization | 7.2/10 | Employee-target approval, PIN, challenge, dan route authorization sudah lebih kuat; attestation backend dan server-side face verification masih tertunda. |
+| Web experience | 7.7/10 | Modul administrasi dan transaksi web luas; Approval Center generic, preview rule, dan audit perubahan rule belum selesai. |
+| Mobile experience/API | 7.8/10 | Absensi, cuti, task, dashboard direktur, Approval Center, dan timeline approval sudah tersedia; notification, deep link, dan offline operation belum lengkap. |
+| Testing & quality | 7.8/10 | Backend 95 test/253 assertion dan mobile test lulus; coverage generic approval lintas departemen dan UI masih perlu ditambah. |
+| Maintainability & documentation | 7.9/10 | Roadmap dan kontrak API membaik; beberapa item roadmap masih perlu dikoreksi agar hanya menandai implementasi yang benar-benar terverifikasi. |
+| **Overall** | **8.1/10** | Layak masuk fase hardening dan perluasan fitur; belum mencapai financial-grade production readiness penuh. |
+
+### Koreksi status roadmap setelah audit
+
+- Approval Center mobile sudah tersedia dengan list/action, detail timeline,
+  dan action PIN.
+- Detail dan timeline approval sudah tersedia di API, bukan berarti seluruh
+  implementasi web dan mobile telah selesai.
+- Approval Center web generic lintas modul belum selesai.
+- Push notification, deep link, notification preference, dan approval rule
+  audit belum selesai.
+- Dashboard Direktur perlu validasi lanjutan agar employee cuti, hari libur,
+  weekend, dan nonaktif tidak salah dihitung sebagai absent.
+- Item “P0 & P1 selesai” harus dibaca sebagai penyelesaian scope yang sudah
+  dikerjakan, bukan seluruh checklist P0/P1.
+
+### Bukti validasi terakhir
+
+- Backend: `95 passed`, `253 assertions`.
+- Mobile Flutter test: lulus.
+- Dart analyzer scoped (`absensi`, `approvals`, `dashboard`): `No issues found`.
+- Regresi `InvoiceStatus::Approved` pada generic approval action diperbaiki.
+- Constraint approval diperketat melalui migration
+  `2026_10_06_222500_harden_approval_integrity`.
+- Rule approval tidak boleh memiliki approver nullable; process tidak boleh
+  memiliki target nullable atau lebih dari satu dokumen sumber.
+- Struktur dokumen approval dinormalisasi melalui
+  `tbl_approval_documents`; `tbl_approval_process` sekarang hanya memiliki
+  `id_approval_document` sebagai FK wajib, tanpa empat FK dokumen nullable.
+- Data development dianggap disposable dan schema divalidasi melalui
+  `migrate:fresh --seed`; tidak ada kompatibilitas legacy yang mengorbankan
+  integritas schema.
+- Migration normalisasi memiliki backfill legacy dan preflight: process lama
+  harus memiliki tepat satu referensi dokumen; row ambigu atau orphan
+  menghentikan migration secara eksplisit.
+- Setelah baseline normalisasi ini, perubahan berikutnya wajib menggunakan
+  migration incremental; `migrate:fresh` hanya untuk reset development.

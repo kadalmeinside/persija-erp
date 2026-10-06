@@ -49,7 +49,15 @@ class Pinjaman extends Model
 
     public function approvalProcess()
     {
-        return $this->hasMany(ApprovalProcess::class, 'id_pinjaman');
+        return $this->hasManyThrough(
+            ApprovalProcess::class,
+            ApprovalDocument::class,
+            'document_id',
+            'id_approval_document',
+            'id',
+            'id'
+        )->where('tbl_approval_documents.document_type', 'Pinjaman')
+          ->orderBy('level_order', 'asc');
     }
     public function getActivitylogOptions(): LogOptions
     {

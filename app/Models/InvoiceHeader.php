@@ -83,15 +83,21 @@ class InvoiceHeader extends Model
     /** Semua langkah approval untuk invoice ini */
     public function approvalProcess()
     {
-        return $this->hasMany(ApprovalProcess::class, 'id_invoice')
-                    ->orderBy('level_order');
+        return $this->hasManyThrough(
+            ApprovalProcess::class,
+            ApprovalDocument::class,
+            'document_id',
+            'id_approval_document',
+            'id',
+            'id'
+        )->where('tbl_approval_documents.document_type', 'Invoice')
+          ->orderBy('level_order');
     }
 
     /** Langkah approval yang sedang aktif (status = Pending) */
     public function currentApprovalStep()
     {
-        return $this->hasOne(ApprovalProcess::class, 'id_invoice')
-                    ->where('status', 'Pending');
+        return $this->approvalProcess()->where('status', 'Pending')->one();
     }
 
     /** User yang menyetujui final */

@@ -66,6 +66,12 @@ tidak memberikan hak approval secara otomatis. Endpoint ini mendukung
 `Approved` dan `Rejected`, termasuk reversal saldo cuti non-unlimited saat cuti
 ditolak.
 
+Secara database, setiap process menunjuk tepat satu baris
+`tbl_approval_documents` melalui `id_approval_document`. Registry tersebut
+menyimpan `document_type` dan `document_id`, sehingga process tidak lagi
+memiliki empat FK dokumen nullable yang dapat terisi bersamaan. `document_type`
+yang tersedia adalah `Pengajuan`, `Cuti`, `Pinjaman`, dan `Invoice`.
+
 Login mobile memakai kebijakan single-device: login baru mencabut seluruh token Sanctum lama untuk user yang sama.
 
 ## Face matching
