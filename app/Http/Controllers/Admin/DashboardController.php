@@ -155,6 +155,48 @@ class DashboardController extends Controller
                 ->count();
         }
 
+        // 7. DIRECTOR OVERVIEW (Web Dashboard)
+        if ($user->hasRole(Role::DIREKTUR->value) || $user->hasRole(Role::SUPER_ADMIN->value)) {
+            $today = Carbon::today();
+            $todayTasks = \App\Models\Task::with('assignee:id,nama_lengkap')
+                ->activeKanban()
+                ->whereDate('due_date', $today)
+                ->orderBy('priority')
+                ->get(['id', 'title', 'status', 'priority', 'due_date', 'id_karyawan_assignee']);
+            
+            $overdueTasks = \App\Models\Task::with('assignee:id,nama_lengkap')
+                ->activeKanban()
+                ->whereDate('due_date', '<', $today)
+                ->where('status', '!=', 'Done')
+                ->orderBy('due_date')
+                ->get(['id', 'title', 'status', 'priority', 'due_date', 'id_karyawan_assignee']);
+                
+            $onLeave = \App\Models\PengajuanCuti::with('karyawan:id,nama_lengkap')
+                ->where('status', 'Approved')
+                ->whereDate('tgl_mulai', '<=', $today)
+                ->whereDate('tgl_selesai', '>=', $today)
+                ->get(['id', 'id_karyawan', 'tgl_mulai', 'tgl_selesai', 'id_jenis_cuti']);
+                
+            $presentIds = \App\Models\Absensi::whereDate('tanggal', $today)->pluck('id_karyawan');
+            
+            $absent = \App\Models\Karyawan::whereNotIn('id', $presentIds)
+                ->whereNotIn('status_karyawan', ['Resign', 'Nonaktif', 'Terminated'])
+                ->orderBy('nama_lengkap')
+                ->get(['id', 'nama_lengkap', 'jabatan', 'id_departemen']);
+
+            $data['director_overview'] = [
+                'today_tasks' => $todayTasks,
+                'overdue_tasks' => $overdueTasks,
+                'on_leave_today' => $onLeave->map(fn ($leave) => [
+                    'id' => $leave->id,
+                    'employee_name' => $leave->karyawan?->nama_lengkap,
+                    'start_date' => $leave->tgl_mulai,
+                    'end_date' => $leave->tgl_selesai,
+                ])->values(),
+                'absent_today' => $absent,
+            ];
+        }
+
         return Inertia::render('Admin/Dashboard', [
             'dashboardData' => $data
         ]);

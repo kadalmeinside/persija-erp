@@ -25,7 +25,7 @@ const props = defineProps({
     dashboardData: Object
 });
 
-const { role, stats, hr_stats, finance_stats, my_stats, action_counts, my_active_tasks } = props.dashboardData;
+const { role, stats, hr_stats, finance_stats, my_stats, action_counts, my_active_tasks, director_overview } = props.dashboardData;
 const user = usePage().props.auth.user;
 const showQuickActions = ref(false);
 const locationName = ref('');
@@ -208,6 +208,57 @@ const greeting = computed(() => {
                         </div>
                     </template>
 
+                </div>
+
+                <!-- 0.5. RINGKASAN DIREKTUR -->
+                <div v-if="director_overview" class="mb-6 space-y-4">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center">
+                        <BriefcaseIcon class="w-5 h-5 mr-2 text-indigo-500"/> Ringkasan Direktur
+                    </h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <Link :href="route('admin.tasks.index')" class="bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-900/40 dark:to-gray-800 rounded-2xl p-5 shadow-sm border border-indigo-100 dark:border-indigo-800/50 hover:shadow-md transition group">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="bg-indigo-100 dark:bg-indigo-900/50 p-2 rounded-xl text-indigo-600 dark:text-indigo-400">
+                                    <CheckBadgeIcon class="w-6 h-6" />
+                                </div>
+                                <ArrowRightIcon class="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </div>
+                            <h4 class="text-3xl font-black text-gray-900 dark:text-white mb-1">{{ director_overview.today_tasks.length }}</h4>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Tugas Hari Ini</p>
+                        </Link>
+                        
+                        <Link :href="route('admin.tasks.index')" class="bg-gradient-to-br from-red-50 to-white dark:from-red-900/40 dark:to-gray-800 rounded-2xl p-5 shadow-sm border border-red-100 dark:border-red-800/50 hover:shadow-md transition group">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="bg-red-100 dark:bg-red-900/50 p-2 rounded-xl text-red-600 dark:text-red-400">
+                                    <ClockIcon class="w-6 h-6" />
+                                </div>
+                                <ArrowRightIcon class="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </div>
+                            <h4 class="text-3xl font-black text-gray-900 dark:text-white mb-1">{{ director_overview.overdue_tasks.length }}</h4>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Tugas Terlambat</p>
+                        </Link>
+                        
+                        <Link :href="route('admin.hr.cuti.index')" class="bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-900/40 dark:to-gray-800 rounded-2xl p-5 shadow-sm border border-emerald-100 dark:border-emerald-800/50 hover:shadow-md transition group">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="bg-emerald-100 dark:bg-emerald-900/50 p-2 rounded-xl text-emerald-600 dark:text-emerald-400">
+                                    <CalendarIcon class="w-6 h-6" />
+                                </div>
+                                <ArrowRightIcon class="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </div>
+                            <h4 class="text-3xl font-black text-gray-900 dark:text-white mb-1">{{ director_overview.on_leave_today.length }}</h4>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Sedang Cuti</p>
+                        </Link>
+                        
+                        <div class="bg-gradient-to-br from-amber-50 to-white dark:from-amber-900/40 dark:to-gray-800 rounded-2xl p-5 shadow-sm border border-amber-100 dark:border-amber-800/50 hover:shadow-md transition">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="bg-amber-100 dark:bg-amber-900/50 p-2 rounded-xl text-amber-600 dark:text-amber-400">
+                                    <UserGroupIcon class="w-6 h-6" />
+                                </div>
+                            </div>
+                            <h4 class="text-3xl font-black text-gray-900 dark:text-white mb-1">{{ director_overview.absent_today.length }}</h4>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Belum Hadir</p>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- 1. PRIORITY SECTION: APPROVALS & TASKS (TOP) -->
