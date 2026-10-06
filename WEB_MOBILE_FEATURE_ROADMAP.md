@@ -116,6 +116,8 @@ Status proses yang perlu dipahami mobile:
 - [x] Approval process menyimpan employee target dan actor aktual.
 - [x] Web approval memvalidasi employee target pada step aktif.
 - [x] Web menyediakan monitoring dan administrasi transaksi ERP utama.
+- [x] Dashboard Direktur web (Overview tugas, cuti, dan absensi).
+- [x] Akses tugas untuk Direktur mencakup semua tugas karyawan (mobile & web).
 - [x] Dokumentasi web/API dan database baseline tersedia.
 
 ### Sudah tersedia di mobile
@@ -390,3 +392,4 @@ Dashboard Direktur juga harus mengecualikan dari daftar “belum hadir”:
 | 2026-10-06 | Perbaikan state lokasi absensi dan warning mobile | Selesai |
 | 2026-10-06 | Implementasi fitur registrasi wajah di mobile | Selesai |
 | 2026-10-06 | Perbaikan bug bottom overflowed pada modul tugas (mobile) | Selesai |
+| 2026-10-06 | Implementasi Dashboard/Ringkasan Direktur di mobile dan web | Selesai |
