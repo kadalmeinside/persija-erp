@@ -125,6 +125,7 @@ Status proses yang perlu dipahami mobile:
 - [x] Absensi clock-in dan clock-out.
 - [x] Attendance challenge, geolocation, dan foto.
 - [x] Face matching on-device untuk flow absensi.
+- [x] Pendaftaran/registrasi wajah on-device jika data wajah belum ada.
 - [x] Riwayat absensi.
 - [x] Pengajuan cuti.
 - [x] Saldo cuti, termasuk tampilan `Unlimited`.
@@ -132,6 +133,7 @@ Status proses yang perlu dipahami mobile:
 - [x] Approval cuti di mobile.
 - [x] PIN enam digit pada approval cuti.
 - [x] Task list, pembuatan task, perubahan status, dan history.
+- [x] Perbaikan bug layout overflow pada form tugas dan ubah status.
 - [x] Calendar perusahaan.
 - [x] Profile.
 - [x] Dashboard Direktur awal:
@@ -386,3 +388,5 @@ Dashboard Direktur juga harus mengecualikan dari daftar “belum hadir”:
 | 2026-10-05 | Roadmap awal mobile dibuat di root backend | Digantikan |
 | 2026-10-06 | Roadmap diperluas menjadi web dan mobile | Selesai |
 | 2026-10-06 | Perbaikan state lokasi absensi dan warning mobile | Selesai |
+| 2026-10-06 | Implementasi fitur registrasi wajah di mobile | Selesai |
+| 2026-10-06 | Perbaikan bug bottom overflowed pada modul tugas (mobile) | Selesai |
