@@ -27,8 +27,8 @@ class TaskController extends Controller
 
         // 1. Is this employee a Department Head?
         $isHead = Departemen::where('id_karyawan_kepala', $karyawan->id)->exists();
-        // Or if super admin
-        $isAdmin = $user->hasRole(['super-admin', 'admin']);
+        // Or if super admin / direktur
+        $isAdmin = $user->hasRole(['super-admin', 'admin', 'direktur', 'Direktur']);
 
         // Base Query
         $query = Task::with(['creator', 'assignee', 'departemen', 'programKerja'])

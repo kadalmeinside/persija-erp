@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\CutiController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\TaskController;
 use App\Http\Controllers\Api\ApprovalCenterController;
+use App\Http\Controllers\Api\KaryawanController;
 
 /*
 |--------------------------------------------------------------------------
@@ -69,5 +70,8 @@ Route::prefix('v1')->group(function () {
         Route::prefix('calendar')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\CalendarController::class, 'index']);
         });
+
+        // Karyawan Module
+        Route::get('/karyawan', [KaryawanController::class, 'index']);
     });
 });
