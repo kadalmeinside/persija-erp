@@ -291,7 +291,7 @@ const sidebarMenu = computed(() => {
     });
 
     // Persetujuan Cuti
-    if (hasRole('Super Admin') || isCutiApprover.value) {
+    if (isCutiApprover.value) {
         menu.push({ 
             type: 'link',
             name: 'Persetujuan Cuti', 
@@ -302,7 +302,7 @@ const sidebarMenu = computed(() => {
     }
 
     // Persetujuan Pengajuan
-    if (hasRole('Super Admin') || isPengajuanApprover.value) {
+    if (isPengajuanApprover.value) {
         menu.push({ 
             type: 'link',
             name: 'Persetujuan Pengajuan', 
