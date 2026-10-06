@@ -26,14 +26,21 @@ class TaskController extends Controller
             ], 403);
         }
 
+        $roles = $user->roles->pluck('name');
+        $isDirektur = $roles->contains('Direktur');
+
         // Base Query - only active tasks
         $query = Task::with(['creator:id,nama_lengkap', 'assignee:id,nama_lengkap'])
-            ->activeKanban()
-            ->where(function ($q) use ($karyawan) {
+            ->activeKanban();
+            
+        if (!$isDirektur) {
+            $query->where(function ($q) use ($karyawan) {
                 $q->where('id_karyawan_assignee', $karyawan->id)
                   ->orWhere('id_karyawan_creator', $karyawan->id);
-            })
-            ->orderBy('order_index', 'asc')
+            });
+        }
+        
+        $query->orderBy('order_index', 'asc')
             ->orderBy('created_at', 'desc');
 
         $tasks = $query->get();
@@ -60,12 +67,19 @@ class TaskController extends Controller
             ], 403);
         }
 
-        $query = Task::with(['creator:id,nama_lengkap', 'assignee:id,nama_lengkap'])
-            ->where(function ($q) use ($karyawan) {
+        $roles = $user->roles->pluck('name');
+        $isDirektur = $roles->contains('Direktur');
+
+        $query = Task::with(['creator:id,nama_lengkap', 'assignee:id,nama_lengkap']);
+
+        if (!$isDirektur) {
+            $query->where(function ($q) use ($karyawan) {
                 $q->where('id_karyawan_assignee', $karyawan->id)
                   ->orWhere('id_karyawan_creator', $karyawan->id);
-            })
-            ->orderBy('created_at', 'desc');
+            });
+        }
+
+        $query->orderBy('created_at', 'desc');
 
         $tasks = $query->paginate(15);
 
