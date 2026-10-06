@@ -48,6 +48,10 @@ class DashboardController extends Controller
             ->where('status', 'Pending')
             ->count();
 
+        // Check if employee is an approver (in rules or has any process targeted to them)
+        $isApprover = \App\Models\ApprovalRule::where('id_karyawan_approver', $karyawan->id)->exists()
+            || ApprovalProcess::where('id_karyawan_target', $karyawan->id)->exists();
+
         $data = [
             'user' => [
                 'name' => $karyawan->nama_lengkap,
@@ -65,6 +69,7 @@ class DashboardController extends Controller
             ],
             'tasks' => [
                 'pending_approvals' => $pendingApprovals,
+                'is_approver' => $isApprover,
             ],
         ];
 
