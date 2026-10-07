@@ -119,6 +119,8 @@ Status proses yang perlu dipahami mobile:
 - [x] Dashboard Direktur web (Overview tugas, cuti, dan absensi).
 - [x] Akses tugas untuk Direktur mencakup semua tugas karyawan (mobile & web).
 - [x] Dokumentasi web/API dan database baseline tersedia.
+- [x] Penyimpanan Multi-Descriptor Wajah berformat JSON di Database untuk kompatibilitas multi-platform.
+- [x] Fix otoritas role (Admin & Head) pada halaman Task (Kanban Board) Web.
 
 ### Sudah tersedia di mobile
 
@@ -128,6 +130,7 @@ Status proses yang perlu dipahami mobile:
 - [x] Attendance challenge, geolocation, dan foto.
 - [x] Face matching on-device untuk flow absensi.
 - [x] Pendaftaran/registrasi wajah on-device jika data wajah belum ada.
+- [x] Multi-descriptor wajah untuk kelancaran absen lintas platform (Web & Mobile).
 - [x] Riwayat absensi.
 - [x] Pengajuan cuti.
 - [x] Saldo cuti, termasuk tampilan `Unlimited`.
@@ -447,6 +450,7 @@ tanpa backup, preflight validation, dan rollback plan.
 | 2026-10-06 | Perbaikan bug bottom overflowed pada modul tugas (mobile) | Selesai |
 | 2026-10-06 | Implementasi Dashboard/Ringkasan Direktur di mobile dan web | Selesai |
 | 2026-10-06 | Penyelesaian P0 & P1 Hasil Audit (Keamanan, Biometrik, Bug Approval, Caching, UX) | Selesai |
+| 2026-10-07 | Implementasi multi-descriptor wajah JSON (Web 128D & Mobile 192D) dan perbaikan variable TaskController | Selesai |
 
 ## Audit rating terbaru - 2026-10-06
 
