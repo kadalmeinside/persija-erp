@@ -25,6 +25,15 @@ class TaskController extends Controller
             abort(403, $e->getMessage());
         }
 
+        $user = Auth::user();
+        $isAdmin = $user->hasRole(['Super Admin', 'Direktur', 'Finance', 'HR']);
+        $karyawan = Karyawan::where('user_id', $user->id)->first();
+        
+        $isHead = false;
+        if ($karyawan) {
+            $isHead = Departemen::where('id_karyawan_kepala', $karyawan->id)->exists();
+        }
+
         // Dropdown options based on hierarchy
         $assigneeOptions = collect();
         if ($isAdmin) {
