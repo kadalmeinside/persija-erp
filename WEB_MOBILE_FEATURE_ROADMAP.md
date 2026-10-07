@@ -167,10 +167,10 @@ Status proses yang perlu dipahami mobile:
 - [x] Pastikan pengaju tidak dapat menyetujui pengajuannya sendiri.
 - [x] Pastikan approval yang sudah selesai, ditolak, dibatalkan, atau dilewati
   tidak dapat diproses ulang.
-- [ ] Tambahkan test untuk employee approver tanpa role manager.
-- [ ] Tambahkan test bahwa employee lain tidak dapat approve request tersebut.
+- [x] Tambahkan test untuk employee approver tanpa role manager.
+- [x] Tambahkan test bahwa employee lain tidak dapat approve request tersebut.
 - [ ] Tambahkan test untuk approval rule berbeda antar departemen.
-- [ ] Tambahkan test untuk satu approver dan beberapa approver berurutan.
+- [x] Tambahkan test untuk satu approver dan beberapa approver berurutan.
 - [x] Audit seluruh endpoint web approval agar tidak memakai role sebagai
   pengganti `id_karyawan_target`.
 - [x] Audit seluruh endpoint mobile approval agar tidak memakai role sebagai
