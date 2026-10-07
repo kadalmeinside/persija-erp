@@ -98,6 +98,13 @@ const initSystem = async () => {
 
         if (props.karyawan.face_descriptor) {
             const descArray = JSON.parse(props.karyawan.face_descriptor);
+            if (descArray.length !== 128) {
+                statusMsg.value = `Model wajah tidak kompatibel (Terdaftar: ${descArray.length}D, Web ini: 128D). Silakan lakukan "Daftar Wajah" ulang melalui browser (Web).`;
+                isError.value = true;
+                loading.value = false;
+                props.karyawan.face_descriptor = null; // force show button
+                return;
+            }
             const labeledDescriptor = new faceapi.LabeledFaceDescriptors(
                 props.karyawan.nama_lengkap,
                 [new Float32Array(descArray)]
