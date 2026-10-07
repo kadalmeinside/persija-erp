@@ -11,6 +11,12 @@ use Inertia\Inertia;
 
 class ApprovalRuleController extends Controller
 {
+    public function __construct()
+    {
+        // Hanya Super Admin, Direktur, atau HR yang boleh mengubah Approval Rules
+        $this->middleware('role:Super Admin|Direktur|HR Staff');
+    }
+
     /**
      * Display a listing of the resource.
      */

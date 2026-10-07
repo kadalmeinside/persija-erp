@@ -177,7 +177,7 @@ Status proses yang perlu dipahami mobile:
   pengganti `id_karyawan_target`.
 - [x] Samakan response status, error, catatan, actor, dan timeline antara web
   dan mobile.
-- [ ] Pastikan konfigurasi approval rule hanya dapat diubah dari web oleh
+- [x] Pastikan konfigurasi approval rule hanya dapat diubah dari web oleh
   permission yang sesuai, bukan dari mobile.
 
 ### P1 - Approval Center web dan mobile
