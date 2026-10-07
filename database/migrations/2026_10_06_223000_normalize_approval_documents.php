@@ -9,11 +9,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (DB::getDriverName() === 'mysql') {
-            DB::statement(
-                'ALTER TABLE tbl_approval_process DROP CHECK approval_process_one_document_chk'
-            );
-        } elseif (DB::getDriverName() === 'pgsql') {
+        if (in_array(DB::getDriverName(), ['mysql', 'pgsql'], true)) {
             DB::statement(
                 'ALTER TABLE tbl_approval_process DROP CONSTRAINT approval_process_one_document_chk'
             );
