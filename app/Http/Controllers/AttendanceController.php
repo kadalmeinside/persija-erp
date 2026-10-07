@@ -20,9 +20,13 @@ class AttendanceController extends Controller
      */
     public function clock()
     {
-        $karyawan = Karyawan::where('user_id', Auth::id())->first();
+        $karyawan = Karyawan::with('biometric')->where('user_id', Auth::id())->first();
         if (!$karyawan) {
             abort(403, 'Profil Karyawan tidak ditemukan.');
+        }
+
+        if ($karyawan->biometric) {
+            $karyawan->face_descriptor = $karyawan->biometric->face_descriptor;
         }
 
         $today = Carbon::today()->toDateString();

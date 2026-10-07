@@ -31,7 +31,7 @@ class AuthController extends Controller
         // Create new token
         $token = $user->createToken('mobile-app')->plainTextToken;
 
-        $user->load('karyawan.lokasiKantor');
+        $user->load(['karyawan.lokasiKantor', 'karyawan.biometric']);
 
         return response()->json([
             'data' => [
@@ -47,7 +47,7 @@ class AuthController extends Controller
     public function profile(Request $request)
     {
         // Load relation for resource if needed, otherwise UserResource will handle it
-        $user = $request->user()->load('karyawan');
+        $user = $request->user()->load(['karyawan.lokasiKantor', 'karyawan.biometric']);
         
         return new \App\Http\Resources\UserResource($user);
     }
@@ -117,9 +117,11 @@ class AuthController extends Controller
             ['face_descriptor' => $request->face_descriptor]
         );
 
+        $user->karyawan->unsetRelation('biometric');
+
         return response()->json([
             'message' => 'Wajah berhasil didaftarkan.',
-            'user' => new \App\Http\Resources\UserResource($user->load('karyawan')),
+            'user' => new \App\Http\Resources\UserResource($user->load(['karyawan.biometric'])),
         ], 200);
     }
 }
