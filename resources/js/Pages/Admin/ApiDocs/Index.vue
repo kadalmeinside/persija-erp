@@ -1,121 +1,418 @@
 <script setup>
-import { ref } from 'vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head } from '@inertiajs/vue3';
-import {
-    BookOpenIcon,
-    CalendarDaysIcon,
-    ChartBarIcon,
-    ChevronDownIcon,
-    ChevronUpIcon,
-    CodeBracketIcon,
-    KeyIcon,
-    MapPinIcon,
-    CheckBadgeIcon,
-    ClipboardDocumentListIcon,
-} from '@heroicons/vue/24/outline';
+import { BookOpenIcon, KeyIcon, MapPinIcon, CalendarDaysIcon, CodeBracketIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/vue/24/outline';
+import { ref } from 'vue';
 
 const openEndpoint = ref(null);
+
 const toggleEndpoint = (id) => {
     openEndpoint.value = openEndpoint.value === id ? null : id;
 };
 
-const auth = 'Authorization: Bearer <sanctum-token>\nAccept: application/json';
 const apis = [
     {
-        title: 'Authentication & Profile',
+        title: 'Authentication Module',
         icon: KeyIcon,
         color: 'text-blue-600',
         bg: 'bg-blue-50',
         endpoints: [
-            { id: 'login', method: 'POST', url: '/api/v1/login', desc: 'Login mobile. Semua token lama user dicabut.', body: '{"email":"user@persija.id","password":"password123"}', response: '{"data":{"token":"1|...","user":{}}}' },
-            { id: 'logout', method: 'POST', url: '/api/v1/logout', desc: 'Cabut token yang sedang digunakan.', headers: auth, response: '{"message":"Successfully logged out"}' },
-            { id: 'profile', method: 'GET', url: '/api/v1/user', desc: 'Ambil profil user dan data karyawan.', headers: auth, response: '{"data":{"id":1,"name":"...","karyawan":{}}}' },
-            { id: 'register-face', method: 'POST', url: '/api/v1/user/register-face', desc: 'Simpan descriptor wajah sekali untuk user.', headers: auth, body: '{"face_descriptor":"<json-string>"}', response: '{"message":"Wajah berhasil didaftarkan.","user":{}}' },
-            { id: 'update-password', method: 'POST', url: '/api/v1/update-password', desc: 'Perbarui password user.', headers: auth, body: '{"current_password":"...","new_password":"...","new_password_confirmation":"..."}', response: '{"message":"Password berhasil diperbarui."}' },
-        ],
+            {
+                id: 'login',
+                method: 'POST',
+                url: '/api/v1/login',
+                desc: 'Login to get Sanctum token',
+                body: "{\n  \"email\": \"user@persija.id\",\n  \"password\": \"password123\"\n}",
+                response: "{\n  \"data\": {\n    \"token\": \"1|xyz123...\",\n    \"user\": {\n      \"id\": 1,\n      \"name\": \"John Doe\",\n      \"email\": \"user@persija.id\",\n      \"role\": \"Staf\",\n      \"karyawan\": {\n        \"nip\": \"12345\",\n        \"nama_lengkap\": \"John Doe\",\n        \"jabatan\": \"Staff IT\",\n        \"departemen\": \"IT\"\n      }\n    }\n  }\n}"
+            },
+            {
+                id: 'profile',
+                method: 'GET',
+                url: '/api/v1/user',
+                desc: 'Get logged in user profile (incl. Geofence data)',
+                headers: "Authorization: Bearer {token}",
+                response: "{\n  \"data\": {\n    \"id\": 1,\n    \"name\": \"John Doe\",\n    \"email\": \"user@persija.id\",\n    \"role\": \"Staf\",\n    \"karyawan\": {\n      \"nip\": \"123\",\n      \"is_strict_location\": true,\n      \"lokasi_kantor\": {\n        \"nama\": \"HQ\",\n        \"latitude\": -6.2088,\n        \"longitude\": 106.8456,\n        \"radius\": 50\n      }\n    }\n  }\n}"
+            },
+            {
+                id: 'logout',
+                method: 'POST',
+                url: '/api/v1/logout',
+                desc: 'Revoke token',
+                headers: "Authorization: Bearer {token}",
+                response: "{\n  \"message\": \"Successfully logged out\"\n}"
+            },
+            {
+                id: 'register_face',
+                method: 'POST',
+                url: '/api/v1/user/register-face',
+                desc: 'Register a face descriptor once for the authenticated employee.',
+                headers: "Authorization: ****** application/json",
+                body: "{\n  \"face_descriptor\": \"<json-string>\"\n}",
+                response: "{\n  \"message\": \"Wajah berhasil didaftarkan.\",\n  \"user\": { }\n}"
+            },
+            {
+                id: 'update_password',
+                method: 'POST',
+                url: '/api/v1/update-password',
+                desc: 'Update the authenticated user password.',
+                headers: "Authorization: ****** application/json",
+                body: "{\n  \"current_password\": \"old-password\",\n  \"new_password\": \"new-password\",\n  \"new_password_confirmation\": \"new-password\"\n}",
+                response: "{\n  \"message\": \"Password berhasil diperbarui.\"\n}"
+            },
+        ]
     },
     {
-        title: 'Dashboard & Approval Center',
-        icon: ChartBarIcon,
-        color: 'text-amber-600',
-        bg: 'bg-amber-50',
-        endpoints: [
-            { id: 'dashboard', method: 'GET', url: '/api/v1/dashboard/home', desc: 'BFF dashboard: absensi, saldo cuti, approval, dan director_overview untuk role Direktur.', headers: auth, response: '{"data":{"user":{},"attendance_today":{},"leave_balance":{},"tasks":{},"director_overview":{}}}' },
-            { id: 'approvals', method: 'GET', url: '/api/v1/approvals?status=all&per_page=20', desc: 'Daftar process approval yang ditujukan kepada employee pada token. Default status Pending.', headers: auth, response: '{"data":[],"meta":{"current_page":1,"last_page":1,"per_page":20,"total":0}}' },
-            { id: 'approval-detail', method: 'GET', url: '/api/v1/approvals/{approval}', desc: 'Detail approval dan timeline seluruh level dokumen.', headers: auth, response: '{"data":{"approval":{},"timeline":[]}}' },
-            { id: 'approval-action', method: 'POST', url: '/api/v1/approvals/{approval}/action', desc: 'Approve/reject hanya jika user adalah target step Pending.', headers: auth, body: '{"status":"Approved","pin":"123456","catatan":"Diproses"}', response: '{"message":"Approval berhasil diproses."}' },
-        ],
-    },
-    {
-        title: 'Absensi',
+        title: 'Absensi (Attendance) Module',
         icon: MapPinIcon,
         color: 'text-green-600',
         bg: 'bg-green-50',
         endpoints: [
-            { id: 'attendance-today', method: 'GET', url: '/api/v1/absensi/today', desc: 'Status absensi hari ini.', headers: auth, response: '{"data":{"clock_in":"08:00:00","clock_out":null,"status":"Hadir"}}' },
-            { id: 'attendance-challenge', method: 'POST', url: '/api/v1/absensi/challenge', desc: 'Buat challenge sekali pakai, berlaku 5 menit.', headers: auth, body: '{"action":"clock-in","security_metadata":{"platform":"android"}}', response: '{"data":{"action":"clock-in","request_id":"<uuid>","nonce":"<64-char>","expires_at":"<iso8601>"}}' },
-            { id: 'clock-in', method: 'POST', url: '/api/v1/absensi/clock-in', desc: 'Clock in dengan challenge, GPS, dan foto.', headers: `${auth}\nContent-Type: multipart/form-data`, body: 'latitude, longitude, photo, request_id, nonce\nis_dinas_luar (optional), catatan (optional)', response: '{"message":"...","data":{"id":10,"clock_in":"08:00:00"}}' },
-            { id: 'clock-out', method: 'POST', url: '/api/v1/absensi/clock-out', desc: 'Clock out dengan challenge, GPS, dan foto.', headers: `${auth}\nContent-Type: multipart/form-data`, body: 'latitude, longitude, photo, request_id, nonce', response: '{"message":"...","data":{"id":10,"clock_out":"17:00:00"}}' },
-            { id: 'attendance-history', method: 'GET', url: '/api/v1/absensi/history?month=10&year=2026', desc: 'Riwayat absensi terpaginasikan 10 item per halaman.', headers: auth, response: '{"data":[],"links":{},"meta":{}}' },
-        ],
+            {
+                id: 'absensi_today',
+                method: 'GET',
+                url: '/api/v1/absensi/today',
+                desc: "Check today's attendance status",
+                headers: "Authorization: Bearer {token}",
+                response: "{\n  \"data\": {\n    \"clock_in\": \"08:00:00\",\n    \"clock_out\": null,\n    \"status\": \"Hadir\"\n  }\n}"
+            },
+            {
+                id: 'absensi_in',
+                method: 'POST',
+                url: '/api/v1/absensi/clock-in',
+                desc: 'Clock in (Requires GPS & Photo)',
+                headers: "Authorization: Bearer {token}\nContent-Type: multipart/form-data",
+                body: "latitude: -6.2088\nlongitude: 106.8456\nphoto: (File/Image)\nis_dinas_luar: 1 (Optional)\ncatatan: Meeting client (Optional)",
+                response: "{\n  \"message\": \"Berhasil absen masuk.\",\n  \"data\": {\n    \"id\": 10,\n    \"clock_in\": \"08:00:00\"\n  }\n}"
+            },
+            {
+                id: 'absensi_out',
+                method: 'POST',
+                url: '/api/v1/absensi/clock-out',
+                desc: 'Clock out (Requires GPS & Photo)',
+                headers: "Authorization: Bearer {token}\nContent-Type: multipart/form-data",
+                body: "latitude: -6.2088\nlongitude: 106.8456\nphoto: (File/Image)",
+                response: "{\n  \"message\": \"Berhasil absen pulang.\",\n  \"data\": {\n    \"id\": 10,\n    \"clock_out\": \"17:00:00\"\n  }\n}"
+            },
+            {
+                id: 'absensi_history',
+                method: 'GET',
+                url: '/api/v1/absensi/history?month=09&year=2026',
+                desc: 'Get attendance history',
+                headers: "Authorization: Bearer {token}",
+                response: "{\n  \"data\": [\n    {\n      \"id\": 10,\n      \"date\": \"2026-09-25\",\n      \"clock_in\": \"08:00:00\",\n      \"clock_out\": \"17:00:00\",\n      \"status\": \"Hadir\"\n    }\n  ]\n}"
+            },
+            {
+                id: 'absensi_challenge',
+                method: 'POST',
+                url: '/api/v1/absensi/challenge',
+                desc: 'Create a five-minute, single-use challenge before clock-in/out.',
+                headers: "Authorization: ****** application/json",
+                body: "{\n  \"action\": \"clock-in\",\n  \"security_metadata\": { \"platform\": \"android\", \"app_version\": \"1.0.0\" }\n}",
+                response: "{\n  \"data\": {\n    \"action\": \"clock-in\",\n    \"request_id\": \"<uuid>\",\n    \"nonce\": \"<64-character nonce>\",\n    \"expires_at\": \"<iso8601>\"\n  }\n}"
+            },
+        ]
     },
     {
-        title: 'Cuti',
+        title: 'Cuti (Leave) Module',
         icon: CalendarDaysIcon,
         color: 'text-purple-600',
         bg: 'bg-purple-50',
         endpoints: [
-            { id: 'leave-types', method: 'GET', url: '/api/v1/cuti/jenis', desc: 'Jenis cuti dan aturan lampiran, mundur, gender, serta unlimited.', headers: auth, response: '{"data":[{"id":1,"nama_cuti":"Cuti Tahunan","is_unlimited":false}]}' },
-            { id: 'leave-balances', method: 'GET', url: '/api/v1/cuti/balances', desc: 'Saldo cuti tahun berjalan. Unlimited harus ditampilkan sebagai Unlimited.', headers: auth, response: '{"data":[{"jenis_cuti":"Cuti Tahunan","saldo_akhir":10,"is_unlimited":false}]}' },
-            { id: 'leave-requests', method: 'GET', url: '/api/v1/cuti/requests', desc: 'Riwayat pengajuan cuti user.', headers: auth, response: '{"data":[{"id":5,"status":"Pending"}]}' },
-            { id: 'leave-request', method: 'POST', url: '/api/v1/cuti/request', desc: 'Ajukan cuti; hari kerja dan hari libur dihitung backend.', headers: `${auth}\nContent-Type: multipart/form-data`, body: 'jenis_cuti_id, tgl_mulai, tgl_selesai, keterangan\nattachment (optional; wajib sesuai jenis cuti)', response: '{"message":"Pengajuan cuti berhasil dibuat","data":{"id":5,"status":"Pending"}}' },
-            { id: 'leave-cancel', method: 'POST', url: '/api/v1/cuti/cancel/{id}', desc: 'Batalkan pengajuan sendiri sebelum tanggal mulai.', headers: auth, body: '{"reason":"Perubahan rencana"}', response: '{"message":"..."}' },
-            { id: 'leave-approvals', method: 'GET', url: '/api/v1/cuti/approvals', desc: 'Endpoint legacy approval cuti untuk kompatibilitas mobile.', headers: auth, response: '{"data":[]}' },
-            { id: 'leave-approve', method: 'POST', url: '/api/v1/cuti/approve/{id}', desc: 'Endpoint legacy approve/reject cuti dengan PIN.', headers: auth, body: '{"status":"Approved","pin":"123456","catatan":"Disetujui"}', response: '{"message":"..."}' },
-        ],
+            {
+                id: 'cuti_jenis',
+                method: 'GET',
+                url: '/api/v1/cuti/jenis',
+                desc: 'Get available leave types for dropdown',
+                headers: "Authorization: Bearer {token}",
+                response: "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"nama_cuti\": \"Cuti Tahunan\",\n      \"kuota_default\": 12,\n      \"wajib_lampiran\": false\n    },\n    {\n      \"id\": 2,\n      \"nama_cuti\": \"Cuti Sakit\",\n      \"kuota_default\": 12,\n      \"wajib_lampiran\": true\n    }\n  ]\n}"
+            },
+            {
+                id: 'cuti_balances',
+                method: 'GET',
+                url: '/api/v1/cuti/balances',
+                desc: 'Get leave balances for current year',
+                headers: "Authorization: Bearer {token}",
+                response: "{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"jenis_cuti_id\": 1,\n      \"jenis_cuti\": \"Cuti Tahunan\",\n      \"saldo_awal\": 12,\n      \"saldo_terpakai\": 2,\n      \"saldo_akhir\": 10\n    }\n  ]\n}"
+            },
+            {
+                id: 'cuti_requests',
+                method: 'GET',
+                url: '/api/v1/cuti/requests',
+                desc: 'Get my leave request history',
+                headers: "Authorization: Bearer {token}",
+                response: "{\n  \"data\": [\n    {\n      \"id\": 5,\n      \"jenis_cuti\": \"Cuti Tahunan\",\n      \"tgl_mulai\": \"2026-10-01\",\n      \"tgl_selesai\": \"2026-10-02\",\n      \"jumlah_hari\": 2,\n      \"alasan\": \"Urusan keluarga\",\n      \"status\": \"Pending\",\n      \"lampiran\": null,\n      \"created_at\": \"2026-09-27 08:00:00\"\n    }\n  ]\n}"
+            },
+            {
+                id: 'cuti_submit',
+                method: 'POST',
+                url: '/api/v1/cuti/request',
+                desc: 'Submit a new leave request',
+                headers: "Authorization: Bearer {token}\nContent-Type: multipart/form-data",
+                body: "jenis_cuti_id: 1               (Integer, Required)\ntgl_mulai: 2026-10-01          (String YYYY-MM-DD, Required)\ntgl_selesai: 2026-10-02        (String YYYY-MM-DD, Required)\nketerangan: Sakit (Demam)      (String max 500, Required)\nattachment: (File jpg/png/pdf) (Optional – Wajib jika wajib_lampiran: true)",
+                response: "{\n  \"message\": \"Pengajuan cuti berhasil dibuat\",\n  \"data\": {\n    \"id\": 5,\n    \"status\": \"Pending\"\n  }\n}"
+            },
+            {
+                id: 'cuti_cancel',
+                method: 'POST',
+                url: '/api/v1/cuti/cancel/{id}',
+                desc: 'Cancel the user’s own request once, before its start date.',
+                headers: "Authorization: ****** application/json",
+                body: "{\n  \"reason\": \"Perubahan rencana\"\n}",
+                response: "{\n  \"message\": \"Pengajuan cuti berhasil dibatalkan.\"\n}"
+            },
+        ]
     },
     {
-        title: 'Tasks, Calendar & Employees',
-        icon: ClipboardDocumentListIcon,
+        title: 'Approval Module (Manager / HR Only)',
+        icon: CalendarDaysIcon,
+        color: 'text-amber-600',
+        bg: 'bg-amber-50',
+        endpoints: [
+            {
+                id: 'cuti_approvals',
+                method: 'GET',
+                url: '/api/v1/cuti/approvals',
+                desc: 'Get pending approvals (Role: Manajer / HR)',
+                headers: "Authorization: Bearer {token}",
+                response: "{\n  \"data\": [\n    {\n      \"id\": 5,\n      \"nama_karyawan\": \"Jane Smith\",\n      \"nip\": \"54321\",\n      \"departemen\": \"IT\",\n      \"jenis_cuti\": \"Cuti Tahunan\",\n      \"tgl_mulai\": \"2026-10-01\",\n      \"tgl_selesai\": \"2026-10-02\",\n      \"jumlah_hari\": 2,\n      \"alasan\": \"Urusan keluarga\",\n      \"lampiran\": null,\n      \"status\": \"Pending\",\n      \"created_at\": \"2026-09-27 08:00:00\"\n    }\n  ]\n}"
+            },
+            {
+                id: 'cuti_approve',
+                method: 'POST',
+                url: '/api/v1/cuti/approve/{id}',
+                desc: 'Approve or Reject a leave request (Role: Manajer / HR)',
+                headers: "Authorization: Bearer {token}\nContent-Type: application/json",
+                body: "{\n  \"status\": \"Approved\",\n  \"catatan\": \"Disetujui, koordinasi dengan tim.\"\n}\n\n// status hanya boleh: \"Approved\" atau \"Rejected\"",
+                response: "{\n  \"message\": \"Pengajuan berhasil approved\"\n}\n\n// Error: { \"message\": \"Pengajuan ini sudah diproses.\" } (422)\n// Error: { \"message\": \"Anda tidak memiliki akses.\" } (403)"
+            },
+        ]
+    },
+    {
+        title: 'Dashboard & Unified Approval Center',
+        icon: BookOpenIcon,
+        color: 'text-amber-600',
+        bg: 'bg-amber-50',
+        endpoints: [
+            {
+                id: 'dashboard_home',
+                method: 'GET',
+                url: '/api/v1/dashboard/home',
+                desc: 'BFF dashboard with attendance, leave balance, tasks, approvals, and director overview.',
+                headers: "Authorization: ****** application/json",
+                response: "{\n  \"data\": {\n    \"user\": { },\n    \"attendance_today\": { },\n    \"leave_balance\": { },\n    \"tasks\": { \"pending_approvals\": 0, \"is_approver\": false },\n    \"director_overview\": { }\n  }\n}"
+            },
+            {
+                id: 'approval_index',
+                method: 'GET',
+                url: '/api/v1/approvals?status=all&per_page=20',
+                desc: 'List approval processes assigned to the employee in the token. Default status is Pending.',
+                headers: "Authorization: ****** application/json",
+                response: "{ \"data\": [], \"meta\": { \"current_page\": 1, \"last_page\": 1, \"per_page\": 20, \"total\": 0 } }"
+            },
+            {
+                id: 'approval_show',
+                method: 'GET',
+                url: '/api/v1/approvals/{approval}',
+                desc: 'Show an approval detail and the complete document timeline.',
+                headers: "Authorization: ****** application/json",
+                response: "{ \"data\": { \"approval\": { }, \"timeline\": [] } }"
+            },
+            {
+                id: 'approval_action',
+                method: 'POST',
+                url: '/api/v1/approvals/{approval}/action',
+                desc: 'Approve or reject a Pending step only when the token employee is its target.',
+                headers: "Authorization: ****** application/json",
+                body: "{\n  \"status\": \"Approved\",\n  \"pin\": \"123456\",\n  \"catatan\": \"Diproses\"\n}",
+                response: "{ \"message\": \"Approval berhasil diproses.\" }"
+            }
+        ]
+    },
+    {
+        title: 'Task Management, Calendar & Employees',
+        icon: CodeBracketIcon,
         color: 'text-indigo-600',
         bg: 'bg-indigo-50',
         endpoints: [
-            { id: 'tasks', method: 'GET', url: '/api/v1/tasks', desc: 'Task aktif yang dapat diakses user.', headers: auth, response: '{"success":true,"data":[]}' },
-            { id: 'task-create', method: 'POST', url: '/api/v1/tasks', desc: 'Buat task; assignment ke employee lain dibatasi role.', headers: auth, body: '{"title":"...","description":"...","priority":"Medium","due_date":"2026-10-10","id_karyawan_assignee":1}', response: '{"success":true,"data":{}}' },
-            { id: 'task-history', method: 'GET', url: '/api/v1/tasks/history', desc: 'Riwayat task aktif dan archived.', headers: auth, response: '{"success":true,"data":{}}' },
-            { id: 'task-status', method: 'POST', url: '/api/v1/tasks/{id}/status', desc: 'Ubah status To Do, In Progress, Review, Done atau archive.', headers: auth, body: '{"status":"In Progress","archive":false}', response: '{"success":true,"data":{}}' },
-            { id: 'calendar', method: 'GET', url: '/api/v1/calendar', desc: 'Event kalender untuk mobile.', headers: auth, response: '{"data":[]}' },
-            { id: 'employees', method: 'GET', url: '/api/v1/karyawan', desc: 'Daftar karyawan yang tersedia untuk kebutuhan mobile.', headers: auth, response: '{"data":[]}' },
-        ],
-    },
+            {
+                id: 'tasks_index',
+                method: 'GET',
+                url: '/api/v1/tasks',
+                desc: 'Get active tasks assigned to or created by the authenticated user.',
+                headers: "Authorization: ****** application/json",
+                response: "{ \"success\": true, \"data\": [] }"
+            },
+            {
+                id: 'tasks_store',
+                method: 'POST',
+                url: '/api/v1/tasks',
+                desc: 'Create a task. Assignment to another employee is restricted to permitted roles.',
+                headers: "Authorization: ****** application/json",
+                body: "{\n  \"title\": \"Review laporan\",\n  \"description\": \"...\",\n  \"priority\": \"Medium\",\n  \"due_date\": \"2026-10-10\",\n  \"id_karyawan_assignee\": 12\n}",
+                response: "{ \"success\": true, \"message\": \"Tugas berhasil dibuat\", \"data\": { } }"
+            },
+            {
+                id: 'tasks_history',
+                method: 'GET',
+                url: '/api/v1/tasks/history',
+                desc: 'Get paginated task history including archived tasks.',
+                headers: "Authorization: ****** application/json",
+                response: "{ \"success\": true, \"data\": { \"data\": [], \"meta\": { } } }"
+            },
+            {
+                id: 'tasks_status',
+                method: 'POST',
+                url: '/api/v1/tasks/{id}/status',
+                desc: 'Change task status or archive a task.',
+                headers: "Authorization: ****** application/json",
+                body: "{ \"status\": \"In Progress\", \"archive\": false }",
+                response: "{ \"success\": true, \"message\": \"Status tugas berhasil diperbarui\", \"data\": { } }"
+            },
+            {
+                id: 'calendar_index',
+                method: 'GET',
+                url: '/api/v1/calendar',
+                desc: 'Get company calendar events for mobile.',
+                headers: "Authorization: ****** application/json",
+                response: "{ \"data\": [] }"
+            },
+            {
+                id: 'employees_index',
+                method: 'GET',
+                url: '/api/v1/karyawan',
+                desc: 'Get employees available to the authenticated mobile user.',
+                headers: "Authorization: ****** application/json",
+                response: "{ \"data\": [] }"
+            }
+        ]
+    }
 ];
 
-const getMethodColor = (method) => ({
-    GET: 'bg-green-100 text-green-700 border-green-200',
-    POST: 'bg-blue-100 text-blue-700 border-blue-200',
-}[method] ?? 'bg-gray-100 text-gray-700 border-gray-200');
+const getMethodColor = (method) => {
+    switch (method) {
+        case 'GET': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+        case 'POST': return 'bg-blue-100 text-blue-700 border-blue-200';
+        case 'PUT':
+        case 'PATCH': return 'bg-amber-100 text-amber-700 border-amber-200';
+        case 'DELETE': return 'bg-red-100 text-red-700 border-red-200';
+        default: return 'bg-gray-100 text-gray-700 border-gray-200';
+    }
+};
 </script>
 
 <template>
-    <Head title="Mobile API Documentation" />
+    <Head title="API Documentation" />
+
     <AuthenticatedLayout>
-        <template #header><div class="flex items-center gap-3"><CodeBracketIcon class="w-6 h-6 text-gray-600" /><h2 class="font-semibold text-xl text-gray-800 leading-tight">Mobile API Documentation</h2></div></template>
-        <div class="py-12"><div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white shadow-sm sm:rounded-lg mb-6 p-6">
-                <div class="flex gap-4"><BookOpenIcon class="w-7 h-7 text-indigo-600 shrink-0" /><div>
-                    <h3 class="text-lg font-bold">API v1 Native Mobile</h3>
-                    <p class="text-gray-600 mt-1">Sumber dokumentasi ini adalah <code>routes/api.php</code>. Semua endpoint selain login memakai Sanctum.</p>
-                    <div class="grid md:grid-cols-3 gap-3 mt-4 text-sm"><div class="bg-gray-50 p-3 rounded"><b>Base URL</b><br><code>/api/v1</code></div><div class="bg-gray-50 p-3 rounded"><b>Headers</b><br><code>Accept: application/json</code><br><code>Authorization: Bearer ...</code></div><div class="bg-gray-50 p-3 rounded"><b>Validasi</b><br>401 token, 403 akses, 422 input/proses.</div></div>
-                </div></div>
+        <template #header>
+            <div class="flex items-center gap-3">
+                <CodeBracketIcon class="w-6 h-6 text-gray-600" />
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight">Mobile API Documentation</h2>
             </div>
-            <div class="grid gap-6"><div v-for="module in apis" :key="module.title" class="bg-white rounded-lg shadow-sm border overflow-hidden">
-                <div class="p-4 border-b flex items-center gap-3" :class="module.bg"><component :is="module.icon" class="w-5 h-5" :class="module.color" /><h3 class="font-bold">{{ module.title }}</h3></div>
-                <ul class="divide-y"><li v-for="ep in module.endpoints" :key="ep.id">
-                    <button @click="toggleEndpoint(ep.id)" class="w-full p-4 text-left flex justify-between items-center hover:bg-gray-50"><div><div class="flex flex-wrap items-center gap-3"><span class="px-2 py-1 text-xs font-bold rounded border" :class="getMethodColor(ep.method)">{{ ep.method }}</span><code class="text-sm font-semibold">{{ ep.url }}</code></div><p class="text-sm text-gray-600 mt-2">{{ ep.desc }}</p></div><ChevronUpIcon v-if="openEndpoint === ep.id" class="w-5 h-5" /><ChevronDownIcon v-else class="w-5 h-5 text-gray-400" /></button>
-                    <div v-if="openEndpoint === ep.id" class="p-4 bg-gray-50 border-t grid md:grid-cols-2 gap-5 text-sm"><div><h4 class="font-bold mb-2">Request</h4><pre v-if="ep.headers" class="mb-3 bg-gray-800 text-green-300 p-3 rounded overflow-x-auto"><code>{{ ep.headers }}</code></pre><pre v-if="ep.body" class="bg-gray-800 text-blue-300 p-3 rounded overflow-x-auto"><code>{{ ep.body }}</code></pre><span v-if="!ep.headers && !ep.body" class="text-gray-500 italic">Tidak ada payload tambahan.</span></div><div><h4 class="font-bold mb-2">Success response</h4><pre class="bg-gray-800 text-emerald-300 p-3 rounded overflow-x-auto"><code>{{ ep.response }}</code></pre></div></div>
-                </li></ul>
-            </div></div>
-        </div></div>
+        </template>
+
+        <div class="py-12">
+            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
+                    <div class="p-6 text-gray-900 border-b border-gray-200">
+                        <div class="flex items-start gap-4">
+                            <div class="p-3 bg-indigo-50 rounded-lg shrink-0">
+                                <BookOpenIcon class="w-6 h-6 text-indigo-600" />
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-bold text-gray-900">Developer Guide (Phase 1)</h3>
+                                <p class="text-gray-600 mt-1">This API is designed specifically for Native Android & iOS applications to enforce hardware-based GPS locations.</p>
+
+                                <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                        <h4 class="font-semibold text-gray-700 mb-2">Base Configurations</h4>
+                                        <ul class="space-y-1 text-sm text-gray-600">
+                                            <li><span class="font-medium">Base URL:</span> <code class="bg-gray-200 px-1 py-0.5 rounded text-indigo-700">https://your-domain.com/api/v1</code></li>
+                                            <li><span class="font-medium">Auth:</span> <code class="bg-gray-200 px-1 py-0.5 rounded text-indigo-700">Bearer {token}</code></li>
+                                            <li><span class="font-medium">Accept:</span> <code class="bg-gray-200 px-1 py-0.5 rounded text-indigo-700">application/json</code></li>
+                                        </ul>
+                                    </div>
+                                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                        <h4 class="font-semibold text-gray-700 mb-2">Success Response (JSend)</h4>
+                                        <ul class="space-y-1 text-sm text-gray-600">
+                                            <li><span class="font-medium text-emerald-600">200 OK:</span> <code>{"data": {...}}</code></li>
+                                            <li><span class="font-medium text-emerald-600">201 Created:</span> <code>{"message":"..","data":{}}</code></li>
+                                        </ul>
+                                    </div>
+                                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                        <h4 class="font-semibold text-gray-700 mb-2">Error Responses</h4>
+                                        <ul class="space-y-1 text-sm text-gray-600">
+                                            <li><span class="font-medium text-amber-600">401:</span> Token expired → redirect Login</li>
+                                            <li><span class="font-medium text-red-600">403:</span> Akses ditolak (role)</li>
+                                            <li><span class="font-medium text-red-600">404:</span> Data tidak ditemukan</li>
+                                            <li><span class="font-medium text-red-600">422:</span> <code>{"errors":{"field":[...]}}</code></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- API Modules -->
+                <div class="grid grid-cols-1 gap-6">
+                    <div v-for="(module, index) in apis" :key="index" class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+                        <div class="p-4 border-b border-gray-100 flex items-center gap-3" :class="module.bg">
+                            <component :is="module.icon" class="w-5 h-5" :class="module.color" />
+                            <h3 class="font-bold text-gray-900">{{ module.title }}</h3>
+                        </div>
+                        <div class="p-0">
+                            <ul class="divide-y divide-gray-100">
+                                <li v-for="(ep, i) in module.endpoints" :key="i" class="p-0 hover:bg-gray-50 transition-colors">
+                                    <div @click="toggleEndpoint(ep.id)" class="p-4 cursor-pointer flex justify-between items-center w-full">
+                                        <div>
+                                            <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-2">
+                                                <span class="px-2.5 py-1 text-xs font-bold rounded border shrink-0 w-max" :class="getMethodColor(ep.method)">
+                                                    {{ ep.method }}
+                                                </span>
+                                                <code class="text-sm font-semibold text-gray-800 break-all">{{ ep.url }}</code>
+                                            </div>
+                                            <p class="text-sm text-gray-600 sm:ml-[72px]">{{ ep.desc }}</p>
+                                        </div>
+                                        <ChevronDownIcon v-if="openEndpoint !== ep.id" class="w-5 h-5 text-gray-400" />
+                                        <ChevronUpIcon v-else class="w-5 h-5 text-gray-400" />
+                                    </div>
+
+                                    <!-- Accordion Detail (Swagger Style) -->
+                                    <div v-if="openEndpoint === ep.id" class="p-4 bg-gray-50 border-t border-gray-200 text-sm">
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                                            <!-- Request Section -->
+                                            <div>
+                                                <h4 class="font-bold text-gray-700 mb-2">Request</h4>
+                                                <div v-if="ep.headers" class="mb-3">
+                                                    <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Headers</span>
+                                                    <pre class="mt-1 bg-gray-800 text-green-400 p-3 rounded-md overflow-x-auto"><code>{{ ep.headers }}</code></pre>
+                                                </div>
+                                                <div v-if="ep.body">
+                                                    <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Payload / Body</span>
+                                                    <pre class="mt-1 bg-gray-800 text-blue-300 p-3 rounded-md overflow-x-auto"><code>{{ ep.body }}</code></pre>
+                                                </div>
+                                                <div v-if="!ep.body && !ep.headers" class="text-gray-500 italic">No additional payload required.</div>
+                                            </div>
+
+                                            <!-- Response Section -->
+                                            <div>
+                                                <h4 class="font-bold text-gray-700 mb-2">Success Response</h4>
+                                                <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Format (JSON)</span>
+                                                <pre class="mt-1 bg-gray-800 text-emerald-400 p-3 rounded-md overflow-x-auto"><code>{{ ep.response }}</code></pre>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
     </AuthenticatedLayout>
 </template>
