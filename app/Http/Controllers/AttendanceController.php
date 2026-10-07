@@ -26,7 +26,7 @@ class AttendanceController extends Controller
         }
 
         if ($karyawan->biometric) {
-            $karyawan->face_descriptor = $karyawan->biometric->face_descriptor;
+            $karyawan->face_descriptor = $karyawan->biometric->getDescriptor('web');
         }
 
         $today = Carbon::today()->toDateString();
@@ -88,10 +88,10 @@ class AttendanceController extends Controller
                 return response()->json(['success' => false, 'message' => 'Karyawan tidak ditemukan']);
             }
 
-            \App\Models\KaryawanBiometric::updateOrCreate(
-                ['id_karyawan' => $karyawan->id],
-                ['face_descriptor' => $request->descriptor]
+            $biometric = \App\Models\KaryawanBiometric::firstOrCreate(
+                ['id_karyawan' => $karyawan->id]
             );
+            $biometric->setDescriptor('web', $request->descriptor);
 
             return response()->json(['success' => true, 'message' => 'Wajah berhasil didaftarkan.']);
         }
@@ -100,7 +100,7 @@ class AttendanceController extends Controller
         $karyawan = Karyawan::with('biometric')->where('user_id', Auth::id())->first();
         // Fallback for frontend that might still expect face_descriptor directly on karyawan
         if ($karyawan && $karyawan->biometric) {
-            $karyawan->face_descriptor = $karyawan->biometric->face_descriptor;
+            $karyawan->face_descriptor = $karyawan->biometric->getDescriptor('web');
         }
 
         return Inertia::render('Admin/Absensi/RegisterFace', [

@@ -23,7 +23,7 @@ class KaryawanResource extends JsonResource
             'tgl_bergabung' => $this->tgl_bergabung,
             'status' => $this->status_karyawan,
             'foto' => $this->foto_url,
-            'face_descriptor' => $this->biometric ? $this->biometric->face_descriptor : null,
+            'face_descriptor' => $this->biometric ? $this->biometric->getDescriptor('mobile') : null,
             'is_strict_location' => (bool) $this->is_strict_location,
             'lokasi_kantor' => $this->lokasiKantor ? [
                 'nama' => $this->lokasiKantor->nama_kantor,
