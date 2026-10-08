@@ -51,6 +51,7 @@ class E2ETestingSeeder extends Seeder
                 ['latitude' => -6.200000, 'longitude' => 106.816666, 'radius_meter' => 100, 'is_active' => true]
             );
 
+            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
             // Hapus data testing sebelumnya (berdasarkan email testing)
             User::whereIn('email', [
                 'test.direktur@persija.id', 
@@ -59,6 +60,7 @@ class E2ETestingSeeder extends Seeder
                 'test.staf1@persija.id',
                 'test.staf2@persija.id'
             ])->forceDelete();
+            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
             $this->command->info('1. Membuat Karyawan (Direktur, Finance, HR, Staf)...');
 
@@ -104,6 +106,14 @@ class E2ETestingSeeder extends Seeder
                 'metode_pembayaran' => 'Transfer',
                 'total_nominal_diajukan' => 5000000,
                 'catatan_header' => 'Kebutuhan mendesak untuk tim IT',
+                
+                // Simulasi input form pengaju (bank dan lampiran)
+                'id_karyawan_penerima' => $staf1->id,
+                'bank_tujuan' => 'BCA',
+                'no_rek_tujuan' => '1234567890',
+                'atas_nama_tujuan' => 'Staf 1 Testing',
+                'attachment_path' => 'pengajuan/dummy-receipt.pdf',
+                
                 'status_global' => 'Draft',
             ]);
             PengajuanDetail::create([

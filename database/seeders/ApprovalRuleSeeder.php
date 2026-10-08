@@ -21,12 +21,13 @@ class ApprovalRuleSeeder extends Seeder
 
         if ($deptIT && $boss1 && $boss2) {
             // Skenario: Dept IT butuh 2 orang approval
-            DB::table('tbl_approval_rules')->insert([
+            DB::table('tbl_approval_rules')->insertOrIgnore([
                 [
                     'id_departemen' => $deptIT->id,
                     'level_order' => 1,
                     'id_karyawan_approver' => $boss1->id, // Layer 1: Boss 1
                     'label_aksi' => 'Diketahui Manajer',
+                    'tipe' => 'Pengajuan',
                     'created_at' => now(), 'updated_at' => now(),
                 ],
                 [
