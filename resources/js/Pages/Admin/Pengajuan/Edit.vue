@@ -81,6 +81,16 @@ const form = useForm({
     }))
 });
 
+// --- INITIAL STATE & WATCHER LOGIC ---
+const isInitializing = ref(true);
+
+onMounted(() => {
+    // Beri sedikit jeda agar watcher selesai berjalan, baru kita lepas flag-nya
+    setTimeout(() => {
+        isInitializing.value = false;
+    }, 100);
+});
+
 // Watcher untuk Reset Logic saat Switch Vendor/Karyawan
 watch(() => form.sub_tipe_penerima, (newVal) => {
     if (newVal === 'Karyawan') {
@@ -91,27 +101,31 @@ watch(() => form.sub_tipe_penerima, (newVal) => {
              form.id_karyawan_penerima = props.karyawan?.id;
         }
         
-        // Coba populate bank dari ID (jika ada)
-        const k = props.masterKaryawan.find(item => item.id == form.id_karyawan_penerima);
-        if (k && k.primary_bank) {
-             form.bank_tujuan = k.primary_bank.nama_bank;
-             form.no_rek_tujuan = k.primary_bank.nomor_rekening;
-             form.atas_nama_tujuan = k.primary_bank.atas_nama_rekening;
-        } else {
-             // Reset jika bank tidak ada, agar tidak nyangkut data vendor
-             form.bank_tujuan = ''; form.no_rek_tujuan = ''; form.atas_nama_tujuan = '';
+        if (!isInitializing.value) {
+            // Coba populate bank dari ID (jika ada)
+            const k = props.masterKaryawan.find(item => item.id == form.id_karyawan_penerima);
+            if (k && k.primary_bank) {
+                 form.bank_tujuan = k.primary_bank.nama_bank;
+                 form.no_rek_tujuan = k.primary_bank.nomor_rekening;
+                 form.atas_nama_tujuan = k.primary_bank.atas_nama_rekening;
+            } else {
+                 // Reset jika bank tidak ada, agar tidak nyangkut data vendor
+                 form.bank_tujuan = ''; form.no_rek_tujuan = ''; form.atas_nama_tujuan = '';
+            }
         }
     } else {
         form.id_karyawan_penerima = null;
         
-        // Coba populate bank vendor jika ID vendor masih tersimpan (jarang, biasanya null)
-        const v = props.masterVendor.find(item => item.id == form.id_vendor_penerima);
-         if (v && v.primary_bank) {
-             form.bank_tujuan = v.primary_bank.nama_bank;
-             form.no_rek_tujuan = v.primary_bank.nomor_rekening;
-             form.atas_nama_tujuan = v.primary_bank.atas_nama_rekening;
-        } else {
-             form.bank_tujuan = ''; form.no_rek_tujuan = ''; form.atas_nama_tujuan = '';
+        if (!isInitializing.value) {
+            // Coba populate bank vendor jika ID vendor masih tersimpan (jarang, biasanya null)
+            const v = props.masterVendor.find(item => item.id == form.id_vendor_penerima);
+             if (v && v.primary_bank) {
+                 form.bank_tujuan = v.primary_bank.nama_bank;
+                 form.no_rek_tujuan = v.primary_bank.nomor_rekening;
+                 form.atas_nama_tujuan = v.primary_bank.atas_nama_rekening;
+            } else {
+                 form.bank_tujuan = ''; form.no_rek_tujuan = ''; form.atas_nama_tujuan = '';
+            }
         }
     }
 }, { immediate: true });
@@ -167,7 +181,7 @@ const selectedVendor = computed(() => {
 });
 
 watch(selectedVendor, (newVal) => {
-    if (newVal && newVal.primary_bank) {
+    if (!isInitializing.value && newVal && newVal.primary_bank) {
         form.bank_tujuan = newVal.primary_bank.nama_bank;
         form.no_rek_tujuan = newVal.primary_bank.nomor_rekening;
         form.atas_nama_tujuan = newVal.primary_bank.atas_nama_rekening;
@@ -186,7 +200,7 @@ const selectedEmployee = computed(() => (props.masterKaryawan || []).find(k => k
 const selectedEmployeeBank = computed(() => selectedEmployee.value ? selectedEmployee.value.primary_bank : null);
 
 watch(selectedEmployeeBank, (newVal) => {
-    if (newVal) {
+    if (!isInitializing.value && newVal) {
         form.bank_tujuan = newVal.nama_bank;
         form.no_rek_tujuan = newVal.nomor_rekening;
         form.atas_nama_tujuan = newVal.atas_nama_rekening;
