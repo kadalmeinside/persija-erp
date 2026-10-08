@@ -89,6 +89,11 @@ class E2ETestingSeeder extends Seeder
             $program = \App\Models\ProgramKerja::firstOrCreate(['nama_program' => 'Program Testing E2E', 'id_departemen' => $deptIT->id]);
             $akun = \App\Models\AkunGl::firstOrCreate(['kode_akun' => 'TEST-001', 'nama_akun' => 'Akun Testing', 'tipe_akun' => 'Biaya']);
             
+            \App\Models\PosAnggaran::firstOrCreate([
+                'id_program_kerja' => $program->id,
+                'id_akun_gl' => $akun->id,
+            ]);
+            
             $pengajuan = PengajuanHeader::create([
                 'id_pengaju' => $staf1->id,
                 'id_departemen' => $deptIT->id,
