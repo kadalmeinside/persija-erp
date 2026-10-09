@@ -150,7 +150,7 @@ class BudgetController extends Controller
                     ->whereBetween('tgl_pengajuan', [$period->tanggal_mulai, $period->tanggal_selesai]);
                 
                 if ($request->id_departemen) {
-                    $expenseActualQuery->where('id_departemen_asal', $request->id_departemen);
+                    $expenseActualQuery->where('id_departemen', $request->id_departemen);
                 }
 
                 $expenseActualData = $expenseActualQuery
