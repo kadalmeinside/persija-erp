@@ -8,13 +8,16 @@ use App\Models\Departemen;
 use App\Models\Karyawan;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class ApprovalRuleController extends Controller
+class ApprovalRuleController extends Controller implements HasMiddleware
 {
-    public function __construct()
+    public static function middleware(): array
     {
-        // Hanya Super Admin, Direktur, atau HR yang boleh mengubah Approval Rules
-        $this->middleware('role:Super Admin|Direktur|HR Staff');
+        return [
+            new Middleware('role:Super Admin|Direktur|HR Staff'),
+        ];
     }
 
     /**
