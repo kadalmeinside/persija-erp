@@ -220,36 +220,27 @@ const selectedVendor = computed(() => {
     return props.masterVendor.find(v => v.id == form.id_vendor_penerima);
 });
 
-watch(selectedVendor, (newVal) => {
-    if (!isInitializing.value && newVal && newVal.primary_bank) {
-        form.bank_tujuan = newVal.primary_bank.nama_bank;
-        form.no_rek_tujuan = newVal.primary_bank.nomor_rekening;
-        form.atas_nama_tujuan = newVal.primary_bank.atas_nama_rekening;
-    }
-});
-
 const handleVendorCreated = (newVendor) => {
     props.masterVendor.push(newVendor);     
     form.id_vendor_penerima = newVendor.id; 
+    form.bank_tujuan = newVendor.primary_bank?.nama_bank || '';
+    form.no_rek_tujuan = newVendor.primary_bank?.nomor_rekening || '';
+    form.atas_nama_tujuan = newVendor.primary_bank?.atas_nama_rekening || '';
     showSelectVendorModal.value = false; showVendorModal.value = false;          
 };
 
 // --- KARYAWAN LOGIC ---
 const showEmployeeBankModal = ref(false);
 const selectedEmployee = computed(() => (props.masterKaryawan || []).find(k => k.id == form.id_karyawan_penerima));
-const selectedEmployeeBank = computed(() => selectedEmployee.value ? selectedEmployee.value.primary_bank : null);
-
-watch(selectedEmployeeBank, (newVal) => {
-    if (!isInitializing.value && newVal) {
-        form.bank_tujuan = newVal.nama_bank;
-        form.no_rek_tujuan = newVal.nomor_rekening;
-        form.atas_nama_tujuan = newVal.atas_nama_rekening;
-    }
-});
 
 const handleEmployeeBankCreated = (newBank) => {
     const empIndex = props.masterKaryawan.findIndex(k => k.id == form.id_karyawan_penerima);
     if (empIndex !== -1) props.masterKaryawan[empIndex].primary_bank = newBank;
+    
+    form.bank_tujuan = newBank.nama_bank;
+    form.no_rek_tujuan = newBank.nomor_rekening;
+    form.atas_nama_tujuan = newBank.atas_nama_rekening;
+    
     showEmployeeBankModal.value = false;
 };
 
@@ -577,9 +568,16 @@ onUnmounted(() => {
                                 </div>
                                 <div class="bg-white p-3 rounded border text-sm">
                                     <div class="text-xs text-gray-500 uppercase font-bold mb-1">Snapshot Data Bank</div>
-                                    <div v-if="form.bank_tujuan"><b>{{ form.bank_tujuan }}</b> - {{ form.no_rek_tujuan }}<br>a.n {{ form.atas_nama_tujuan }}</div>
-                                    <div v-else class="text-red-500">Data bank kosong.</div>
-                                    <button type="button" @click="showEmployeeBankModal=true" class="text-indigo-600 underline text-xs mt-1" v-if="form.id_karyawan_penerima">Ubah Rekening?</button>
+                                    <div v-if="form.bank_tujuan">
+                                        <b>{{ form.bank_tujuan }}</b> - {{ form.no_rek_tujuan }}<br>a.n {{ form.atas_nama_tujuan }}
+                                        <button type="button" @click="showEmployeeBankModal=true" class="text-indigo-600 underline text-xs mt-2 block" v-if="form.id_karyawan_penerima">Ubah Rekening?</button>
+                                    </div>
+                                    <div v-else class="text-red-600 font-medium">
+                                        Data bank kosong! Pengajuan tidak bisa disimpan.
+                                        <button type="button" @click="showEmployeeBankModal=true" class="mt-2 flex items-center justify-center w-full px-3 py-1.5 bg-red-100 text-red-700 hover:bg-red-200 border border-red-300 rounded font-bold transition text-xs" v-if="form.id_karyawan_penerima">
+                                            + Isi Rekening Karyawan Sekarang
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
