@@ -109,8 +109,9 @@ class E2ETestingSeeder extends Seeder
                 'id_periode_anggaran' => $periode->id,
                 'id_pos_anggaran' => $pos->id,
             ], [
-                'nominal_budget' => 50000000,
-                'sisa_saldo_db' => 50000000
+                'anggaran_total_tahun' => 50000000,
+                'anggaran_terikat_ytd' => 0,
+                'anggaran_realisasi_ytd' => 0
             ]);
             
             $pengajuan = PengajuanHeader::create([
