@@ -145,6 +145,13 @@ class E2ETestingSeeder extends Seeder
             ]);
             $pengajuan->update(['status_global' => 'Pending Approval']);
             $service->initApproval($pengajuan);
+            
+            // Commit budget manual karena seeder mem-bypass PengajuanService
+            $budgetCheckService = app(\App\Services\BudgetCheckService::class);
+            $budgetId = $budgetCheckService->getBudgetId($deptIT->id, $akun->id, $program->id, Carbon::now());
+            if ($budgetId) {
+                $budgetCheckService->commitBudget($budgetId, 5000000);
+            }
 
             $this->command->info('3. Membuat Skenario Cuti...');
             $jenisCuti = \App\Models\JenisCuti::firstOrCreate(
