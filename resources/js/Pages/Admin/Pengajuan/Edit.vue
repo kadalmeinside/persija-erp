@@ -141,7 +141,7 @@ const fetchPrograms = async () => {
     isLoadingPrograms.value = true;
     try {
         const response = await axios.get(route('admin.pengajuan.getProgramsByDepartemen'), {
-            params: { id_departemen: form.id_departemen }
+            params: { id_departemen: form.id_departemen, tgl_pengajuan: form.tgl_pengajuan }
         });
         filteredPrograms.value = response.data;
     } catch (error) { console.error(error); } finally { isLoadingPrograms.value = false; }
@@ -158,7 +158,7 @@ const fetchAccounts = async (preserveSelection = false) => {
     isLoadingAkun.value = true;
     try {
         const response = await axios.get(route('admin.pengajuan.getAccountsByProgram'), {
-            params: { id_departemen: form.id_departemen, id_program: modalForm.value.id_program }
+            params: { id_departemen: form.id_departemen, id_program: modalForm.value.id_program, tgl_pengajuan: form.tgl_pengajuan }
         });
         filteredAkun.value = response.data;
     } catch (error) { console.error(error); } 
@@ -253,7 +253,17 @@ const onBudgetLineChange = async () => {
         const response = await axios.get(route('admin.pengajuan.getBudgetBalance'), {
             params: { id_departemen: form.id_departemen, id_akun: id_akun, id_program: id_program, tgl_pengajuan: form.tgl_pengajuan }
         });
-        sisaSaldoModal.value = response.data.sisa_saldo_db;
+        const saldoDariDB = response.data.sisa_saldo_db;
+        
+        const usedInCart = form.items.reduce((sum, item, idx) => {
+            if (isEditingItem.value && idx === editingIndex.value) return sum;
+            if (item.id_akun == id_akun && item.id_program == id_program) {
+                return sum + (parseFloat(item.nominal_item) || 0);
+            }
+            return sum;
+        }, 0);
+        
+        sisaSaldoModal.value = saldoDariDB - usedInCart;
     } catch (error) { console.error(error); } 
     finally { isLoadingSaldoModal.value = false; }
 };
@@ -264,6 +274,11 @@ const simpanItem = () => {
     if (!modalForm.value.id_program) modalErrors.value.id_program = 'Wajib dipilih.';
     if (!modalForm.value.id_akun) modalErrors.value.id_akun = 'Wajib dipilih.';
     if (!modalForm.value.nominal_item || modalForm.value.nominal_item <= 0) modalErrors.value.nominal_item = 'Harus > 0.';
+    
+    if (parseFloat(modalForm.value.nominal_item) > sisaSaldoModal.value) {
+         modalErrors.value.nominal_item = `Melebihi saldo (${formatCurrency(sisaSaldoModal.value)})`;
+    }
+
     if (Object.keys(modalErrors.value).length > 0) return;
 
     const itemData = JSON.parse(JSON.stringify(modalForm.value));
