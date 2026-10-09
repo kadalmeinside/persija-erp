@@ -43,6 +43,7 @@ class SettingsController extends Controller
         $validated = $request->validate([
             'app_name' => 'nullable|string|max:255',
             'app_logo' => 'nullable|image|max:1024', // Max 1MB
+            'app_favicon' => 'nullable|image|mimes:png,ico|max:512', // Max 512KB for Favicon
             'company_name' => 'nullable|string|max:255',
             'company_address' => 'nullable|string',
             'company_logo' => 'nullable|image|max:2048', // Max 2MB
@@ -59,7 +60,7 @@ class SettingsController extends Controller
             }
         }
 
-        $fileKeys = ['app_logo', 'company_logo'];
+        $fileKeys = ['app_logo', 'app_favicon', 'company_logo'];
         foreach ($fileKeys as $key) {
             if ($request->hasFile($key)) {
                 $oldPath = Setting::where('key', $key)->value('value');

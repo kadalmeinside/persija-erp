@@ -7,6 +7,15 @@
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
+        @php
+            $settings = \Illuminate\Support\Facades\Cache::rememberForever('app_settings', function () {
+                return \App\Models\Setting::all()->pluck('value', 'key')->toArray();
+            });
+            $favicon = isset($settings['app_favicon']) && $settings['app_favicon'] 
+                ? asset('storage/' . $settings['app_favicon']) 
+                : asset('favicon.ico');
+        @endphp
+        <link rel="icon" type="image/x-icon" href="{{ $favicon }}">
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">

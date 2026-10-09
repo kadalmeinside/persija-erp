@@ -54,6 +54,7 @@ class E2ETestingSeeder extends Seeder
             DB::statement('SET FOREIGN_KEY_CHECKS=0;');
             // Hapus data testing sebelumnya (berdasarkan email testing)
             User::whereIn('email', [
+                'test.admin@persija.id',
                 'test.direktur@persija.id', 
                 'test.finance@persija.id', 
                 'test.hr@persija.id',
@@ -62,8 +63,9 @@ class E2ETestingSeeder extends Seeder
             ])->forceDelete();
             DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
-            $this->command->info('1. Membuat Karyawan (Direktur, Finance, HR, Staf)...');
+            $this->command->info('1. Membuat Karyawan (Super Admin, Direktur, Finance, HR, Staf)...');
 
+            $superAdmin = $this->createUserAndKaryawan('Super Admin Testing', 'test.admin@persija.id', 'Super Admin', $deptIT->id, $lokasi->id);
             $direktur = $this->createUserAndKaryawan('Direktur Testing', 'test.direktur@persija.id', 'Direktur', $deptExecutive->id, $lokasi->id);
             $finance = $this->createUserAndKaryawan('Finance Testing', 'test.finance@persija.id', 'Finance', $deptFinance->id, $lokasi->id);
             $hr = $this->createUserAndKaryawan('HR Testing', 'test.hr@persija.id', 'HR Staff', $deptHr->id, $lokasi->id);

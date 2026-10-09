@@ -21,6 +21,7 @@ const flashType = computed(() => page.props.flash?.type || 'info');
 const form = useForm({
     app_name: props.settings.app_name || '',
     app_logo: null,
+    app_favicon: null,
     company_name: props.settings.company_name || '',
     company_address: props.settings.company_address || '',
     company_logo: null,
@@ -28,6 +29,7 @@ const form = useForm({
 });
 
 const logoPreview = ref(props.settings.app_logo ? `/storage/${props.settings.app_logo}` : null);
+const faviconPreview = ref(props.settings.app_favicon ? `/storage/${props.settings.app_favicon}` : null);
 const companyLogoPreview = ref(props.settings.company_logo ? `/storage/${props.settings.company_logo}` : null);
 
 function onLogoChange(event) {
@@ -36,6 +38,14 @@ function onLogoChange(event) {
 
     form.app_logo = file;
     logoPreview.value = URL.createObjectURL(file);
+}
+
+function onFaviconChange(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    form.app_favicon = file;
+    faviconPreview.value = URL.createObjectURL(file);
 }
 
 function onCompanyLogoChange(event) {
@@ -51,8 +61,10 @@ function submit() {
         forceFormData: true,
         onSuccess: () => {
             document.getElementById('app_logo_input').value = '';
+            if (document.getElementById('app_favicon_input')) document.getElementById('app_favicon_input').value = '';
             document.getElementById('company_logo_input').value = '';
             form.app_logo = null;
+            form.app_favicon = null;
             form.company_logo = null;
         }
     });
@@ -97,9 +109,21 @@ function submit() {
                                         <div v-else class="h-16 w-16 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-md text-gray-400">
                                             No Logo
                                         </div>
-                                        <input id="app_logo_input" type="file" @input="onLogoChange" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100"/>
+                                        <input id="app_logo_input" type="file" @input="onLogoChange" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100"/>
                                     </div>
                                     <InputError class="mt-2" :message="form.errors.app_logo" />
+                                </div>
+
+                                <div>
+                                    <InputLabel for="app_favicon" value="Favicon Aplikasi (PNG/ICO)" />
+                                    <div class="mt-2 flex items-center gap-x-3">
+                                        <img v-if="faviconPreview" :src="faviconPreview" alt="Favicon Preview" class="h-10 w-10 object-contain rounded bg-gray-100 dark:bg-gray-700">
+                                        <div v-else class="h-10 w-10 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded text-gray-400 text-xs">
+                                            N/A
+                                        </div>
+                                        <input id="app_favicon_input" type="file" @input="onFaviconChange" accept=".png,.ico" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100"/>
+                                    </div>
+                                    <InputError class="mt-2" :message="form.errors.app_favicon" />
                                 </div>
                             </div>
                         </div>
