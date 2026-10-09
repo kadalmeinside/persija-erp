@@ -91,9 +91,22 @@ class E2ETestingSeeder extends Seeder
             $program = \App\Models\ProgramKerja::firstOrCreate(['nama_program' => 'Program Testing E2E', 'id_departemen' => $deptIT->id]);
             $akun = \App\Models\AkunGl::firstOrCreate(['kode_akun' => 'TEST-001', 'nama_akun' => 'Akun Testing', 'tipe_akun' => 'Biaya']);
             
-            \App\Models\PosAnggaran::firstOrCreate([
+            $pos = \App\Models\PosAnggaran::firstOrCreate([
                 'id_program_kerja' => $program->id,
                 'id_akun_gl' => $akun->id,
+            ]);
+            
+            $periode = \App\Models\PeriodeAnggaran::firstOrCreate(
+                ['tahun' => Carbon::now()->year, 'bulan' => Carbon::now()->month],
+                ['is_active' => true, 'is_closed' => false]
+            );
+            
+            \App\Models\BudgetMaster::firstOrCreate([
+                'id_periode_anggaran' => $periode->id,
+                'id_pos_anggaran' => $pos->id,
+            ], [
+                'nominal_budget' => 50000000,
+                'sisa_saldo_db' => 50000000
             ]);
             
             $pengajuan = PengajuanHeader::create([
