@@ -156,7 +156,7 @@ class ApprovalCenterController extends Controller
 
         if ($document) {
             if ($type === 'Pengajuan') {
-                $document->loadMissing(['pengaju:id,nama_lengkap', 'departemen:id,nama_departemen', 'detail.akunGl', 'detail.programKerja']);
+                $document->loadMissing(['pengaju:id,nama_lengkap', 'departemen:id,nama_departemen', 'detail.akunGl', 'detail.programKerja', 'karyawanPenerima:id,nama_lengkap']);
             } elseif ($type === 'Cuti') {
                 $document->loadMissing(['karyawan:id,nama_lengkap', 'jenisCuti']);
             } elseif ($type === 'Pinjaman') {
