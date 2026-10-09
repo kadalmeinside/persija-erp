@@ -53,7 +53,7 @@ const initialSubTipe = () => {
 const form = useForm({
     _method: 'PUT', 
     judul_pengajuan: props.pengajuan.judul_pengajuan, 
-    tgl_pengajuan: props.pengajuan.tgl_pengajuan,
+    tgl_pengajuan: props.pengajuan.tgl_pengajuan ? String(props.pengajuan.tgl_pengajuan).substring(0, 10) : '',
     id_pengaju: props.pengajuan.id_pengaju,
     id_departemen: props.pengajuan.id_departemen,
     tipe_pengajuan: props.pengajuan.tipe_pengajuan,
