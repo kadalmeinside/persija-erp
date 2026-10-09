@@ -138,6 +138,11 @@ watch(() => form.id_karyawan_penerima, (newVal) => {
             form.bank_tujuan = k.primary_bank.nama_bank;
             form.no_rek_tujuan = k.primary_bank.nomor_rekening;
             form.atas_nama_tujuan = k.primary_bank.atas_nama_rekening;
+        } else if (newVal == props.pengajuan.id_karyawan_penerima) {
+            // Restore dari snapshot pengajuan jika kembali ke karyawan asal
+            form.bank_tujuan = props.pengajuan.bank_tujuan || '';
+            form.no_rek_tujuan = props.pengajuan.no_rek_tujuan || '';
+            form.atas_nama_tujuan = props.pengajuan.atas_nama_tujuan || '';
         } else {
              if (form.sub_tipe_penerima === 'Karyawan' || form.tipe_pengajuan !== 'Langsung') {
                 form.bank_tujuan = ''; form.no_rek_tujuan = ''; form.atas_nama_tujuan = '';
@@ -158,6 +163,11 @@ watch(() => form.id_vendor_penerima, (newVal) => {
             form.bank_tujuan = v.primary_bank.nama_bank;
             form.no_rek_tujuan = v.primary_bank.nomor_rekening;
             form.atas_nama_tujuan = v.primary_bank.atas_nama_rekening;
+        } else if (newVal == props.pengajuan.id_vendor_penerima) {
+            // Restore dari snapshot pengajuan jika kembali ke vendor asal
+            form.bank_tujuan = props.pengajuan.bank_tujuan || '';
+            form.no_rek_tujuan = props.pengajuan.no_rek_tujuan || '';
+            form.atas_nama_tujuan = props.pengajuan.atas_nama_tujuan || '';
         } else {
              if (form.sub_tipe_penerima === 'Vendor' && form.tipe_pengajuan === 'Langsung') {
                 form.bank_tujuan = ''; form.no_rek_tujuan = ''; form.atas_nama_tujuan = '';
