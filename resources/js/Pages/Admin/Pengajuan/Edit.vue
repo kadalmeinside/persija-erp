@@ -12,7 +12,7 @@ import { useClientValidation } from '@/Composables/useClientValidation';
 import FilePreviewModal from '@/Components/FilePreviewModal.vue';
 import InputCurrency from '@/Components/InputCurrency.vue';
 
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, useForm, Link } from '@inertiajs/vue3';
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { 
     UserCircleIcon, PlusIcon, TrashIcon, XMarkIcon, 
@@ -567,7 +567,10 @@ onUnmounted(() => {
                                     <InputLabel value="Catatan Tambahan" />
                                     <textarea v-model="form.catatan_header" rows="3" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Catatan umum untuk approver..."></textarea>
                                 </div>
-                                <div class="flex items-end justify-end">
+                                <div class="flex items-end justify-end space-x-3">
+                                    <Link :href="route('admin.pengajuan.show', pengajuan.id)">
+                                        <SecondaryButton class="px-6 py-3 text-base" type="button">Batal</SecondaryButton>
+                                    </Link>
                                     <PrimaryButton class="px-6 py-3 text-base" :disabled="form.processing">Simpan Perubahan</PrimaryButton>
                                 </div>
                             </div>
