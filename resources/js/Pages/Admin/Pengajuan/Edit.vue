@@ -130,6 +130,46 @@ watch(() => form.sub_tipe_penerima, (newVal) => {
     }
 }, { immediate: true });
 
+watch(() => form.id_karyawan_penerima, (newVal) => {
+    if (isInitializing.value) return;
+    if (newVal) {
+        const k = props.masterKaryawan.find(item => item.id == newVal);
+        if (k && k.primary_bank) {
+            form.bank_tujuan = k.primary_bank.nama_bank;
+            form.no_rek_tujuan = k.primary_bank.nomor_rekening;
+            form.atas_nama_tujuan = k.primary_bank.atas_nama_rekening;
+        } else {
+             if (form.sub_tipe_penerima === 'Karyawan' || form.tipe_pengajuan !== 'Langsung') {
+                form.bank_tujuan = ''; form.no_rek_tujuan = ''; form.atas_nama_tujuan = '';
+             }
+        }
+    } else {
+        if (form.sub_tipe_penerima === 'Karyawan' || form.tipe_pengajuan !== 'Langsung') {
+            form.bank_tujuan = ''; form.no_rek_tujuan = ''; form.atas_nama_tujuan = '';
+        }
+    }
+});
+
+watch(() => form.id_vendor_penerima, (newVal) => {
+    if (isInitializing.value) return;
+    if (newVal) {
+        const v = props.masterVendor.find(item => item.id == newVal);
+        if (v && v.primary_bank) {
+            form.bank_tujuan = v.primary_bank.nama_bank;
+            form.no_rek_tujuan = v.primary_bank.nomor_rekening;
+            form.atas_nama_tujuan = v.primary_bank.atas_nama_rekening;
+        } else {
+             if (form.sub_tipe_penerima === 'Vendor' && form.tipe_pengajuan === 'Langsung') {
+                form.bank_tujuan = ''; form.no_rek_tujuan = ''; form.atas_nama_tujuan = '';
+             }
+        }
+    } else {
+        if (form.sub_tipe_penerima === 'Vendor' && form.tipe_pengajuan === 'Langsung') {
+            form.bank_tujuan = ''; form.no_rek_tujuan = ''; form.atas_nama_tujuan = '';
+        }
+    }
+});
+
 // --- DATA FETCHING ---
 const filteredPrograms = ref([]); 
 const filteredAkun = ref([]); 
