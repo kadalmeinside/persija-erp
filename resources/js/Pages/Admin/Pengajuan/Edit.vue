@@ -569,7 +569,7 @@ onUnmounted(() => {
                                 </div>
                                 <div class="flex items-end justify-end space-x-3">
                                     <Link :href="route('admin.pengajuan.show', pengajuan.id)">
-                                        <SecondaryButton class="px-6 py-3 text-base" type="button">Batal</SecondaryButton>
+                                        <SecondaryButton class="px-6 py-3 text-base" type="button">Batal Edit</SecondaryButton>
                                     </Link>
                                     <PrimaryButton class="px-6 py-3 text-base" :disabled="form.processing">Simpan Perubahan</PrimaryButton>
                                 </div>
