@@ -97,8 +97,12 @@ class E2ETestingSeeder extends Seeder
             ]);
             
             $periode = \App\Models\PeriodeAnggaran::firstOrCreate(
-                ['tahun' => Carbon::now()->year, 'bulan' => Carbon::now()->month],
-                ['is_active' => true, 'is_closed' => false]
+                [
+                    'nama_periode' => 'Periode ' . Carbon::now()->format('F Y'),
+                    'tanggal_mulai' => Carbon::now()->startOfMonth()->format('Y-m-d'),
+                    'tanggal_selesai' => Carbon::now()->endOfMonth()->format('Y-m-d')
+                ],
+                ['is_active' => true]
             );
             
             \App\Models\BudgetMaster::firstOrCreate([
