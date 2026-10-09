@@ -153,6 +153,17 @@ class ApprovalCenterController extends Controller
     {
         $type = $process->approvalDocument?->document_type;
         $document = $this->documentFor($process);
+
+        if ($document) {
+            if ($type === 'Pengajuan') {
+                $document->loadMissing(['pengaju:id,nama_lengkap', 'departemen:id,nama_departemen', 'detail.akunGl', 'detail.programKerja']);
+            } elseif ($type === 'Cuti') {
+                $document->loadMissing(['karyawan:id,nama_lengkap', 'jenisCuti']);
+            } elseif ($type === 'Pinjaman') {
+                $document->loadMissing(['karyawan:id,nama_lengkap']);
+            }
+        }
+
         $applicant = match ($type) {
             'Cuti', 'Pinjaman' => $document?->karyawan,
             'Pengajuan' => $document?->pengaju,
@@ -169,19 +180,22 @@ class ApprovalCenterController extends Controller
             'target_employee' => $process->targetKaryawan?->nama_lengkap,
             'action_employee' => $process->actionKaryawan?->nama_lengkap,
             'applicant' => $applicant?->nama_lengkap,
-            'document' => $document ? [
-                'title' => $document->alasan
-                    ?? $document->keterangan
-                    ?? $document->nomor_pengajuan
-                    ?? $document->nomor_invoice
-                    ?? $type,
-                'start_date' => $document->tgl_mulai ?? null,
-                'end_date' => $document->tgl_selesai ?? null,
-                'amount' => $document->total_nominal_diajukan
-                    ?? $document->jumlah_pinjaman
-                    ?? $document->total_tagihan
-                    ?? null,
-            ] : null,
+            'document' => $document ? array_merge(
+                $document->toArray(),
+                [
+                    'title' => $document->alasan
+                        ?? $document->keterangan
+                        ?? $document->nomor_pengajuan
+                        ?? $document->nomor_invoice
+                        ?? $type,
+                    'start_date' => $document->tgl_mulai ?? null,
+                    'end_date' => $document->tgl_selesai ?? null,
+                    'amount' => $document->total_nominal_diajukan
+                        ?? $document->jumlah_pinjaman
+                        ?? $document->total_tagihan
+                        ?? null,
+                ]
+            ) : null,
             'catatan' => $process->catatan,
             'acted_at' => $process->tgl_aksi,
             'created_at' => $process->created_at,
