@@ -30,6 +30,14 @@ Route::prefix('v1')->group(function () {
         Route::post('/user/register-face', [AuthController::class, 'registerFace']);
         Route::post('/update-password', [AuthController::class, 'updatePassword']);
 
+        // PIN Management
+        Route::prefix('pin')->group(function () {
+            Route::get('/status', [\App\Http\Controllers\Admin\PinController::class, 'checkStatus']);
+            Route::post('/set', [\App\Http\Controllers\Admin\PinController::class, 'setPin']);
+            Route::post('/change', [\App\Http\Controllers\Admin\PinController::class, 'changePin']);
+            Route::post('/verify', [\App\Http\Controllers\Admin\PinController::class, 'verifyPin']);
+        });
+
         // Dashboard (BFF Pattern)
         Route::get('/dashboard/home', [DashboardController::class, 'home']);
         Route::get('/approvals', [ApprovalCenterController::class, 'index']);

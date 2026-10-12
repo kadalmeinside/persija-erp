@@ -42,8 +42,33 @@ import {
     LockClosedIcon, LockOpenIcon, PhotoIcon, MapPinIcon, PlusIcon, CodeBracketIcon
 } from '@heroicons/vue/24/outline';
 
+const props = defineProps({
+    hideQuickActions: {
+        type: Boolean,
+        default: false,
+    },
+});
+
 const page = usePage();
 const user = computed(() => page.props.auth?.user);
+
+const isQuickActionsHidden = computed(() => {
+    if (props.hideQuickActions) return true;
+    const comp = page.component || '';
+    const url = page.url || '';
+    // Sembunyikan pada halaman detail pembayaran / pengajuan show / invoice show
+    if (
+        comp.includes('Pengajuan/Show') || 
+        comp.includes('Invoice/Show') || 
+        comp.includes('PaymentSchedule') ||
+        comp.includes('Finance/Payment') ||
+        (url.includes('/pengajuan/') && !url.endsWith('/pengajuan') && !url.includes('/pengajuan?')) ||
+        (url.includes('/invoice/') && !url.endsWith('/invoice') && !url.includes('/invoice?'))
+    ) {
+        return true;
+    }
+    return false;
+});
 
 // --- SWEETALERT2 TOAST CONFIG ---
 const Toast = Swal.mixin({
@@ -869,7 +894,7 @@ watch(sidebarMenu, (menu) => {
         </div>
 
         <!-- FLOATING QUICK ACTIONS (GLOBAL) -->
-        <div class="fixed bottom-6 right-6 z-50 flex flex-col items-end space-y-4">
+        <div v-if="!isQuickActionsHidden" class="fixed bottom-6 right-6 z-50 flex flex-col items-end space-y-4">
             <!-- Action Menu (pops up above the button) -->
             <transition
                 enter-active-class="transition ease-out duration-200"

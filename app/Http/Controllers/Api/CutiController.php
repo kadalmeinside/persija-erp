@@ -302,8 +302,11 @@ class CutiController extends Controller
         ]);
 
         $user = $request->user();
-        if (!$user->pin || !Hash::check($request->pin, $user->pin)) {
-            return response()->json(['message' => 'PIN salah atau belum diatur.'], 422);
+        if (!$user->pin) {
+            return response()->json(['message' => 'Anda belum memiliki PIN.', 'has_pin' => false], 422);
+        }
+        if (!Hash::check($request->pin, $user->pin)) {
+            return response()->json(['message' => 'PIN salah.', 'has_pin' => true], 422);
         }
 
         $pengajuan = PengajuanCuti::find($id);

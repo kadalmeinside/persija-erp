@@ -147,7 +147,7 @@ const currentPendingStep = computed(() => {
 <template>
     <Head :title="`Invoice ${invoice.nomor_invoice}`" />
 
-    <AuthenticatedLayout>
+    <AuthenticatedLayout :hideQuickActions="true">
         <template #header>
             <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">Detail Invoice</h2>
         </template>

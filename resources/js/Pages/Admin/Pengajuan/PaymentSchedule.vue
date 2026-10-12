@@ -132,7 +132,7 @@ const submitPrint = () => {
 <template>
     <Head title="Rencana Pembayaran" />
 
-    <AuthenticatedLayout>
+    <AuthenticatedLayout :hideQuickActions="true">
         <template #header>
             <div class="flex justify-between items-center">
                 <div class="flex items-center gap-3">

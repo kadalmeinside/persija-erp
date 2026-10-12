@@ -42,6 +42,7 @@ class HandleInertiaRequests extends Middleware
                     'email'       => $request->user()->email,
                     'roles'       => $request->user()->getRoleNames(),
                     'permissions' => $request->user()->getAllPermissions()->pluck('name'),
+                    'has_pin'     => !is_null($request->user()->pin),
                     'karyawan'    => $request->user()->karyawan,
                 ] : null,
             ],

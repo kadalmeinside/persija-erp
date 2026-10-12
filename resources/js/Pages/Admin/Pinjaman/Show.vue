@@ -71,7 +71,7 @@ const triggerRevision = () => {
 <template>
     <Head title="Detail Pinjaman" />
 
-    <AuthenticatedLayout>
+    <AuthenticatedLayout :hideQuickActions="true">
         <template #header>
             <div class="flex items-center">
                 <Link :href="route('admin.pinjaman.index')" class="mr-4 text-gray-500 hover:text-gray-700">

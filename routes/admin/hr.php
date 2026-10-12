@@ -30,10 +30,13 @@ Route::middleware(['role:Super Admin|HR Manager|HR Staff'])->group(function () {
     Route::put('payrolls/{payroll}/details/{detail}', [PayrollController::class, 'updateDetail'])->name('payrolls.details.update');
     Route::get('payrolls/{payroll}/details/{detail}/print', [PayrollController::class, 'printPayslip'])->name('payrolls.details.print');
 
-    // Pinjaman Karyawan
-    Route::resource('pinjaman', PinjamanController::class);
-    Route::post('pinjaman/{pinjaman}/action', [PinjamanController::class, 'action'])->name('pinjaman.action');
-
     // Company Events
     Route::resource('company-events', CompanyEventController::class);
+});
+
+// Pinjaman Karyawan (Dapat diakses oleh HR, Approver: Direktur/Finance/Manajer, serta Pengaju)
+$pinjamanRoles = 'Super Admin|HR Manager|HR Staff|Direktur|Finance|Finance Manager|Finance Staff|Staf Finance|Manajer Departemen|Staf|Karyawan';
+Route::middleware(["role:{$pinjamanRoles}"])->group(function () {
+    Route::resource('pinjaman', PinjamanController::class);
+    Route::post('pinjaman/{pinjaman}/action', [PinjamanController::class, 'action'])->name('pinjaman.action');
 });

@@ -23,7 +23,7 @@ use App\Http\Controllers\Admin\TaxTypeController;
 use App\Http\Controllers\Admin\VendorController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['role:Super Admin|Finance|Staf Finance|Finance Manager|Finance Staff'])->group(function () {
+Route::middleware(['role:Super Admin|Finance|Staf Finance|Finance Manager|Finance Staff|Direktur'])->group(function () {
     // Master Data
     Route::resource('departemen', DepartemenController::class)
         ->parameters(['departemen' => 'departemen'])

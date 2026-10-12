@@ -20,15 +20,34 @@ class ApprovalCenterController extends Controller
             return response()->json(['message' => 'Data karyawan tidak ditemukan.'], 403);
         }
 
+        $baseQuery = ApprovalProcess::where('id_karyawan_target', $karyawan->id);
+        $counts = [
+            'pending' => (clone $baseQuery)->where('status', 'Pending')->count(),
+            'approved' => (clone $baseQuery)->where('status', 'Approved')->count(),
+            'rejected' => (clone $baseQuery)->where('status', 'Rejected')->count(),
+            'all' => (clone $baseQuery)->count(),
+        ];
+
         $query = ApprovalProcess::with([
-            'targetKaryawan:id,nama_lengkap',
-            'actionKaryawan:id,nama_lengkap',
-            'approvalDocument',
+            'targetKaryawan.departemen',
+            'actionKaryawan',
+            'approvalDocument.pengajuan.document.pengaju.departemen',
+            'approvalDocument.pengajuan.document.departemen',
+            'approvalDocument.cuti.document.karyawan.departemen',
+            'approvalDocument.cuti.document.jenisCuti',
+            'approvalDocument.pinjaman.document.karyawan.departemen',
+            'approvalDocument.invoice.document.pelanggan',
+            'approvalDocument.invoice.document.departemen',
         ])->where('id_karyawan_target', $karyawan->id);
 
         $status = $request->string('status')->toString() ?: 'Pending';
         if ($status !== 'all') {
             $query->where('status', $status);
+        }
+
+        $type = $request->string('type')->toString();
+        if ($type && $type !== 'all') {
+            $query->whereHas('approvalDocument', fn ($q) => $q->where('document_type', $type));
         }
 
         $processes = $query->orderByDesc('created_at')->paginate(
@@ -39,6 +58,7 @@ class ApprovalCenterController extends Controller
             'data' => $processes->getCollection()->map(
                 fn (ApprovalProcess $process) => $this->serializeProcess($process)
             )->values(),
+            'counts' => $counts,
             'meta' => [
                 'current_page' => $processes->currentPage(),
                 'last_page' => $processes->lastPage(),
@@ -92,8 +112,11 @@ class ApprovalCenterController extends Controller
         if ($approval->status !== 'Pending') {
             return response()->json(['message' => 'Approval sudah tidak berstatus pending.'], 422);
         }
-        if (!$request->user()->pin || !Hash::check($validated['pin'], $request->user()->pin)) {
-            return response()->json(['message' => 'PIN salah atau belum diatur.'], 422);
+        if (!$request->user()->pin) {
+            return response()->json(['message' => 'Anda belum memiliki PIN.', 'has_pin' => false], 422);
+        }
+        if (!Hash::check($validated['pin'], $request->user()->pin)) {
+            return response()->json(['message' => 'PIN salah.', 'has_pin' => true], 422);
         }
 
         $model = $this->documentFor($approval);
@@ -154,51 +177,156 @@ class ApprovalCenterController extends Controller
         $type = $process->approvalDocument?->document_type;
         $document = $this->documentFor($process);
 
-        if ($document) {
-            if ($type === 'Pengajuan') {
-                $document->loadMissing(['pengaju:id,nama_lengkap', 'departemen:id,nama_departemen', 'detail.akunGl', 'detail.programKerja', 'karyawanPenerima:id,nama_lengkap']);
-            } elseif ($type === 'Cuti') {
-                $document->loadMissing(['karyawan:id,nama_lengkap', 'jenisCuti']);
-            } elseif ($type === 'Pinjaman') {
-                $document->loadMissing(['karyawan:id,nama_lengkap']);
-            }
+        $docNumber = null;
+        $title = null;
+        $subType = null;
+        $applicant = null;
+        $applicantName = '-';
+        $applicantDepartment = '-';
+        $applicantPosition = '-';
+        $applicantNik = '-';
+        $applicantAvatar = null;
+        $amount = null;
+        $formattedAmount = null;
+        $startDate = null;
+        $endDate = null;
+        $days = null;
+        $tenor = null;
+        $monthlyInstallment = null;
+        $dueDate = null;
+        $customerName = null;
+        $description = null;
+        $badgeInfo = null;
+
+        if ($type === 'Pengajuan' && $document) {
+            $docNumber = $document->nomor_pengajuan;
+            $title = $document->judul_pengajuan ?: ($document->catatan_header ?: 'Pengajuan Dana');
+            $subType = $document->tipe_pengajuan ?? 'Pengajuan Dana';
+            $applicant = $document->pengaju;
+            $applicantName = $applicant?->nama_lengkap ?? '-';
+            $applicantDepartment = $document->departemen?->nama_departemen ?? $applicant?->departemen?->nama_departemen ?? '-';
+            $applicantPosition = $applicant?->jabatan ?? '-';
+            $applicantNik = $applicant?->nomor_induk_karyawan ?? '-';
+            $applicantAvatar = $applicant?->foto_url ?? null;
+            $amount = $document->total_nominal_diajukan ? (float) $document->total_nominal_diajukan : null;
+            $formattedAmount = $amount !== null ? 'Rp ' . number_format($amount, 0, ',', '.') : null;
+            $startDate = $document->tgl_pengajuan ? $document->tgl_pengajuan->format('Y-m-d') : null;
+            $description = $document->catatan_header ?: $document->judul_pengajuan;
+            $badgeInfo = $document->tipe_pengajuan ?? 'Pengajuan';
+        } elseif ($type === 'Cuti' && $document) {
+            $docNumber = 'CUTI-' . str_pad($document->id, 5, '0', STR_PAD_LEFT);
+            $cutiName = $document->jenisCuti?->nama_cuti ?? 'Cuti';
+            $title = "Permohonan {$cutiName}";
+            $subType = $cutiName;
+            $applicant = $document->karyawan;
+            $applicantName = $applicant?->nama_lengkap ?? '-';
+            $applicantDepartment = $applicant?->departemen?->nama_departemen ?? '-';
+            $applicantPosition = $applicant?->jabatan ?? '-';
+            $applicantNik = $applicant?->nomor_induk_karyawan ?? '-';
+            $applicantAvatar = $applicant?->foto_url ?? null;
+            $days = $document->jumlah_hari;
+            $startDate = $document->tgl_mulai ? $document->tgl_mulai->format('Y-m-d') : null;
+            $endDate = $document->tgl_selesai ? $document->tgl_selesai->format('Y-m-d') : null;
+            $description = $document->alasan;
+            $badgeInfo = "{$days} Hari Kerja";
+        } elseif ($type === 'Pinjaman' && $document) {
+            $docNumber = 'PINJ-' . str_pad($document->id, 5, '0', STR_PAD_LEFT);
+            $title = "Pinjaman Karyawan ({$document->tenor_bulan} Bulan)";
+            $subType = 'Pinjaman Karyawan';
+            $applicant = $document->karyawan;
+            $applicantName = $applicant?->nama_lengkap ?? '-';
+            $applicantDepartment = $applicant?->departemen?->nama_departemen ?? '-';
+            $applicantPosition = $applicant?->jabatan ?? '-';
+            $applicantNik = $applicant?->nomor_induk_karyawan ?? '-';
+            $applicantAvatar = $applicant?->foto_url ?? null;
+            $amount = $document->jumlah_pinjaman ? (float) $document->jumlah_pinjaman : null;
+            $formattedAmount = $amount !== null ? 'Rp ' . number_format($amount, 0, ',', '.') : null;
+            $tenor = $document->tenor_bulan;
+            $monthlyInstallment = $document->jumlah_angsuran_per_bulan ? (float) $document->jumlah_angsuran_per_bulan : null;
+            $formattedInstallment = $monthlyInstallment !== null ? 'Rp ' . number_format($monthlyInstallment, 0, ',', '.') : null;
+            $startDate = $document->tanggal_pengajuan ? $document->tanggal_pengajuan->format('Y-m-d') : null;
+            $description = $document->keterangan;
+            $badgeInfo = "Tenor {$tenor} Bln" . ($formattedInstallment ? " • {$formattedInstallment}/bln" : '');
+        } elseif ($type === 'Invoice' && $document) {
+            $docNumber = $document->nomor_invoice;
+            $customerName = $document->pelanggan?->nama_pelanggan ?? $document->pelanggan?->nama_customer ?? 'Pelanggan';
+            $title = "Invoice Penjualan: {$customerName}";
+            $subType = 'Sales Invoice';
+            $applicantName = $customerName;
+            $applicantDepartment = $document->departemen?->nama_departemen ?? 'Keuangan & Penjualan';
+            $applicantPosition = 'Pelanggan / Klien';
+            $amount = $document->total_tagihan ? (float) $document->total_tagihan : null;
+            $formattedAmount = $amount !== null ? 'Rp ' . number_format($amount, 0, ',', '.') : null;
+            $startDate = $document->tgl_invoice ? $document->tgl_invoice->format('Y-m-d') : null;
+            $dueDate = $document->tgl_jatuh_tempo ? $document->tgl_jatuh_tempo->format('Y-m-d') : null;
+            $description = $document->catatan;
+            $badgeInfo = "Jatuh Tempo: " . ($document->tgl_jatuh_tempo ? $document->tgl_jatuh_tempo->format('d/m/Y') : '-');
         }
 
-        $applicant = match ($type) {
-            'Cuti', 'Pinjaman' => $document?->karyawan,
-            'Pengajuan' => $document?->pengaju,
-            default => null,
+        $title = $title ?: ($document?->alasan ?? $document?->keterangan ?? $docNumber ?? $type ?? 'Dokumen');
+        $docNumber = $docNumber ?: '#' . ($document?->id ?? $process->id);
+
+        $statusLabel = match ($process->status) {
+            'Pending' => 'Butuh Disetujui',
+            'Approved' => 'Disetujui',
+            'Rejected' => 'Ditolak',
+            default => $process->status,
         };
 
         return [
             'id' => $process->id,
             'document_id' => $document?->id,
-            'type' => $type,
+            'type' => $type ?: 'Dokumen',
+            'type_label' => match ($type) {
+                'Pengajuan' => 'Pengajuan Dana',
+                'Cuti' => 'Pengajuan Cuti',
+                'Pinjaman' => 'Pinjaman Karyawan',
+                'Invoice' => 'Invoice Penjualan',
+                default => $type ?: 'Dokumen',
+            },
+            'sub_type' => $subType,
+            'document_number' => $docNumber,
             'status' => $process->status,
+            'status_label' => $statusLabel,
             'level_order' => $process->level_order,
-            'label_aksi' => $process->label_aksi,
+            'label_aksi' => $process->label_aksi ?: 'Persetujuan Dokumen',
             'target_employee' => $process->targetKaryawan?->nama_lengkap,
             'action_employee' => $process->actionKaryawan?->nama_lengkap,
-            'applicant' => $applicant?->nama_lengkap,
+            'applicant' => $applicantName,
+            'applicant_department' => $applicantDepartment,
+            'applicant_position' => $applicantPosition,
+            'applicant_nik' => $applicantNik,
+            'applicant_avatar' => $applicantAvatar,
+            'details' => [
+                'title' => $title,
+                'description' => $description,
+                'amount' => $amount,
+                'formatted_amount' => $formattedAmount,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'days' => $days,
+                'tenor' => $tenor,
+                'monthly_installment' => $monthlyInstallment ? 'Rp ' . number_format($monthlyInstallment, 0, ',', '.') : null,
+                'due_date' => $dueDate,
+                'customer' => $customerName,
+                'department' => $applicantDepartment,
+                'badge_info' => $badgeInfo,
+            ],
             'document' => $document ? array_merge(
                 $document->toArray(),
                 [
-                    'title' => $document->alasan
-                        ?? $document->keterangan
-                        ?? $document->nomor_pengajuan
-                        ?? $document->nomor_invoice
-                        ?? $type,
-                    'start_date' => $document->tgl_mulai ?? null,
-                    'end_date' => $document->tgl_selesai ?? null,
-                    'amount' => $document->total_nominal_diajukan
-                        ?? $document->jumlah_pinjaman
-                        ?? $document->total_tagihan
-                        ?? null,
+                    'title' => $title,
+                    'code' => $docNumber,
+                    'start_date' => $startDate,
+                    'end_date' => $endDate,
+                    'amount' => $amount,
+                    'formatted_amount' => $formattedAmount,
                 ]
             ) : null,
             'catatan' => $process->catatan,
-            'acted_at' => $process->tgl_aksi,
-            'created_at' => $process->created_at,
+            'acted_at' => $process->tgl_aksi ? $process->tgl_aksi->format('d M Y, H:i') : null,
+            'created_at' => $process->created_at ? $process->created_at->format('d M Y, H:i') : null,
+            'created_at_human' => $process->created_at ? $process->created_at->diffForHumans() : null,
         ];
     }
 
@@ -226,9 +354,17 @@ class ApprovalCenterController extends Controller
 
     private function documentFor(ApprovalProcess $process)
     {
-        return match (true) {
-            $process->approvalDocument !== null => $process->approvalDocument->resolveDocument(),
-            default => null,
+        $docWrapper = $process->approvalDocument;
+        if (!$docWrapper) {
+            return null;
+        }
+
+        return match ($docWrapper->document_type) {
+            'Pengajuan' => $docWrapper->pengajuan?->document ?? $docWrapper->resolveDocument(),
+            'Cuti' => $docWrapper->cuti?->document ?? $docWrapper->resolveDocument(),
+            'Pinjaman' => $docWrapper->pinjaman?->document ?? $docWrapper->resolveDocument(),
+            'Invoice' => $docWrapper->invoice?->document ?? $docWrapper->resolveDocument(),
+            default => $docWrapper->resolveDocument(),
         };
     }
 }

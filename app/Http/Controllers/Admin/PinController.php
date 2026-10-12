@@ -85,11 +85,17 @@ class PinController extends Controller
         $user = Auth::user();
 
         if (!$user->pin) {
-            return response()->json(['message' => 'PIN belum diset.'], 400);
+            return response()->json([
+                'message' => 'Anda belum memiliki PIN.',
+                'has_pin' => false,
+            ], 400);
         }
 
         if (!Hash::check($request->pin, $user->pin)) {
-            return response()->json(['message' => 'PIN salah.'], 403);
+            return response()->json([
+                'message' => 'PIN salah.',
+                'has_pin' => true,
+            ], 403);
         }
 
         return response()->json(['message' => 'PIN valid.']);

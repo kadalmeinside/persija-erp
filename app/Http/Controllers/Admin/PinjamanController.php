@@ -24,7 +24,17 @@ class PinjamanController extends Controller
 
     public function index(Request $request)
     {
+        $user = \Illuminate\Support\Facades\Auth::user();
         $query = Pinjaman::query()->with(['karyawan', 'approver']);
+
+        // Jika staf biasa (bukan HR/Finance/Direktur/Super Admin), hanya tampilkan pinjamannya sendiri
+        if (!$user->hasAnyRole(['Super Admin', 'HR Manager', 'HR Staff', 'Direktur', 'Finance', 'Finance Manager', 'Finance Staff', 'Manajer Departemen'])) {
+            if ($user->karyawan) {
+                $query->where('id_karyawan', $user->karyawan->id);
+            } else {
+                $query->whereRaw('1 = 0');
+            }
+        }
 
         if ($request->search) {
             $query->whereHas('karyawan', function ($q) use ($request) {
@@ -70,10 +80,21 @@ class PinjamanController extends Controller
     {
         $pinjaman->load(['karyawan.departemen', 'approver', 'angsuran', 'approvalProcess.targetKaryawan.user', 'approvalProcess.actionKaryawan.user']);
 
-        $activities = $this->pinjamanService->getAuditLogs($pinjaman);
-        
         $user = \Illuminate\Support\Facades\Auth::user();
         $karyawanId = $user->karyawan ? $user->karyawan->id : null;
+
+        // Otorisasi: HR, Finance, Direktur, Super Admin, pemilik pinjaman, atau approver dokumen ini
+        $hasGeneralAccess = $user->hasAnyRole(['Super Admin', 'HR Manager', 'HR Staff', 'Direktur', 'Finance', 'Finance Manager', 'Finance Staff', 'Manajer Departemen']);
+        $isOwner = $karyawanId && ($pinjaman->id_karyawan === $karyawanId);
+        $isApprover = $karyawanId && $pinjaman->approvalProcess->contains(function ($p) use ($karyawanId) {
+            return $p->id_karyawan_target === $karyawanId || $p->id_karyawan_action === $karyawanId;
+        });
+
+        if (!$hasGeneralAccess && !$isOwner && !$isApprover) {
+            abort(403, 'Anda tidak memiliki hak akses untuk melihat pinjaman ini.');
+        }
+
+        $activities = $this->pinjamanService->getAuditLogs($pinjaman);
 
         // Check if current user is the target approver for the active step
         $activeStep = $pinjaman->approvalProcess->where('status', 'Pending')->sortBy('level_order')->first();

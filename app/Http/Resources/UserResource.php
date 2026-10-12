@@ -19,6 +19,7 @@ class UserResource extends JsonResource
             'name' => $this->name,
             'email' => $this->email,
             'role' => $this->roles->first()?->name ?? 'User', // Spatie role
+            'has_pin' => !is_null($this->pin),
             'karyawan' => new KaryawanResource($this->whenLoaded('karyawan')),
         ];
     }
