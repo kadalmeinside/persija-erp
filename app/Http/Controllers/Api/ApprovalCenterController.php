@@ -84,14 +84,17 @@ class ApprovalCenterController extends Controller
         }
 
         $approval->load([
-            'targetKaryawan:id,nama_lengkap',
-            'actionKaryawan:id,nama_lengkap',
+            'targetKaryawan:id,nama_lengkap,jabatan',
+            'actionKaryawan:id,nama_lengkap,jabatan',
             'approvalDocument',
         ]);
+
+        $document = $this->documentFor($approval);
 
         return response()->json([
             'data' => [
                 'approval' => $this->serializeProcess($approval),
+                'document' => $document ? $document->toArray() : null,
                 'timeline' => $this->timeline($approval),
             ],
         ]);
@@ -333,8 +336,8 @@ class ApprovalCenterController extends Controller
     private function timeline(ApprovalProcess $approval): array
     {
         $query = ApprovalProcess::with([
-            'targetKaryawan:id,nama_lengkap',
-            'actionKaryawan:id,nama_lengkap',
+            'targetKaryawan:id,nama_lengkap,jabatan',
+            'actionKaryawan:id,nama_lengkap,jabatan',
             'approvalDocument',
         ]);
 
@@ -346,9 +349,12 @@ class ApprovalCenterController extends Controller
             'label_aksi' => $step->label_aksi,
             'status' => $step->status,
             'target_employee' => $step->targetKaryawan?->nama_lengkap,
+            'target_position' => $step->jabatan_approver ?: $step->targetKaryawan?->jabatan,
             'action_employee' => $step->actionKaryawan?->nama_lengkap,
+            'action_position' => $step->actionKaryawan?->jabatan,
             'catatan' => $step->catatan,
-            'acted_at' => $step->tgl_aksi,
+            'acted_at' => $step->tgl_aksi ? $step->tgl_aksi->toISOString() : null,
+            'created_at' => $step->created_at ? $step->created_at->toISOString() : null,
         ])->values()->all();
     }
 
@@ -359,12 +365,28 @@ class ApprovalCenterController extends Controller
             return null;
         }
 
-        return match ($docWrapper->document_type) {
+        $doc = match ($docWrapper->document_type) {
             'Pengajuan' => $docWrapper->pengajuan?->document ?? $docWrapper->resolveDocument(),
             'Cuti' => $docWrapper->cuti?->document ?? $docWrapper->resolveDocument(),
             'Pinjaman' => $docWrapper->pinjaman?->document ?? $docWrapper->resolveDocument(),
             'Invoice' => $docWrapper->invoice?->document ?? $docWrapper->resolveDocument(),
             default => $docWrapper->resolveDocument(),
         };
+
+        if ($doc instanceof \App\Models\PengajuanHeader) {
+            $doc->loadMissing([
+                'pengaju.departemen',
+                'departemen',
+                'vendorPenerima',
+                'karyawanPenerima',
+                'detail.programKerja',
+                'detail.akunGl',
+                'detail.pajak',
+                'approvalProcess.targetKaryawan',
+                'approvalProcess.actionKaryawan',
+            ]);
+        }
+
+        return $doc;
     }
 }
