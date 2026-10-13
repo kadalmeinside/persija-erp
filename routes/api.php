@@ -94,6 +94,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/preferences', [\App\Http\Controllers\Api\NotificationController::class, 'getPreferences']);
             Route::post('/preferences', [\App\Http\Controllers\Api\NotificationController::class, 'updatePreferences']);
             Route::post('/device-token', [\App\Http\Controllers\Api\NotificationController::class, 'registerDeviceToken']);
+            Route::post('/simulate', [\App\Http\Controllers\Api\NotificationController::class, 'simulate']);
         });
 
         // ESS (Employee Self-Service) Module

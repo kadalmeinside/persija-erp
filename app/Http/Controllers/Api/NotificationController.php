@@ -161,4 +161,60 @@ class NotificationController extends Controller
             'message' => 'Token perangkat berhasil didaftarkan.',
         ]);
     }
+
+    /**
+     * Simulate / Trigger a test notification for the authenticated user.
+     */
+    public function simulate(Request $request)
+    {
+        $user = $request->user();
+        $validated = $request->validate([
+            'type' => 'required|string|in:approval,cuti,attendance,task,ess,announcement',
+            'title' => 'required|string|max:150',
+            'message' => 'required|string|max:500',
+            'link' => 'nullable|string|max:200',
+        ]);
+
+        $defaultLinks = [
+            'approval' => '/approvals',
+            'cuti' => '/cuti-filter',
+            'attendance' => '/absensi-history',
+            'task' => '/tasks',
+            'ess' => '/ess',
+            'announcement' => '/dashboard',
+        ];
+
+        $link = $validated['link'] ?? ($defaultLinks[$validated['type']] ?? '/dashboard');
+        $notifId = (string) \Illuminate\Support\Str::uuid();
+
+        \DB::table('notifications')->insert([
+            'id' => $notifId,
+            'type' => 'App\\Notifications\\' . ucfirst($validated['type']) . 'Notification',
+            'notifiable_type' => get_class($user),
+            'notifiable_id' => $user->id,
+            'data' => json_encode([
+                'type' => $validated['type'],
+                'title' => $validated['title'],
+                'message' => $validated['message'],
+                'link' => $link,
+                'is_simulation' => true,
+            ]),
+            'read_at' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Notifikasi uji coba berhasil dikirim ke akun Anda.',
+            'data' => [
+                'id' => $notifId,
+                'type' => $validated['type'],
+                'title' => $validated['title'],
+                'message' => $validated['message'],
+                'link' => $link,
+                'unread_count' => $user->unreadNotifications()->count(),
+            ],
+        ], 201);
+    }
 }
