@@ -216,4 +216,53 @@ class AbsensiController extends Controller
 
         return \App\Http\Resources\AbsensiResource::collection($history);
     }
+
+    /**
+     * Get list of employees who have not clocked in today and are not on leave.
+     */
+    public function absentToday(Request $request)
+    {
+        $today = now()->toDateString();
+        $attendedIds = \App\Models\Absensi::whereDate('tanggal', $today)->pluck('id_karyawan');
+        $onLeaveIds = \App\Models\PengajuanCuti::where('status', 'Approved')
+            ->whereDate('tgl_mulai', '<=', $today)
+            ->whereDate('tgl_selesai', '>=', $today)
+            ->pluck('id_karyawan');
+        $excludedIds = $attendedIds->merge($onLeaveIds)->unique();
+
+        $query = \App\Models\Karyawan::with('departemen')
+            ->whereNotIn('id', $excludedIds)
+            ->whereNotIn('status_karyawan', ['Resign', 'Nonaktif', 'Terminated']);
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('nama_lengkap', 'like', "%{$search}%")
+                  ->orWhere('nomor_induk_karyawan', 'like', "%{$search}%")
+                  ->orWhere('jabatan', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('id_departemen')) {
+            $query->where('id_departemen', $request->id_departemen);
+        }
+
+        $list = $query->orderBy('nama_lengkap')->get();
+
+        return response()->json([
+            'data' => $list->map(fn ($k) => [
+                'id' => $k->id,
+                'nama_lengkap' => $k->nama_lengkap,
+                'nip' => $k->nomor_induk_karyawan,
+                'jabatan' => $k->jabatan ?? '-',
+                'departemen' => $k->departemen?->nama_departemen ?? 'Umum',
+                'foto' => $k->foto ? asset('storage/' . $k->foto) : null,
+                'status' => 'Belum Hadir',
+            ]),
+            'meta' => [
+                'total_absent' => $list->count(),
+                'date' => $today,
+            ]
+        ], 200);
+    }
 }

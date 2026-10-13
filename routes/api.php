@@ -47,6 +47,7 @@ Route::prefix('v1')->group(function () {
         // Absensi (Attendance) Module
         Route::prefix('absensi')->group(function () {
             Route::get('/today', [AbsensiController::class, 'today']);
+            Route::get('/absent-today', [AbsensiController::class, 'absentToday']);
             
             // Rate limit attendance actions: 10 requests per minute
             Route::middleware('throttle:10,1')->group(function () {
@@ -63,6 +64,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/jenis', [CutiController::class, 'jenis']);
             Route::get('/balances', [CutiController::class, 'balances']);
             Route::get('/requests', [CutiController::class, 'requests']);
+            Route::get('/all', [CutiController::class, 'allRequests']);
             Route::post('/request', [CutiController::class, 'submitRequest']);
             Route::post('/cancel/{id}', [CutiController::class, 'cancelRequest']);
             

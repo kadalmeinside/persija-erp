@@ -397,4 +397,92 @@ class CutiController extends Controller
 
         return response()->json(['message' => 'Pengajuan cuti berhasil dibatalkan.']);
     }
+
+    /**
+     * Get all employees leave requests and list of people on leave today.
+     */
+    public function allRequests(Request $request)
+    {
+        $today = now()->toDateString();
+        
+        // 1. Sedang cuti hari ini (Approved dan mencakup hari ini)
+        $todayLeaves = \App\Models\PengajuanCuti::with(['karyawan.departemen', 'jenisCuti'])
+            ->where('status', 'Approved')
+            ->whereDate('tgl_mulai', '<=', $today)
+            ->whereDate('tgl_selesai', '>=', $today)
+            ->orderBy('tgl_mulai', 'asc')
+            ->get();
+
+        // 2. Query riwayat seluruh karyawan dengan filter
+        $query = \App\Models\PengajuanCuti::with(['karyawan.departemen', 'jenisCuti']);
+
+        if ($request->filled('status') && $request->status !== 'Semua') {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('jenis_cuti_id')) {
+            $query->where('id_jenis_cuti', $request->jenis_cuti_id);
+        }
+
+        if ($request->filled('id_departemen')) {
+            $query->whereHas('karyawan', fn ($q) => $q->where('id_departemen', $request->id_departemen));
+        }
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->whereHas('karyawan', function ($q) use ($search) {
+                $q->where('nama_lengkap', 'like', "%{$search}%")
+                  ->orWhere('nomor_induk_karyawan', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('today_only') && filter_var($request->today_only, FILTER_VALIDATE_BOOLEAN)) {
+            $query->where('status', 'Approved')
+                ->whereDate('tgl_mulai', '<=', $today)
+                ->whereDate('tgl_selesai', '>=', $today);
+        }
+
+        $allLeaves = $query->orderBy('created_at', 'desc')->paginate(30);
+
+        return response()->json([
+            'data' => collect($allLeaves->items())->map(fn ($cuti) => [
+                'id' => $cuti->id,
+                'nama_karyawan' => $cuti->karyawan?->nama_lengkap ?? '-',
+                'nip' => $cuti->karyawan?->nomor_induk_karyawan ?? '-',
+                'jabatan' => $cuti->karyawan?->jabatan ?? '-',
+                'departemen' => $cuti->karyawan?->departemen?->nama_departemen ?? 'Umum',
+                'foto' => $cuti->karyawan?->foto ? asset('storage/' . $cuti->karyawan->foto) : null,
+                'jenis_cuti' => $cuti->jenisCuti?->nama_cuti ?? '-',
+                'tgl_mulai' => $cuti->tgl_mulai?->format('Y-m-d') ?? $cuti->tgl_mulai,
+                'tgl_selesai' => $cuti->tgl_selesai?->format('Y-m-d') ?? $cuti->tgl_selesai,
+                'jumlah_hari' => $cuti->jumlah_hari,
+                'alasan' => $cuti->alasan,
+                'status' => $cuti->status,
+                'created_at' => $cuti->created_at?->toDateTimeString(),
+                'is_today' => $cuti->status === 'Approved'
+                    && Carbon::parse($cuti->tgl_mulai)->lte($today)
+                    && Carbon::parse($cuti->tgl_selesai)->gte($today),
+            ]),
+            'today_leaves' => $todayLeaves->map(fn ($cuti) => [
+                'id' => $cuti->id,
+                'nama_karyawan' => $cuti->karyawan?->nama_lengkap ?? '-',
+                'nip' => $cuti->karyawan?->nomor_induk_karyawan ?? '-',
+                'jabatan' => $cuti->karyawan?->jabatan ?? '-',
+                'departemen' => $cuti->karyawan?->departemen?->nama_departemen ?? 'Umum',
+                'foto' => $cuti->karyawan?->foto ? asset('storage/' . $cuti->karyawan->foto) : null,
+                'jenis_cuti' => $cuti->jenisCuti?->nama_cuti ?? '-',
+                'tgl_mulai' => $cuti->tgl_mulai?->format('Y-m-d') ?? $cuti->tgl_mulai,
+                'tgl_selesai' => $cuti->tgl_selesai?->format('Y-m-d') ?? $cuti->tgl_selesai,
+                'jumlah_hari' => $cuti->jumlah_hari,
+                'alasan' => $cuti->alasan,
+                'status' => $cuti->status,
+            ]),
+            'meta' => [
+                'total_on_leave_today' => $todayLeaves->count(),
+                'total_filtered' => $allLeaves->total(),
+                'current_page' => $allLeaves->currentPage(),
+                'last_page' => $allLeaves->lastPage(),
+            ]
+        ], 200);
+    }
 }

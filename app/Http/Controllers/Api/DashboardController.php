@@ -97,10 +97,11 @@ class DashboardController extends Controller
             
             $excludedIds = array_unique(array_merge($presentIds, $onLeaveIds));
 
-            $absent = Karyawan::whereNotIn('id', $excludedIds)
+            $absent = Karyawan::with('departemen')
+                ->whereNotIn('id', $excludedIds)
                 ->whereNotIn('status_karyawan', ['Resign', 'Nonaktif', 'Terminated'])
                 ->orderBy('nama_lengkap')
-                ->get(['id', 'nama_lengkap', 'jabatan', 'id_departemen']);
+                ->get();
 
             $data['director_overview'] = [
                 'today_tasks' => $todayTasks,
@@ -111,7 +112,14 @@ class DashboardController extends Controller
                     'start_date' => $leave->tgl_mulai,
                     'end_date' => $leave->tgl_selesai,
                 ])->values(),
-                'absent_today' => $absent,
+                'absent_today' => $absent->map(fn ($k) => [
+                    'id' => $k->id,
+                    'nama_lengkap' => $k->nama_lengkap,
+                    'nip' => $k->nomor_induk_karyawan,
+                    'jabatan' => $k->jabatan ?? '-',
+                    'departemen' => $k->departemen?->nama_departemen ?? 'Umum',
+                    'foto' => $k->foto_url,
+                ])->values(),
             ];
         }
 
