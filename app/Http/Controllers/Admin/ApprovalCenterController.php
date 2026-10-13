@@ -229,7 +229,9 @@ class ApprovalCenterController extends Controller
             'applicant_position' => $applicantPosition,
             'applicant_nik' => $applicantNik,
             'applicant_avatar' => $applicantAvatar,
-            'route_url' => ($routeName && $document && \Illuminate\Support\Facades\Route::has($routeName)) ? route($routeName, $document->id) : null,
+            'route_url' => ($routeName && $document && \Illuminate\Support\Facades\Route::has($routeName))
+                ? route($routeName, [$document->id, 'from' => 'approval-center'])
+                : null,
             'details' => [
                 'title' => $title,
                 'description' => $description,

@@ -376,7 +376,7 @@ class PengajuanController extends Controller
     /**
      * Show Detail Page.
      */
-    public function show(PengajuanHeader $pengajuan)
+    public function show(Request $request, PengajuanHeader $pengajuan)
     {
         // ... previous loads ...
         $pengajuan->load([
@@ -455,6 +455,9 @@ class PengajuanController extends Controller
             ['pengajuan' => $pengajuan],
             $permissions,
             [
+                'backUrl' => $request->query('from') === 'approval-center'
+                    ? route('admin.approval-center.index')
+                    : route('admin.pengajuan.index'),
                 'pin_session_valid' => session('approval_pin_verified_at')
                     && \Carbon\Carbon::parse(session('approval_pin_verified_at'))->diffInMinutes(now()) <= 5,
             ]

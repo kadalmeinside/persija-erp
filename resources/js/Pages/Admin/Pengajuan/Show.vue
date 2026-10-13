@@ -31,6 +31,10 @@ const props = defineProps({
     canVerifySettlement: Boolean, 
     listKasBank: Array,
     pin_session_valid: Boolean, // Prop dari backend
+    backUrl: {
+        type: String,
+        default: null,
+    },
 });
 
 // --- TABS STATE ---
@@ -220,7 +224,7 @@ const submitSettlementReject = () => {
         <template #header>
             <div class="flex justify-between items-center">
                 <div class="flex items-center gap-3">
-                    <Link :href="route('admin.pengajuan.index')" class="p-2 rounded-full hover:bg-gray-100 transition">
+                    <Link :href="backUrl || route('admin.pengajuan.index')" class="p-2 rounded-full hover:bg-gray-100 transition">
                         <ArrowLeftIcon class="w-5 h-5 text-gray-600"/>
                     </Link>
                     <div>

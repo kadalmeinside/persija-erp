@@ -182,9 +182,10 @@ Status proses yang perlu dipahami mobile:
 
 ### P1 - Approval Center web dan mobile
 
-- [ ] Buat Approval Center web untuk seluruh modul approval yang tersedia.
+- [x] Buat Approval Center web untuk Pengajuan, Cuti, Pinjaman, dan Invoice
+  melalui inbox terpadu; settlement/reimbursement generic masih belum tersedia.
 - [x] Buat Approval Center mobile untuk approval yang cocok diproses cepat.
-- [ ] Kedua client harus mengambil daftar berdasarkan employee login yang
+- [x] Kedua client mengambil daftar berdasarkan employee login yang
   tercatat pada `id_karyawan_target`.
 - [x] Sumber data inbox harus assignment employee, bukan daftar role.
 - [x] Tahap awal yang direkomendasikan untuk endpoint generic:
@@ -212,6 +213,8 @@ Status proses yang perlu dipahami mobile:
 - [x] Jangan menampilkan label seperti “Supervisor”, “Manager”, atau
   “Direktur” sebagai asumsi wajib. Jika label aksi dikonfigurasi, tampilkan
   `label_aksi` dari rule sebagai informasi saja.
+- [x] Navigasi detail approval mobile memakai route bertingkat dan back perangkat
+  maupun app bar kembali ke Approval Center.
 - [ ] Kirim notifikasi kepada employee pada `id_karyawan_target`.
 - [ ] Tambahkan deep link dari notifikasi ke detail approval.
 - [ ] Tambahkan riwayat approval setelah proses selesai.
@@ -384,13 +387,20 @@ Dashboard Direktur juga harus mengecualikan dari daftar “belum hadir”:
 
 ## Prioritas kerja berikutnya
 
-1. Tambahkan test employee-based approval lintas departemen.
-2. Tambahkan test bahwa employee lain tidak dapat approve request tersebut.
-3. Bangun Approval Center web yang tersinkronisasi penuh dengan versi mobile.
-4. Tambahkan push/in-app notification ke employee target menggunakan Firebase Cloud Messaging (FCM).
-5. Kembangkan modul Employee Self-Service lanjutan (Riwayat Pembatalan Cuti, Koreksi Absensi).
-6. Tambahkan deep link dari notifikasi ke detail approval.
-7. Bangun modul Payslip untuk Mobile (Read-only) dan pengajuan dinas luar.
+1. Tutup 5 issue `flutter analyze`, hapus debug print, dan deklarasikan seluruh
+   dependency langsung.
+2. Ganti placeholder mobile test dengan unit/widget/integration test untuk
+   login, 401 logout, approval PIN, list/detail, dan system back.
+3. Tambahkan contract test API untuk payload approval dan response error agar
+   web dan mobile tidak drift.
+4. Tambahkan push/in-app notification, read/unread, preference, dan deep link
+   ke detail approval menggunakan FCM.
+5. Tambahkan idempotency key, retry upload aman, dan reconciliation untuk
+   transaksi finansial serta settlement.
+6. Tambahkan audit immutable, preview/versioning rule, delegasi/reassignment,
+   dan escalation SLA.
+7. Kembangkan Employee Self-Service lanjutan: riwayat pembatalan cuti,
+   koreksi absensi, dinas luar, payslip read-only, dan reimbursement.
 
 ## Scalability dan migration-safety
 
@@ -451,32 +461,79 @@ tanpa backup, preflight validation, dan rollback plan.
 | 2026-10-06 | Implementasi Dashboard/Ringkasan Direktur di mobile dan web | Selesai |
 | 2026-10-06 | Penyelesaian P0 & P1 Hasil Audit (Keamanan, Biometrik, Bug Approval, Caching, UX) | Selesai |
 | 2026-10-07 | Implementasi multi-descriptor wajah JSON (Web 128D & Mobile 192D) dan perbaikan variable TaskController | Selesai |
+| 2026-10-12 | Approval Center web/API/mobile disatukan untuk empat tipe dokumen dan navigasi back mobile diperbaiki | Selesai |
 
-## Audit rating terbaru - 2026-10-06
+## Audit rating terbaru - 2026-10-12
 
 Rating ini didasarkan pada implementasi dan hasil test aktual, bukan hanya
 checkbox roadmap.
 
 | Area | Rating | Penilaian |
 |---|---:|---|
-| Arsitektur aplikasi | 8.3/10 | Pemisahan backend/web/mobile dan service approval sudah baik; generic approval masih perlu disatukan di web. |
+| Arsitektur aplikasi | 8.5/10 | Pemisahan backend/web/mobile, service domain, registry approval, dan route mobile sudah baik; kontrak lintas client dan observability masih perlu diperkuat. |
 | Desain database/ERD | 8.9/10 | Registry approval memiliki FK process wajib, subtype table dengan FK native per tipe dokumen, unique constraint, preflight/backfill migration, dan approver/target wajib. Audit history, delegasi, dan reconciliation masih perlu diperkuat. |
-| Flow bisnis ERP | 8.0/10 | Cuti, approval, task, absensi, dan dashboard direktur sudah memiliki alur yang jelas; self-service dan finance mobile masih terbatas. |
+| Flow bisnis ERP | 8.2/10 | Cuti, approval terpadu, task, absensi, dashboard direktur, dan detail approval lintas client sudah jelas; self-service lanjutan dan finance mobile masih terbatas. |
 | Integritas finansial | 7.5/10 | Reversal cuti, GL traceability, tax settlement, dan period control membaik; idempotency dan reconciliation end-to-end belum lengkap. |
-| Security & authorization | 7.2/10 | Employee-target approval, PIN, challenge, dan route authorization sudah lebih kuat; attestation backend dan server-side face verification masih tertunda. |
-| Web experience | 7.7/10 | Modul administrasi dan transaksi web luas; Approval Center generic, preview rule, dan audit perubahan rule belum selesai. |
-| Mobile experience/API | 7.8/10 | Absensi, cuti, task, dashboard direktur, Approval Center, dan timeline approval sudah tersedia; notification, deep link, dan offline operation belum lengkap. |
-| Testing & quality | 7.8/10 | Backend 95 test/253 assertion dan mobile test lulus; coverage generic approval lintas departemen dan UI masih perlu ditambah. |
-| Maintainability & documentation | 7.9/10 | Roadmap dan kontrak API membaik; beberapa item roadmap masih perlu dikoreksi agar hanya menandai implementasi yang benar-benar terverifikasi. |
-| **Overall** | **8.1/10** | Layak masuk fase hardening dan perluasan fitur; belum mencapai financial-grade production readiness penuh. |
+| Security & authorization | 7.0/10 | Assignment employee, PIN, Sanctum, challenge absensi, dan route authorization sudah benar secara konsep; attestation server-side, verifikasi wajah server-side, rate limit menyeluruh, dan audit keamanan mobile belum lengkap. |
+| Web experience | 8.0/10 | Modul administrasi/transaksi luas dan Approval Center web sudah terpadu; preview rule, audit perubahan rule, deep link notifikasi, dan beberapa alur back masih perlu pengujian browser. |
+| Mobile experience/API | 8.1/10 | Absensi, cuti, task, dashboard direktur, Approval Center, detail/timeline, dan navigasi back sudah tersedia; push notification, deep link, offline write safety, dan production monitoring belum lengkap. |
+| Testing & quality | 7.2/10 | Backend **96 test/263 assertions** lulus dan mobile test lulus, tetapi mobile baru memiliki satu placeholder test; `flutter analyze` masih menemukan 5 issue. |
+| Maintainability & documentation | 8.0/10 | Struktur feature mobile, dokumentasi API, roadmap, dan commit perubahan cukup jelas; ada debug `print`, dependency analyzer issue, dan dokumentasi mobile belum sepenuhnya sinkron dengan fitur Approval Center terbaru. |
+| **Overall** | **8.0/10** | Fondasi sudah kuat dan layak masuk fase hardening; belum layak disebut production-ready penuh untuk proses finansial/sensitif sebelum gap reliability, security, observability, dan test coverage ditutup. |
+
+### Analisis best practice per area
+
+#### Yang sudah mengikuti best practice
+
+- Otorisasi approval berbasis employee assignment (`id_karyawan_target`),
+  bukan role semata, dan divalidasi ulang di backend.
+- Registry approval dan subtype document menjaga integritas referensi tanpa
+  empat foreign key nullable pada process.
+- Operasi approval dan reversal saldo memakai service domain serta
+  transaction/locking pada jalur kritis.
+- API mobile memakai versioning `/api/v1`, Sanctum, rate limit login/absensi,
+  timeout jaringan, secure storage, dan auto logout saat 401.
+- Web dan mobile memiliki pemisahan tanggung jawab yang sehat: administrasi
+  kompleks di web, ESS/approval cepat di mobile.
+- Navigasi Approval Center mobile sudah menggunakan GoRouter dengan root
+  navigator yang benar; app bar back dan Android system back kembali ke inbox.
+- Face matching dilakukan on-device sebagai pre-check dan dokumentasi sudah
+  menyatakan bahwa sinyal device bukan pengganti otorisasi backend.
+- Backend test suite saat ini lulus **96 test dengan 263 assertions**.
+
+#### Yang belum memenuhi best practice
+
+- Test mobile belum representatif: masih satu placeholder test, tanpa coverage
+  unit/widget/integration untuk auth, approval, back navigation, error, dan
+  session expiry.
+- `flutter analyze` masih menghasilkan 5 issue: penggunaan `print` pada
+  production code dan dependency `http` yang belum dideklarasikan. Ini harus
+  bersih sebelum release gate.
+- Logging mobile belum memiliki logging framework, redaction policy, crash
+  reporting, atau performance monitoring yang terdokumentasi.
+- Contract test antara API, web, dan mobile belum ada; perubahan payload dapat
+  lolos backend test tetapi merusak client.
+- Push notification, read/unread state, notification preference, deep link,
+  offline retry idempotent, dan upload resume belum selesai.
+- Attestation Play Integrity/App Attest dan verifikasi wajah server-side belum
+  aktif; kontrol anti-emulator/fake GPS tetap hanya sinyal tambahan.
+- Audit immutable untuk perubahan approval rule, reassign/delegasi, payroll,
+  saldo, dan transaksi finansial belum lengkap.
+- Idempotency key dan reconciliation end-to-end untuk operasi finansial belum
+  menjadi kontrak wajib.
+- Beberapa TODO bisnis masih ada pada reversal budget dan guard approval; harus
+  ditutup atau diberi issue/acceptance criteria sebelum production.
 
 ### Koreksi status roadmap setelah audit
 
 - Approval Center mobile sudah tersedia dengan list/action, detail timeline,
   dan action PIN.
-- Detail dan timeline approval sudah tersedia di API, bukan berarti seluruh
-  implementasi web dan mobile telah selesai.
-- Approval Center web generic lintas modul belum selesai.
+- Detail dan timeline approval tersedia di API dan digunakan oleh mobile;
+  settlement/reimbursement generic masih belum terintegrasi penuh.
+- Approval Center web generic untuk empat tipe dokumen sudah tersedia; filter
+  tanggal/prioritas dan administrasi rule preview masih belum selesai.
+- Navigasi back detail approval mobile sudah diperbaiki untuk app bar dan tombol
+  back Android, tetapi wajib dipertahankan dengan regression test.
 - Push notification, deep link, notification preference, dan approval rule
   audit belum selesai.
 - Dashboard Direktur perlu validasi lanjutan agar employee cuti, hari libur,
@@ -486,9 +543,10 @@ checkbox roadmap.
 
 ### Bukti validasi terakhir
 
-- Backend: `95 passed`, `253 assertions`.
-- Mobile Flutter test: lulus.
-- Dart analyzer scoped (`absensi`, `approvals`, `dashboard`): `No issues found`.
+- Backend: `96 passed`, `263 assertions`.
+- Mobile Flutter test: lulus, tetapi saat ini hanya satu placeholder test.
+- `flutter analyze`: **5 issues** (debug `print` production dan dependency
+  `http` yang belum dideklarasikan; seluruh issue wajib ditutup).
 - Regresi `InvoiceStatus::Approved` pada generic approval action diperbaiki.
 - Constraint approval diperketat melalui migration
   `2026_10_06_222500_harden_approval_integrity`.
