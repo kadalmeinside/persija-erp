@@ -25,7 +25,7 @@ class SettingsController extends Controller
         $settings = Setting::all()->pluck('value', 'key');
 
         $users = \App\Models\User::select('id', 'name', 'email')
-            ->with(['roles:id,name', 'karyawan:id,user_id,jabatan,departemen'])
+            ->with(['roles:id,name', 'karyawan:id,user_id,jabatan'])
             ->get()
             ->map(function ($u) {
                 $latestToken = \App\Models\UserDeviceToken::where('user_id', $u->id)

@@ -146,4 +146,17 @@ class NotificationTest extends TestCase
             'notifiable_type' => get_class($this->user),
         ]);
     }
+
+    public function test_admin_can_access_settings_page()
+    {
+        $role = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'Super Admin', 'guard_name' => 'web']);
+        $permission = \Spatie\Permission\Models\Permission::firstOrCreate(['name' => 'settings.manage', 'guard_name' => 'web']);
+        $role->givePermissionTo($permission);
+
+        $admin = \App\Models\User::factory()->create();
+        $admin->assignRole($role);
+
+        $response = $this->actingAs($admin)->get('/admin/settings');
+        $response->assertStatus(200);
+    }
 }
