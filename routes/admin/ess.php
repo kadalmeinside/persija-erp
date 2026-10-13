@@ -123,15 +123,21 @@ Route::middleware(["role:{$essRoles}"])->group(function () {
     Route::post('tasks/{task}/status', [\App\Http\Controllers\TaskController::class, 'updateStatus'])->name('tasks.updateStatus');
     Route::post('tasks/{task}/archive', [\App\Http\Controllers\TaskController::class, 'archive'])->name('tasks.archive');
     Route::resource('tasks', \App\Http\Controllers\TaskController::class)->except(['create', 'show', 'edit']);
-    // ----------------------------------------------------------------
-    // Absensi (Attendance)
-    // ----------------------------------------------------------------
-    Route::prefix('absensi')->name('absensi.')->controller(\App\Http\Controllers\AttendanceController::class)->group(function () {
-        Route::get('clock', 'clock')->name('clock');
-        Route::post('clock', 'storeClock')->name('storeClock');
-        Route::match(['get', 'post'], 'register-face', 'registerFace')->name('register-face');
-        Route::get('my-attendance', 'myAttendance')->name('my-attendance');
-        Route::get('rekap', 'index')->name('rekap'); // Untuk HR
+});
+
+// ----------------------------------------------------------------
+// Absensi (Attendance) — Accessible by all roles including Freelance
+// ----------------------------------------------------------------
+$absensiRoles = 'Super Admin|Manajer Departemen|Finance|Staf|Direktur|Karyawan|Staf Finance|Finance Manager|Finance Staff|HR Staff|IT Support|Freelance';
+Route::middleware(["role:{$absensiRoles}"])->prefix('absensi')->name('absensi.')->controller(\App\Http\Controllers\AttendanceController::class)->group(function () {
+    Route::get('clock', 'clock')->name('clock');
+    Route::post('clock', 'storeClock')->name('storeClock');
+    Route::match(['get', 'post'], 'register-face', 'registerFace')->name('register-face');
+    Route::get('my-attendance', 'myAttendance')->name('my-attendance');
+
+    // Rekap & Export (Khusus HR & Admin)
+    Route::middleware(['role:Super Admin|HR Manager|HR Staff|Direktur'])->group(function () {
+        Route::get('rekap', 'index')->name('rekap');
         Route::get('print', 'print')->name('print');
         Route::get('export-pdf', 'exportPdf')->name('export-pdf');
     });

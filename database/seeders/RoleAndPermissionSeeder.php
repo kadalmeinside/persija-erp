@@ -71,7 +71,10 @@ class RoleAndPermissionSeeder extends Seeder
         // IT
         $itSupportRole      = Role::firstOrCreate(['name' => 'IT Support']);
 
-        $this->command->info('✅ Roles created/verified (12 roles).');
+        // Freelance (Khusus Absensi)
+        $freelanceRole      = Role::firstOrCreate(['name' => 'Freelance']);
+
+        $this->command->info('✅ Roles created/verified (13 roles).');
 
         // -------------------------------------------------------
         // PERMISSION ASSIGNMENTS
@@ -83,6 +86,7 @@ class RoleAndPermissionSeeder extends Seeder
         $stafRole->syncPermissions($essPermissions);
         $karyawanRole->syncPermissions($essPermissions);
         $itSupportRole->syncPermissions($essPermissions);
+        $freelanceRole->syncPermissions([]); // Zero general/finance permissions
 
         // Manajer Departemen
         $manajerRole->syncPermissions([

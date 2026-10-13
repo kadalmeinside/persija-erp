@@ -59,11 +59,12 @@ class E2ETestingSeeder extends Seeder
                 'test.finance@persija.id', 
                 'test.hr@persija.id',
                 'test.staf1@persija.id',
-                'test.staf2@persija.id'
+                'test.staf2@persija.id',
+                'test.freelance@persija.id'
             ])->forceDelete();
             DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
-            $this->command->info('1. Membuat Karyawan (Super Admin, Direktur, Finance, HR, Staf)...');
+            $this->command->info('1. Membuat Karyawan (Super Admin, Direktur, Finance, HR, Staf, Freelance)...');
 
             $superAdmin = $this->createUserAndKaryawan('Super Admin Testing', 'test.admin@persija.id', 'Super Admin', $deptIT->id, $lokasi->id);
             $direktur = $this->createUserAndKaryawan('Direktur Testing', 'test.direktur@persija.id', 'Direktur', $deptExecutive->id, $lokasi->id);
@@ -71,6 +72,7 @@ class E2ETestingSeeder extends Seeder
             $hr = $this->createUserAndKaryawan('HR Testing', 'test.hr@persija.id', 'HR Staff', $deptHr->id, $lokasi->id);
             $staf1 = $this->createUserAndKaryawan('Staf 1 Testing', 'test.staf1@persija.id', 'Staf', $deptIT->id, $lokasi->id);
             $staf2 = $this->createUserAndKaryawan('Staf 2 Testing', 'test.staf2@persija.id', 'Staf', $deptIT->id, $lokasi->id);
+            $freelance = $this->createUserAndKaryawan('Freelance Testing', 'test.freelance@persija.id', 'Freelance', $deptIT->id, $lokasi->id);
 
             ApprovalRule::where('tipe', 'Pengajuan')->delete();
             ApprovalRule::create(['id_departemen' => $deptIT->id, 'tipe' => 'Pengajuan', 'level_order' => 1, 'id_karyawan_approver' => $direktur->id, 'label_aksi' => 'Disetujui Lvl 1']);

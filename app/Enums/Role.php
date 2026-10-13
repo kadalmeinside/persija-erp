@@ -30,6 +30,7 @@ enum Role: string
     case FINANCE_MANAGER     = 'Finance Manager';
     case FINANCE_STAFF       = 'Finance Staff'; // Alias role, ada di database prod
     case KARYAWAN            = 'Karyawan';       // Mobile App ESS only (absensi, cuti, profil)
+    case FREELANCE           = 'Freelance';      // Khusus absensi (web & mobile)
 
     // =========================================================================
     // Helper: Role Groups (kembalikan array of string value)

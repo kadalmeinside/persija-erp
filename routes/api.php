@@ -40,11 +40,7 @@ Route::prefix('v1')->group(function () {
 
         // Dashboard (BFF Pattern)
         Route::get('/dashboard/home', [DashboardController::class, 'home']);
-        Route::get('/approvals', [ApprovalCenterController::class, 'index']);
-        Route::get('/approvals/{approval}', [ApprovalCenterController::class, 'show']);
-        Route::post('/approvals/{approval}/action', [ApprovalCenterController::class, 'action']);
-
-        // Absensi (Attendance) Module
+        // Absensi (Attendance) Module — Accessible by Freelance
         Route::prefix('absensi')->group(function () {
             Route::get('/today', [AbsensiController::class, 'today']);
             Route::get('/absent-today', [AbsensiController::class, 'absentToday']);
@@ -59,34 +55,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/history', [AbsensiController::class, 'history']);
         });
 
-        // Cuti (Leave Request) Module
-        Route::prefix('cuti')->group(function () {
-            Route::get('/jenis', [CutiController::class, 'jenis']);
-            Route::get('/balances', [CutiController::class, 'balances']);
-            Route::get('/requests', [CutiController::class, 'requests']);
-            Route::get('/all', [CutiController::class, 'allRequests']);
-            Route::post('/request', [CutiController::class, 'submitRequest']);
-            Route::post('/cancel/{id}', [CutiController::class, 'cancelRequest']);
-            
-            // Optional Manager Approvals
-            Route::get('/approvals', [CutiController::class, 'pendingApprovals']);
-            Route::post('/approve/{id}', [CutiController::class, 'approveRequest']);
-        });
-
-        // Task Management Module
-        Route::prefix('tasks')->group(function () {
-            Route::get('/', [TaskController::class, 'index']); // active kanban
-            Route::post('/', [TaskController::class, 'store']); // create new task
-            Route::get('/history', [TaskController::class, 'history']); // all tasks (archived + active)
-            Route::post('/{id}/status', [TaskController::class, 'updateStatus']); // change status
-        });
-
-        // Calendar Module
-        Route::prefix('calendar')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Api\CalendarController::class, 'index']);
-        });
-
-        // Notifications Module
+        // Notifications Module — Accessible by Freelance
         Route::prefix('notifications')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\NotificationController::class, 'index']);
             Route::post('/{id}/read', [\App\Http\Controllers\Api\NotificationController::class, 'markAsRead']);
@@ -97,26 +66,61 @@ Route::prefix('v1')->group(function () {
             Route::post('/simulate', [\App\Http\Controllers\Api\NotificationController::class, 'simulate']);
         });
 
-        // ESS (Employee Self-Service) Module
-        Route::prefix('ess')->group(function () {
-            // Koreksi Absensi
-            Route::get('/attendance-correction', [\App\Http\Controllers\Api\EssController::class, 'getAttendanceCorrections']);
-            Route::post('/attendance-correction', [\App\Http\Controllers\Api\EssController::class, 'submitAttendanceCorrection']);
+        // ── Modules Blocked for Role Freelance ─────────────────────────────────
+        Route::middleware('not_freelance')->group(function () {
+            // Approvals
+            Route::get('/approvals', [ApprovalCenterController::class, 'index']);
+            Route::get('/approvals/{approval}', [ApprovalCenterController::class, 'show']);
+            Route::post('/approvals/{approval}/action', [ApprovalCenterController::class, 'action']);
 
-            // Dinas Luar
-            Route::get('/business-trip', [\App\Http\Controllers\Api\EssController::class, 'getBusinessTrips']);
-            Route::post('/business-trip', [\App\Http\Controllers\Api\EssController::class, 'submitBusinessTrip']);
+            // Cuti (Leave Request) Module
+            Route::prefix('cuti')->group(function () {
+                Route::get('/jenis', [CutiController::class, 'jenis']);
+                Route::get('/balances', [CutiController::class, 'balances']);
+                Route::get('/requests', [CutiController::class, 'requests']);
+                Route::get('/all', [CutiController::class, 'allRequests']);
+                Route::post('/request', [CutiController::class, 'submitRequest']);
+                Route::post('/cancel/{id}', [CutiController::class, 'cancelRequest']);
+                
+                // Optional Manager Approvals
+                Route::get('/approvals', [CutiController::class, 'pendingApprovals']);
+                Route::post('/approve/{id}', [CutiController::class, 'approveRequest']);
+            });
 
-            // Slip Gaji (Payslip Read-Only)
-            Route::get('/payslips', [\App\Http\Controllers\Api\EssController::class, 'getPayslips']);
-            Route::get('/payslips/{id}', [\App\Http\Controllers\Api\EssController::class, 'getPayslipDetail']);
+            // Task Management Module
+            Route::prefix('tasks')->group(function () {
+                Route::get('/', [TaskController::class, 'index']); // active kanban
+                Route::post('/', [TaskController::class, 'store']); // create new task
+                Route::get('/history', [TaskController::class, 'history']); // all tasks (archived + active)
+                Route::post('/{id}/status', [TaskController::class, 'updateStatus']); // change status
+            });
 
-            // Reimbursement
-            Route::get('/reimbursements', [\App\Http\Controllers\Api\EssController::class, 'getReimbursements']);
-            Route::post('/reimbursements', [\App\Http\Controllers\Api\EssController::class, 'submitReimbursement']);
+            // Calendar Module
+            Route::prefix('calendar')->group(function () {
+                Route::get('/', [\App\Http\Controllers\Api\CalendarController::class, 'index']);
+            });
+
+            // ESS (Employee Self-Service) Module
+            Route::prefix('ess')->group(function () {
+                // Koreksi Absensi
+                Route::get('/attendance-correction', [\App\Http\Controllers\Api\EssController::class, 'getAttendanceCorrections']);
+                Route::post('/attendance-correction', [\App\Http\Controllers\Api\EssController::class, 'submitAttendanceCorrection']);
+
+                // Dinas Luar
+                Route::get('/business-trip', [\App\Http\Controllers\Api\EssController::class, 'getBusinessTrips']);
+                Route::post('/business-trip', [\App\Http\Controllers\Api\EssController::class, 'submitBusinessTrip']);
+
+                // Slip Gaji (Payslip Read-Only)
+                Route::get('/payslips', [\App\Http\Controllers\Api\EssController::class, 'getPayslips']);
+                Route::get('/payslips/{id}', [\App\Http\Controllers\Api\EssController::class, 'getPayslipDetail']);
+
+                // Reimbursement
+                Route::get('/reimbursements', [\App\Http\Controllers\Api\EssController::class, 'getReimbursements']);
+                Route::post('/reimbursements', [\App\Http\Controllers\Api\EssController::class, 'submitReimbursement']);
+            });
+
+            // Karyawan Module
+            Route::get('/karyawan', [KaryawanController::class, 'index']);
         });
-
-        // Karyawan Module
-        Route::get('/karyawan', [KaryawanController::class, 'index']);
     });
 });

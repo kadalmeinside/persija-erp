@@ -46,6 +46,7 @@ Gunakan kredensial berikut untuk *login* ke Web UI (password untuk semua akun ad
 4. **HR** (sebagai Approver Cuti): `test.hr@persija.id`
 5. **Staf 1** (Mengajukan Dana Operasional & Pinjaman): `test.staf1@persija.id`
 6. **Staf 2** (Mengajukan Cuti Tahunan): `test.staf2@persija.id`
+7. **Freelance** (Hanya Akses Absensi di Web & Mobile): `test.freelance@persija.id`
 
 ### Skenario Uji (Tertunda / Pending Approval)
 Setelah seeder dijalankan, terdapat beberapa skenario pengajuan yang siap untuk di-approve:

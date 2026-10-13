@@ -21,6 +21,12 @@ class DashboardController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
+
+        // Akun Freelance hanya memiliki akses untuk absensi
+        if ($user->hasRole(Role::FREELANCE->value)) {
+            return redirect()->route('admin.absensi.clock');
+        }
+
         $data = [
             'role' => $user->getRoleNames()->first(),
             'stats' => [],

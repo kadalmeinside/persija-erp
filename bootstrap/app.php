@@ -29,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
             'check.period' => \App\Http\Middleware\CheckPeriodLock::class,
             'idempotent' => \App\Http\Middleware\IdempotencyMiddleware::class,
+            'not_freelance' => \App\Http\Middleware\EnsureNotFreelance::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [

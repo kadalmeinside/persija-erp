@@ -53,7 +53,7 @@ const page = usePage();
 const user = computed(() => page.props.auth?.user);
 
 const isQuickActionsHidden = computed(() => {
-    if (props.hideQuickActions) return true;
+    if (props.hideQuickActions || userRoles.value.includes('Freelance')) return true;
     const comp = page.component || '';
     const url = page.url || '';
     // Sembunyikan pada halaman detail pembayaran / pengajuan show / invoice show
@@ -248,6 +248,27 @@ const logout = () => {
 
 // --- MENU DEFINITION (Sesuai ERP Kita) ---
 const sidebarMenu = computed(() => {
+    // KHUSUS ROLE FREELANCE: HANYA MODUL ABSENSI
+    if (hasRole('Freelance')) {
+        return [
+            { type: 'heading', label: 'Absensi' },
+            { 
+                type: 'link', 
+                name: 'Live Absensi (Clock)', 
+                icon: ClockIcon, 
+                route: 'admin.absensi.clock', 
+                current: 'admin.absensi.clock' 
+            },
+            { 
+                type: 'link', 
+                name: 'Riwayat Absensi', 
+                icon: ClockIcon, 
+                route: 'admin.absensi.my-attendance', 
+                current: 'admin.absensi.my-attendance' 
+            },
+        ];
+    }
+
     const menu = [
         { type: 'heading', label: 'Utama' },
         { 
