@@ -86,6 +86,35 @@ Route::prefix('v1')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\CalendarController::class, 'index']);
         });
 
+        // Notifications Module
+        Route::prefix('notifications')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\NotificationController::class, 'index']);
+            Route::post('/{id}/read', [\App\Http\Controllers\Api\NotificationController::class, 'markAsRead']);
+            Route::post('/read-all', [\App\Http\Controllers\Api\NotificationController::class, 'markAllAsRead']);
+            Route::get('/preferences', [\App\Http\Controllers\Api\NotificationController::class, 'getPreferences']);
+            Route::post('/preferences', [\App\Http\Controllers\Api\NotificationController::class, 'updatePreferences']);
+            Route::post('/device-token', [\App\Http\Controllers\Api\NotificationController::class, 'registerDeviceToken']);
+        });
+
+        // ESS (Employee Self-Service) Module
+        Route::prefix('ess')->group(function () {
+            // Koreksi Absensi
+            Route::get('/attendance-correction', [\App\Http\Controllers\Api\EssController::class, 'getAttendanceCorrections']);
+            Route::post('/attendance-correction', [\App\Http\Controllers\Api\EssController::class, 'submitAttendanceCorrection']);
+
+            // Dinas Luar
+            Route::get('/business-trip', [\App\Http\Controllers\Api\EssController::class, 'getBusinessTrips']);
+            Route::post('/business-trip', [\App\Http\Controllers\Api\EssController::class, 'submitBusinessTrip']);
+
+            // Slip Gaji (Payslip Read-Only)
+            Route::get('/payslips', [\App\Http\Controllers\Api\EssController::class, 'getPayslips']);
+            Route::get('/payslips/{id}', [\App\Http\Controllers\Api\EssController::class, 'getPayslipDetail']);
+
+            // Reimbursement
+            Route::get('/reimbursements', [\App\Http\Controllers\Api\EssController::class, 'getReimbursements']);
+            Route::post('/reimbursements', [\App\Http\Controllers\Api\EssController::class, 'submitReimbursement']);
+        });
+
         // Karyawan Module
         Route::get('/karyawan', [KaryawanController::class, 'index']);
     });
