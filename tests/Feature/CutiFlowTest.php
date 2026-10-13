@@ -331,4 +331,26 @@ class CutiFlowTest extends TestCase
         $response->assertSessionHas('error');
         $this->assertDatabaseCount('tbl_pengajuan_cuti', 0);
     }
+
+    public function test_riwayat_cuti_karyawan_dibatasi_hanya_untuk_direktur_dan_hr()
+    {
+        // Staf biasa ditolak
+        $responseStaf = $this->actingAs($this->pengajuUser)
+            ->getJson('/api/v1/cuti/all');
+        $responseStaf->assertStatus(403);
+
+        // Direktur diizinkan
+        \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'Direktur']);
+        $this->approverUser->assignRole('Direktur');
+        $responseDirektur = $this->actingAs($this->approverUser)
+            ->getJson('/api/v1/cuti/all');
+        $responseDirektur->assertStatus(200);
+
+        // HR Staff diizinkan
+        \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'HR Staff']);
+        $this->hrUser->assignRole('HR Staff');
+        $responseHr = $this->actingAs($this->hrUser)
+            ->getJson('/api/v1/cuti/all');
+        $responseHr->assertStatus(200);
+    }
 }

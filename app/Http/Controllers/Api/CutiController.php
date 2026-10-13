@@ -403,6 +403,29 @@ class CutiController extends Controller
      */
     public function allRequests(Request $request)
     {
+        $user = $request->user();
+        $isAllowed = $user->hasAnyRole([
+            'Super Admin',
+            'super admin',
+            'Direktur',
+            'direktur',
+            'HR Staff',
+            'hr staff',
+            'HR Manager',
+            'hr manager',
+            'HR',
+            'hr',
+        ])
+        || str_contains(strtolower($user->karyawan?->departemen?->nama_departemen ?? ''), 'hr')
+        || str_contains(strtolower($user->karyawan?->jabatan ?? ''), 'direktur')
+        || str_contains(strtolower($user->karyawan?->jabatan ?? ''), 'hr');
+
+        if (!$isAllowed) {
+            return response()->json([
+                'message' => 'Akses ditolak. Riwayat cuti seluruh karyawan hanya dapat diakses oleh Direktur dan HR.'
+            ], 403);
+        }
+
         $today = now()->toDateString();
         
         // 1. Sedang cuti hari ini (Approved dan mencakup hari ini)
