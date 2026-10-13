@@ -20,6 +20,7 @@ Route::middleware(['role:Super Admin'])->group(function () {
     // Settings
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::post('settings', [SettingsController::class, 'update'])->name('settings.update');
+    Route::post('settings/test-notification', [SettingsController::class, 'sendTestNotification'])->name('settings.test-notification');
 
     // Finance Settings
     Route::get('finance-settings', [FinanceSettingController::class, 'index'])->name('finance-settings.index');

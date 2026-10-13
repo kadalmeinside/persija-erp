@@ -121,4 +121,29 @@ class NotificationTest extends TestCase
             'device_type' => 'android',
         ]);
     }
+
+    public function test_admin_can_send_test_notification_from_settings()
+    {
+        $role = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'Super Admin', 'guard_name' => 'web']);
+        $permission = \Spatie\Permission\Models\Permission::firstOrCreate(['name' => 'settings.manage', 'guard_name' => 'web']);
+        $role->givePermissionTo($permission);
+
+        $admin = \App\Models\User::factory()->create();
+        $admin->assignRole($role);
+
+        $response = $this->actingAs($admin)
+            ->post('/admin/settings/test-notification', [
+                'target_user_id' => $this->user->id,
+                'type' => 'approval',
+                'title' => 'Uji Coba Approval dari Web',
+                'message' => 'Silakan periksa dokumen pengajuan baru',
+                'link' => '/approvals',
+            ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('notifications', [
+            'notifiable_id' => $this->user->id,
+            'notifiable_type' => get_class($this->user),
+        ]);
+    }
 }

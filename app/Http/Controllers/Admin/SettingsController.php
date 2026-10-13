@@ -24,8 +24,31 @@ class SettingsController extends Controller
 
         $settings = Setting::all()->pluck('value', 'key');
 
+        $users = \App\Models\User::select('id', 'name', 'email')
+            ->with(['roles:id,name', 'karyawan:id,user_id,jabatan,departemen'])
+            ->get()
+            ->map(function ($u) {
+                $latestToken = \App\Models\UserDeviceToken::where('user_id', $u->id)
+                    ->where('is_active', true)
+                    ->latest()
+                    ->first();
+
+                return [
+                    'id' => $u->id,
+                    'name' => $u->name,
+                    'email' => $u->email,
+                    'role' => $u->roles->first()?->name ?? 'Staff',
+                    'jabatan' => $u->karyawan?->jabatan ?? '-',
+                    'has_device_token' => $latestToken !== null,
+                    'device_name' => $latestToken?->device_name ?? null,
+                    'device_type' => $latestToken?->device_type ?? null,
+                ];
+            });
+
         return Inertia::render('Admin/Settings/Index', [
             'settings' => $settings,
+            'users' => $users,
+            'currentUserId' => auth()->id(),
             'pageTitle' => 'Pengaturan Aplikasi',
             'can' => [
                 'update_settings' => auth()->user()->can('settings.manage'),
@@ -81,6 +104,60 @@ class SettingsController extends Controller
         return Redirect::route('admin.settings.index')->with([
             'message' => 'Pengaturan berhasil diperbarui.',
             'type' => 'success'
+        ]);
+    }
+
+    /**
+     * Send test push notification from Web Settings to selected mobile user.
+     */
+    public function sendTestNotification(Request $request)
+    {
+        $this->authorize('settings.manage');
+
+        $validated = $request->validate([
+            'target_user_id' => 'required|exists:users,id',
+            'type' => 'required|string|in:approval,cuti,attendance,task,ess,announcement,custom',
+            'title' => 'required|string|max:150',
+            'message' => 'required|string|max:500',
+            'link' => 'nullable|string|max:200',
+        ]);
+
+        $targetUser = \App\Models\User::findOrFail($validated['target_user_id']);
+        $defaultLinks = [
+            'approval' => '/approvals',
+            'cuti' => '/cuti-filter',
+            'attendance' => '/absensi-history',
+            'task' => '/tasks',
+            'ess' => '/ess?tab=payslip',
+            'announcement' => '/dashboard',
+            'custom' => '/dashboard',
+        ];
+
+        $link = $validated['link'] ?: ($defaultLinks[$validated['type']] ?? '/dashboard');
+        $notifId = (string) \Illuminate\Support\Str::uuid();
+
+        \DB::table('notifications')->insert([
+            'id' => $notifId,
+            'type' => 'App\\Notifications\\' . ucfirst($validated['type']) . 'Notification',
+            'notifiable_type' => get_class($targetUser),
+            'notifiable_id' => $targetUser->id,
+            'data' => json_encode([
+                'type' => $validated['type'],
+                'title' => $validated['title'],
+                'message' => $validated['message'],
+                'link' => $link,
+                'is_simulation' => true,
+                'sent_from' => 'Web Settings ERP',
+                'sent_by' => auth()->user()->name,
+            ]),
+            'read_at' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return Redirect::back()->with([
+            'message' => "Notifikasi '{$validated['title']}' berhasil dikirim ke {$targetUser->name}!",
+            'type' => 'success',
         ]);
     }
 }
