@@ -65,6 +65,16 @@ class EssController extends Controller
             'status' => 'Pending',
         ]);
 
+        $managerUser = $karyawan->departemen?->kepala?->user;
+        if ($managerUser && $managerUser->id !== $request->user()->id) {
+            $managerUser->notify(new \App\Notifications\EssSubmissionNotification(
+                'attendance',
+                'Pengajuan Koreksi Absensi Baru',
+                "{$karyawan->nama_lengkap} mengajukan koreksi absensi tanggal {$validated['tanggal']}.",
+                '/ess?tab=koreksi'
+            ));
+        }
+
         return response()->json([
             'status' => 'success',
             'message' => 'Pengajuan koreksi absensi berhasil dikirim.',
@@ -123,6 +133,16 @@ class EssController extends Controller
             'keterangan' => $validated['keterangan'] ?? null,
             'status' => 'Pending',
         ]);
+
+        $managerUser = $karyawan->departemen?->kepala?->user;
+        if ($managerUser && $managerUser->id !== $request->user()->id) {
+            $managerUser->notify(new \App\Notifications\EssSubmissionNotification(
+                'attendance',
+                'Pengajuan Dinas Luar Baru',
+                "{$karyawan->nama_lengkap} mengajukan dinas luar ke {$validated['lokasi_tujuan']}.",
+                '/ess?tab=dinas'
+            ));
+        }
 
         return response()->json([
             'status' => 'success',
@@ -261,6 +281,16 @@ class EssController extends Controller
             'keterangan' => $validated['keterangan'] ?? null,
             'status' => 'Pending',
         ]);
+
+        $managerUser = $karyawan->departemen?->kepala?->user;
+        if ($managerUser && $managerUser->id !== $request->user()->id) {
+            $managerUser->notify(new \App\Notifications\EssSubmissionNotification(
+                'ess',
+                'Pengajuan Reimbursement Baru',
+                "{$karyawan->nama_lengkap} mengajukan reimbursement: {$validated['judul_klaim']}.",
+                '/ess?tab=reimbursement'
+            ));
+        }
 
         return response()->json([
             'status' => 'success',

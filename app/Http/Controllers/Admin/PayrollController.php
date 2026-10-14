@@ -123,6 +123,16 @@ class PayrollController extends Controller
 
         try {
             $this->payrollService->approvePayroll($payroll, $request->input('allocations', []));
+
+            // Notify employees about published payslips
+            $payroll->load('details.karyawan.user');
+            foreach ($payroll->details as $detail) {
+                $user = $detail->karyawan?->user;
+                if ($user) {
+                    $user->notify(new \App\Notifications\PayrollPublishedNotification($payroll->bulan_periode));
+                }
+            }
+
             return back()->with('success', 'Payroll berhasil disetujui. Pengajuan pembayaran telah dibuat untuk Finance.');
         } catch (\Exception $e) {
             return back()->with('error', 'Gagal menyetujui payroll: ' . $e->getMessage());

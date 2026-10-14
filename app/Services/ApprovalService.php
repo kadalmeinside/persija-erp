@@ -386,7 +386,7 @@ class ApprovalService
             if ($pengajuKaryawanId) {
                 $pengajuUser = $this->getUserNotifiable($pengajuKaryawanId);
                 if ($pengajuUser) {
-                    $pengajuUser->notify(new \App\Notifications\PengajuanPendingNotification($model));
+                    $pengajuUser->notify(new \App\Notifications\PengajuanPendingNotification($model, 'rejected', $catatan));
                 }
             }
 
@@ -407,6 +407,7 @@ class ApprovalService
     {
         if ($meta['isCuti']) {
             $model->update(['status' => 'Approved']);
+            $this->notifyApplicant($model, $meta, 'approved');
             return;
         }
 
@@ -419,6 +420,7 @@ class ApprovalService
             ]);
             $approverKaryawan = $karyawanIdAction ? \App\Models\Karyawan::find($karyawanIdAction) : null;
             app(\App\Services\PinjamanService::class)->createPaymentRequest($model, $approverKaryawan);
+            $this->notifyApplicant($model, $meta, 'approved');
             return;
         }
 
@@ -429,6 +431,7 @@ class ApprovalService
                 'approved_at' => now(),
             ]);
             app(\App\Services\InvoiceService::class)->postGLAfterApproval($model);
+            $this->notifyApplicant($model, $meta, 'approved');
             return;
         }
 
@@ -439,16 +442,33 @@ class ApprovalService
             if ($isPettyCash) {
                 // PettyCash: langsung post GL & set PAID (uang sudah keluar secara fisik)
                 app(\App\Services\PengajuanService::class)->postPettyCashGL($model);
+                $this->notifyApplicant($model, $meta, 'approved');
                 return;
             }
 
             // PengajuanHeader tipe lain (Langsung, UangMuka, Reimburse): set APPROVED
             $model->update(['status_global' => PengajuanStatus::APPROVED]);
+            $this->notifyApplicant($model, $meta, 'approved');
             return;
         }
 
         // Fallback
         $model->update(['status_global' => PengajuanStatus::APPROVED]);
+        $this->notifyApplicant($model, $meta, 'approved');
+    }
+
+    private function notifyApplicant($model, array $meta, string $status, ?string $catatan = null): void
+    {
+        $pengajuKaryawanId = $meta['isCuti'] || $meta['isPinjaman']
+            ? $model->id_karyawan
+            : ($meta['isInvoice'] ? null : ($model->id_pengaju ?? null));
+
+        if ($pengajuKaryawanId) {
+            $pengajuUser = $this->getUserNotifiable($pengajuKaryawanId);
+            if ($pengajuUser) {
+                $pengajuUser->notify(new \App\Notifications\PengajuanPendingNotification($model, $status, $catatan));
+            }
+        }
     }
 
     // =========================================================================

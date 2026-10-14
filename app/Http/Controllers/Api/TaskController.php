@@ -107,6 +107,14 @@ class TaskController extends Controller
 
         $task = Task::create($validated);
 
+        // Notify assignee if assigned to someone else
+        if ($assigneeId && $assigneeId != $karyawan->id) {
+            $assignee = \App\Models\Karyawan::find($assigneeId);
+            if ($assignee && $assignee->user) {
+                $assignee->user->notify(new \App\Notifications\TaskAssignedNotification($task, $karyawan->nama_lengkap));
+            }
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Tugas berhasil dibuat',

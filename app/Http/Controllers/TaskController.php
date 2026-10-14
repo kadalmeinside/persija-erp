@@ -80,7 +80,14 @@ class TaskController extends Controller
         $validated['id_karyawan_creator'] = $karyawan->id;
         $validated['status'] = 'To Do';
 
-        Task::create($validated);
+        $task = Task::create($validated);
+
+        if (!empty($validated['id_karyawan_assignee']) && $validated['id_karyawan_assignee'] != $karyawan->id) {
+            $assignee = \App\Models\Karyawan::find($validated['id_karyawan_assignee']);
+            if ($assignee && $assignee->user) {
+                $assignee->user->notify(new \App\Notifications\TaskAssignedNotification($task, $karyawan->nama_lengkap));
+            }
+        }
 
         return redirect()->back()->with('success', 'Tugas berhasil dibuat.');
     }
