@@ -156,7 +156,7 @@
             margin-top: 12px;
             page-break-inside: avoid;
         }
-        .pasal-header {
+        .pasal-header, .contract-body h1, .contract-body h2 {
             text-align: center;
             font-size: 9.5pt;
             font-weight: bold;
@@ -165,9 +165,30 @@
             border-top: 1px solid #d1d5db;
             border-bottom: 1px solid #d1d5db;
             padding: 4px 6px;
+            margin-top: 12px;
             margin-bottom: 6px;
             color: #111827;
             letter-spacing: 0.3px;
+            page-break-after: avoid;
+        }
+        .contract-body h3 {
+            font-size: 9pt;
+            font-weight: bold;
+            margin: 8px 0 4px 0;
+            color: #1f2937;
+            page-break-after: avoid;
+        }
+        .contract-body blockquote {
+            border-left: 2px solid #6b7280;
+            padding-left: 8px;
+            font-style: italic;
+            color: #4b5563;
+            margin: 6px 0;
+        }
+        .contract-body hr {
+            border: 0;
+            border-top: 1px solid #d1d5db;
+            margin: 10px 0;
         }
         p {
             margin: 4px 0 6px 0;

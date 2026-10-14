@@ -7,9 +7,10 @@ import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
+import ContractWysiwygEditor from '@/Components/ContractWysiwygEditor.vue';
 import { 
     PlusIcon, TrashIcon, DocumentTextIcon, ClipboardDocumentListIcon, 
-    PencilSquareIcon, ArrowPathIcon 
+    PencilSquareIcon, ArrowPathIcon, DocumentDuplicateIcon, ClockIcon
 } from '@heroicons/vue/24/outline';
 import Swal from 'sweetalert2';
 
@@ -26,7 +27,7 @@ const activeSubTab = ref('clauses'); // 'clauses', 'scope', 'content'
 const form = useForm({
     nomor_kontrak: '',
     contract_type: 'PKWT',
-    durasi_probation_bulan: 3,
+    durasi_probation_bulan: 0,
     tanggal_selesai_probation: '',
     notice_period_hari: 30,
     jam_kerja_mingguan: 40,
@@ -34,6 +35,8 @@ const form = useForm({
     is_strict_location: true,
     working_scope: [],
     custom_contract_content: '',
+    is_new_version: false,
+    catatan_perubahan: '',
 });
 
 const newScopeItem = ref('');
@@ -43,13 +46,15 @@ watch(() => props.show, (newVal) => {
     if (newVal && props.employee) {
         form.nomor_kontrak = props.employee.nomor_kontrak || '';
         form.contract_type = props.employee.contract_type || 'PKWT';
-        form.durasi_probation_bulan = props.employee.durasi_probation_bulan ?? 3;
-        form.tanggal_selesai_probation = props.employee.tanggal_selesai_probation || '';
+        form.durasi_probation_bulan = props.employee.contract_type === 'PKWT' ? 0 : (props.employee.durasi_probation_bulan ?? 3);
+        form.tanggal_selesai_probation = props.employee.contract_type === 'PKWT' ? '' : (props.employee.tanggal_selesai_probation || '');
         form.notice_period_hari = props.employee.notice_period_hari ?? 30;
         form.jam_kerja_mingguan = props.employee.jam_kerja_mingguan ?? 40;
         form.id_lokasi_kantor = props.employee.id_lokasi_kantor || '';
         form.is_strict_location = props.employee.is_strict_location == 1;
         form.custom_contract_content = props.employee.custom_contract_content || '';
+        form.is_new_version = false;
+        form.catatan_perubahan = '';
 
         if (Array.isArray(props.employee.working_scope) && props.employee.working_scope.length > 0) {
             form.working_scope = [...props.employee.working_scope];
@@ -410,17 +415,14 @@ const close = () => {
                 </div>
 
                 <div v-if="form.custom_contract_content" class="space-y-1.5">
-                    <div class="flex items-center justify-between">
-                        <InputLabel for="custom_contract_content" value="Editor Draf Pasal Kontrak (HTML / Teks)" />
-                        <span class="text-[11px] text-gray-400 font-mono">Draf ini akan dicetak ke PDF</span>
+                    <div class="flex items-center justify-between mb-1">
+                        <InputLabel value="Editor Draf Pasal Kontrak (WYSIWYG Rich Text)" />
+                        <span class="text-[11px] text-gray-400 font-mono">Draf ini akan dirender langsung ke PDF resmi</span>
                     </div>
-                    <textarea
-                        id="custom_contract_content"
+                    <ContractWysiwygEditor
                         v-model="form.custom_contract_content"
-                        rows="15"
-                        class="w-full font-mono text-xs p-3.5 rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 focus:border-indigo-500 focus:ring-indigo-500 leading-relaxed"
-                        placeholder="Ketik atau edit draf pasal kontrak disini..."
-                    ></textarea>
+                        minHeight="350px"
+                    />
                 </div>
                 <div v-else class="text-center py-8 border border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
                     <DocumentTextIcon class="w-8 h-8 mx-auto text-gray-400 mb-2" />
@@ -434,6 +436,40 @@ const close = () => {
                         <PencilSquareIcon class="w-4 h-4 mr-1.5" />
                         Mulai Kustomisasi Pasal Kontrak Ini
                     </button>
+                </div>
+            </div>
+
+            <!-- Pilihan Versi Dokumen Kontrak -->
+            <div class="p-3.5 bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/80 rounded-xl mt-4">
+                <div class="flex items-center justify-between">
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input 
+                            type="checkbox" 
+                            v-model="form.is_new_version" 
+                            class="rounded border-gray-300 dark:border-gray-700 text-indigo-600 shadow-xs focus:ring-indigo-500 h-4 w-4"
+                        />
+                        <span class="ml-2.5 text-xs font-bold text-gray-800 dark:text-gray-200">
+                            Simpan sebagai Versi Baru Dokumen Kontrak (v{{ (props.employee?.contracts?.length || 0) + 1 }})
+                        </span>
+                    </label>
+                    <span 
+                        class="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                        :class="form.is_new_version ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/60 dark:text-indigo-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'"
+                    >
+                        {{ form.is_new_version ? 'Arsip Snapshot Baru' : 'Koreksi Versi Berjalan' }}
+                    </span>
+                </div>
+                <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1 pl-6">
+                    Centang opsi ini saat perpanjangan masa kerja, kenaikan gaji, atau perubahan klausul penting agar riwayat versi sebelumnya tetap tersimpan utuh dan tidak tertimpa.
+                </p>
+                <div v-if="form.is_new_version" class="mt-2.5 pl-6">
+                    <InputLabel value="Catatan Perubahan Versi Baru (Opsional)" class="text-[11px] mb-1 text-indigo-900 dark:text-indigo-200 font-semibold" />
+                    <input 
+                        type="text" 
+                        v-model="form.catatan_perubahan" 
+                        placeholder="Cth: Perpanjangan PKWT Tahun ke-2, Penyesuaian Gaji Pokok, Penambahan Klausul NDA" 
+                        class="w-full text-xs border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 rounded-lg shadow-2xs focus:ring-indigo-500 focus:border-indigo-500"
+                    />
                 </div>
             </div>
 

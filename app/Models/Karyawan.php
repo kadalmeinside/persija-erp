@@ -196,4 +196,22 @@ class Karyawan extends Model
     {
         return $this->hasMany(KaryawanKomponenGaji::class, 'id_karyawan');
     }
+
+    /**
+     * Relasi ke Riwayat Versi Kontrak Kerja Karyawan (Contract Versioning).
+     */
+    public function contracts()
+    {
+        return $this->hasMany(KaryawanContract::class, 'id_karyawan')->orderBy('version_number', 'desc');
+    }
+
+    public function activeContract()
+    {
+        return $this->hasOne(KaryawanContract::class, 'id_karyawan')->where('status', 'active')->latestOfMany('version_number');
+    }
+
+    public function latestContract()
+    {
+        return $this->hasOne(KaryawanContract::class, 'id_karyawan')->latestOfMany('version_number');
+    }
 }

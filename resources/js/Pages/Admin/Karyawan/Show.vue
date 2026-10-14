@@ -9,7 +9,8 @@ import {
     UserPlusIcon, CheckCircleIcon, XCircleIcon, ClockIcon, DocumentTextIcon,
     ShieldCheckIcon, EllipsisVerticalIcon, EnvelopeIcon, ArrowDownTrayIcon,
     ClipboardDocumentCheckIcon, ExclamationTriangleIcon, TrashIcon,
-    DocumentArrowUpIcon, FolderIcon, TagIcon, ArrowTopRightOnSquareIcon
+    DocumentArrowUpIcon, FolderIcon, TagIcon, ArrowTopRightOnSquareIcon,
+    PlusIcon
 } from '@heroicons/vue/24/outline';
 import Swal from 'sweetalert2';
 import CareerHistoryModal from '@/Components/CareerHistoryModal.vue';
@@ -832,6 +833,77 @@ const formatLastClockIn = (val) => {
                                     {{ karyawan.is_strict_location ? 'STRICT (Wajib di radius kantor)' : 'ROAMING (Bebas di semua cabang)' }}
                                 </p>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 5: Contract Document Versioning History -->
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200/80 dark:border-gray-700/70 p-5 md:p-6 shadow-2xs">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-2.5">
+                                <ClockIcon class="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                                <h2 class="font-bold text-base md:text-lg text-gray-900 dark:text-white">
+                                    Riwayat Versi Dokumen Kontrak
+                                </h2>
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">
+                                    {{ karyawan.contracts?.length || 0 }} Versi
+                                </span>
+                            </div>
+                            <button 
+                                @click="openEditContract"
+                                class="inline-flex items-center px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 rounded-lg text-xs font-semibold transition-colors border border-indigo-200 dark:border-indigo-800"
+                            >
+                                <PlusIcon class="w-3.5 h-3.5 mr-1" />
+                                Buat Versi Baru / Perpanjang
+                            </button>
+                        </div>
+
+                        <div v-if="karyawan.contracts && karyawan.contracts.length > 0" class="divide-y divide-gray-100 dark:divide-gray-700/60">
+                            <div 
+                                v-for="c in karyawan.contracts" 
+                                :key="c.id"
+                                class="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
+                            >
+                                <div class="flex items-start space-x-3">
+                                    <div 
+                                        class="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 mt-0.5"
+                                        :class="c.status === 'active' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 ring-2 ring-emerald-500/30' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'"
+                                    >
+                                        v{{ c.version_number }}
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center space-x-2">
+                                            <p class="text-xs font-bold text-gray-900 dark:text-white">
+                                                {{ c.judul_surat || 'Surat Perjanjian Kerja' }} ({{ c.contract_type }})
+                                            </p>
+                                            <span 
+                                                class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                                                :class="c.status === 'active' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'"
+                                            >
+                                                {{ c.status === 'active' ? 'Aktif' : 'Tergantikan (Superseded)' }}
+                                            </span>
+                                        </div>
+                                        <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                                            <span class="font-medium text-gray-700 dark:text-gray-300">{{ c.catatan_perubahan || 'Pembaruan Dokumen' }}</span>
+                                            • Dibuat {{ formatDate(c.created_at) }} {{ c.creator ? 'oleh ' + c.creator.name : '' }}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center space-x-2 shrink-0 self-end sm:self-center">
+                                    <a
+                                        :href="route('admin.karyawan.contracts.download', [karyawan.id, c.id])"
+                                        target="_blank"
+                                        class="inline-flex items-center px-2.5 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-2xs"
+                                        title="Download PDF versi ini"
+                                    >
+                                        <ArrowDownTrayIcon class="w-3.5 h-3.5 mr-1 text-indigo-500" />
+                                        Unduh PDF v{{ c.version_number }}
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-else class="text-center py-6 text-gray-400 text-xs">
+                            Belum ada riwayat versi kontrak kerja terdaftar.
                         </div>
                     </div>
 

@@ -11,6 +11,7 @@ use App\Models\Setting;
 use App\Models\ContractTemplate;
 use App\Models\KaryawanDokumen;
 use App\Models\KaryawanKomponenGaji;
+use App\Models\KaryawanContract;
 use App\Models\GajiKomponen;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -143,9 +144,36 @@ class KaryawanController extends Controller
             'lokasiKantor',
             'dokumen.uploader',
             'komponenGaji.komponenGaji',
+            'contracts.creator',
             'tasksAssigned' => fn($q) => $q->latest()->take(5),
         ]);
         $karyawan->append('primary_bank');
+
+        // Lazy initialize baseline version 1 if employee has no contract records yet
+        if ($karyawan->contracts->isEmpty() && ($karyawan->nomor_kontrak || $karyawan->contract_type)) {
+            $data = $this->prepareContractData($karyawan);
+            KaryawanContract::create([
+                'id_karyawan'            => $karyawan->id,
+                'version_number'         => 1,
+                'nomor_kontrak'          => $karyawan->nomor_kontrak,
+                'contract_type'          => $karyawan->contract_type ?? 'PKWT',
+                'judul_surat'            => $data['judulSurat'] ?? 'SURAT PERJANJIAN KERJA',
+                'tanggal_mulai'          => $karyawan->tgl_bergabung,
+                'tanggal_selesai'        => $karyawan->tanggal_berakhir_kontrak,
+                'durasi_probation_bulan' => $karyawan->durasi_probation_bulan ?? 0,
+                'notice_period_hari'     => $karyawan->notice_period_hari ?? 30,
+                'jam_kerja_mingguan'     => $karyawan->jam_kerja_mingguan ?? 40,
+                'gaji_pokok'             => $karyawan->gaji_pokok,
+                'working_scope'          => $karyawan->working_scope,
+                'contract_content'       => $karyawan->custom_contract_content,
+                'rendered_content'       => $data['contractBody'],
+                'status'                 => 'active',
+                'catatan_perubahan'      => 'Kontrak Awal Terdaftar',
+                'created_by'             => auth()->id(),
+            ]);
+
+            $karyawan->load('contracts.creator');
+        }
         
         // Load Leave Balances
         $currentYear = date('Y');
@@ -288,13 +316,21 @@ class KaryawanController extends Controller
             'id_lokasi_kantor' => 'nullable|exists:tbl_lokasi_kantor,id',
             'is_strict_location' => 'boolean',
             'custom_contract_content' => 'nullable|string',
+            'is_new_version' => 'nullable|boolean',
+            'catatan_perubahan' => 'nullable|string|max:255',
         ]);
 
-        DB::transaction(function () use ($karyawan, $validated) {
+        // Legal guardrail for PKWT (PP 35/2021): probation is void by law on PKWT
+        if ($validated['contract_type'] === 'PKWT') {
+            $validated['durasi_probation_bulan'] = 0;
+            $validated['tanggal_selesai_probation'] = null;
+        }
+
+        DB::transaction(function () use ($karyawan, $validated, $request) {
             $karyawan->update([
                 'nomor_kontrak' => $validated['nomor_kontrak'] ?? null,
                 'contract_type' => $validated['contract_type'],
-                'durasi_probation_bulan' => $validated['durasi_probation_bulan'] ?? 3,
+                'durasi_probation_bulan' => $validated['durasi_probation_bulan'] ?? 0,
                 'tanggal_selesai_probation' => $validated['tanggal_selesai_probation'] ?? null,
                 'notice_period_hari' => $validated['notice_period_hari'] ?? 30,
                 'jam_kerja_mingguan' => $validated['jam_kerja_mingguan'] ?? 40,
@@ -303,9 +339,90 @@ class KaryawanController extends Controller
                 'is_strict_location' => $validated['is_strict_location'] ?? $karyawan->is_strict_location,
                 'custom_contract_content' => array_key_exists('custom_contract_content', $validated) ? $validated['custom_contract_content'] : $karyawan->custom_contract_content,
             ]);
+
+            $karyawan->refresh();
+
+            // Render PDF snapshot
+            $pdfResult = $this->generateContractPdfOutput($karyawan, $karyawan->custom_contract_content);
+            $cleanNik = preg_replace('/[^A-Za-z0-9_\-]/', '_', $karyawan->nomor_induk_karyawan ?? 'KARYAWAN');
+
+            $isNewVersion = $request->boolean('is_new_version') || $karyawan->contracts()->count() === 0;
+
+            if ($isNewVersion) {
+                // Determine next version number
+                $versionNumber = ($karyawan->contracts()->max('version_number') ?? 0) + 1;
+
+                // Mark current active contracts as superseded
+                $karyawan->contracts()->where('status', 'active')->update(['status' => 'superseded']);
+
+                $filename = "kontrak_v{$versionNumber}_{$cleanNik}_" . time() . ".pdf";
+                $folder = "karyawan_dokumen/{$karyawan->id}";
+                $fullPath = "{$folder}/{$filename}";
+
+                Storage::disk('public')->put($fullPath, $pdfResult['pdfContent']);
+
+                $catatan = $validated['catatan_perubahan'] ?? ($versionNumber === 1 ? 'Kontrak Awal' : "Pembaruan Versi {$versionNumber}");
+
+                KaryawanContract::create([
+                    'id_karyawan'            => $karyawan->id,
+                    'version_number'         => $versionNumber,
+                    'nomor_kontrak'          => $karyawan->nomor_kontrak,
+                    'contract_type'          => $karyawan->contract_type,
+                    'judul_surat'            => $pdfResult['judulSurat'],
+                    'tanggal_mulai'          => $karyawan->tgl_bergabung,
+                    'tanggal_selesai'        => $karyawan->tanggal_berakhir_kontrak,
+                    'durasi_probation_bulan' => $karyawan->durasi_probation_bulan,
+                    'notice_period_hari'     => $karyawan->notice_period_hari,
+                    'jam_kerja_mingguan'     => $karyawan->jam_kerja_mingguan,
+                    'gaji_pokok'             => $karyawan->gaji_pokok,
+                    'working_scope'          => $karyawan->working_scope,
+                    'contract_content'       => $karyawan->custom_contract_content,
+                    'rendered_content'       => $pdfResult['contractBody'],
+                    'file_path'              => $fullPath,
+                    'status'                 => 'active',
+                    'catatan_perubahan'      => $catatan,
+                    'created_by'             => auth()->id(),
+                ]);
+
+                // Also archive to KaryawanDokumen
+                KaryawanDokumen::create([
+                    'id_karyawan'        => $karyawan->id,
+                    'kategori_dokumen'   => 'kontrak',
+                    'judul_dokumen'      => "Surat Perjanjian Kerja ({$karyawan->contract_type}) - v{$versionNumber}",
+                    'nomor_dokumen'      => $karyawan->nomor_kontrak,
+                    'file_path'          => $fullPath,
+                    'file_size'          => strlen($pdfResult['pdfContent']),
+                    'file_extension'     => 'pdf',
+                    'tanggal_terbit'     => $karyawan->tgl_bergabung ?? now(),
+                    'tanggal_kadaluarsa' => $karyawan->tanggal_berakhir_kontrak,
+                    'catatan'            => $catatan,
+                    'uploaded_by'        => auth()->id(),
+                ]);
+            } else {
+                // Update active version
+                $activeContract = $karyawan->contracts()->where('status', 'active')->latest('version_number')->first();
+                if ($activeContract) {
+                    $activeContract->update([
+                        'nomor_kontrak'          => $karyawan->nomor_kontrak,
+                        'contract_type'          => $karyawan->contract_type,
+                        'judul_surat'            => $pdfResult['judulSurat'],
+                        'durasi_probation_bulan' => $karyawan->durasi_probation_bulan,
+                        'notice_period_hari'     => $karyawan->notice_period_hari,
+                        'jam_kerja_mingguan'     => $karyawan->jam_kerja_mingguan,
+                        'working_scope'          => $karyawan->working_scope,
+                        'contract_content'       => $karyawan->custom_contract_content,
+                        'rendered_content'       => $pdfResult['contractBody'],
+                        'catatan_perubahan'      => $validated['catatan_perubahan'] ?? $activeContract->catatan_perubahan,
+                    ]);
+
+                    if ($activeContract->file_path) {
+                        Storage::disk('public')->put($activeContract->file_path, $pdfResult['pdfContent']);
+                    }
+                }
+            }
         });
 
-        return redirect()->back()->with('success', 'Rincian klausul kontrak & lingkup kerja berhasil diperbarui.');
+        return redirect()->back()->with('success', 'Rincian klausul kontrak & versi dokumen berhasil disimpan.');
     }
 
     public function uploadDokumen(Request $request, Karyawan $karyawan)
@@ -408,7 +525,29 @@ class KaryawanController extends Controller
         return redirect()->back()->with('success', 'Data kompensasi, benefit & tunjangan berhasil diperbarui.');
     }
 
-    protected function prepareContractData(Karyawan $karyawan): array
+    protected function generateContractPdfOutput(Karyawan $karyawan, ?string $customContent = null): array
+    {
+        $data = $this->prepareContractData($karyawan);
+        $company = $data['company'];
+        $contractBody = $data['contractBody'];
+        $judulSurat = $data['judulSurat'];
+
+        if ($customContent !== null) {
+            $contractBody = ContractTemplate::parseContent($customContent, $karyawan, $company);
+        }
+
+        $pdf = Pdf::loadView('pdf.kontrak_kerja', compact('karyawan', 'company', 'contractBody', 'judulSurat'));
+        $pdf->setPaper('a4', 'portrait');
+
+        return [
+            'pdfContent'   => $pdf->output(),
+            'contractBody' => $contractBody,
+            'judulSurat'   => $judulSurat,
+            'company'      => $company,
+        ];
+    }
+
+    protected function prepareContractData(Karyawan $karyawan, ?KaryawanContract $contract = null): array
     {
         $karyawan->load([
             'departemen.kepala',
@@ -434,13 +573,21 @@ class KaryawanController extends Controller
             'logo_path' => $logoPath,
         ];
 
+        if ($contract && !empty($contract->rendered_content)) {
+            return [
+                'company'      => $company,
+                'contractBody' => $contract->rendered_content,
+                'judulSurat'   => $contract->judul_surat,
+            ];
+        }
+
         // 1. Check if employee has customized contract text
-        $rawContent = $karyawan->custom_contract_content;
-        $judulSurat = null;
+        $rawContent = $contract ? $contract->contract_content : $karyawan->custom_contract_content;
+        $judulSurat = $contract ? $contract->judul_surat : null;
 
         // 2. If no custom content, load from Master Template based on contract_type
         if (empty($rawContent)) {
-            $contractType = $karyawan->contract_type ?? 'PKWT';
+            $contractType = ($contract ? $contract->contract_type : $karyawan->contract_type) ?? 'PKWT';
             $template = ContractTemplate::where('contract_type', $contractType)
                 ->where('is_active', true)
                 ->first();
@@ -477,6 +624,25 @@ class KaryawanController extends Controller
         return $pdf->download("Perjanjian_Kerja_{$cleanNik}.pdf");
     }
 
+    public function downloadContractVersionPdf(Karyawan $karyawan, KaryawanContract $contract)
+    {
+        $cleanNik = preg_replace('/[^A-Za-z0-9_\-]/', '_', $karyawan->nomor_induk_karyawan ?? 'KARYAWAN');
+
+        if ($contract->file_path && Storage::disk('public')->exists($contract->file_path)) {
+            return response()->download(storage_path('app/public/' . $contract->file_path), "Perjanjian_Kerja_v{$contract->version_number}_{$cleanNik}.pdf");
+        }
+
+        $data = $this->prepareContractData($karyawan, $contract);
+        $company = $data['company'];
+        $contractBody = $data['contractBody'];
+        $judulSurat = $data['judulSurat'];
+
+        $pdf = Pdf::loadView('pdf.kontrak_kerja', compact('karyawan', 'company', 'contractBody', 'judulSurat'));
+        $pdf->setPaper('a4', 'portrait');
+
+        return $pdf->download("Perjanjian_Kerja_v{$contract->version_number}_{$cleanNik}.pdf");
+    }
+
     public function archiveContractPdf(Karyawan $karyawan)
     {
         $data = $this->prepareContractData($karyawan);
@@ -489,7 +655,8 @@ class KaryawanController extends Controller
         $pdfContent = $pdf->output();
 
         $cleanNik = preg_replace('/[^A-Za-z0-9_\-]/', '_', $karyawan->nomor_induk_karyawan ?? 'KARYAWAN');
-        $filename = "draft_kontrak_{$cleanNik}_" . time() . ".pdf";
+        $versionNumber = ($karyawan->contracts()->max('version_number') ?? 0) + 1;
+        $filename = "draft_kontrak_v{$versionNumber}_{$cleanNik}_" . time() . ".pdf";
         $folder = "karyawan_dokumen/{$karyawan->id}";
         $fullPath = "{$folder}/{$filename}";
 
@@ -498,21 +665,46 @@ class KaryawanController extends Controller
         $contractType = $karyawan->contract_type ?? 'PKWT';
         $nomorKontrak = $karyawan->nomor_kontrak ?? ('PKWT/HRD/' . date('Y') . '/' . $karyawan->nomor_induk_karyawan);
 
+        // Update active contracts to superseded
+        $karyawan->contracts()->where('status', 'active')->update(['status' => 'superseded']);
+
+        // Create version
+        KaryawanContract::create([
+            'id_karyawan'            => $karyawan->id,
+            'version_number'         => $versionNumber,
+            'nomor_kontrak'          => $nomorKontrak,
+            'contract_type'          => $contractType,
+            'judul_surat'            => $judulSurat,
+            'tanggal_mulai'          => $karyawan->tgl_bergabung,
+            'tanggal_selesai'        => $karyawan->tanggal_berakhir_kontrak,
+            'durasi_probation_bulan' => $karyawan->durasi_probation_bulan ?? 0,
+            'notice_period_hari'     => $karyawan->notice_period_hari ?? 30,
+            'jam_kerja_mingguan'     => $karyawan->jam_kerja_mingguan ?? 40,
+            'gaji_pokok'             => $karyawan->gaji_pokok,
+            'working_scope'          => $karyawan->working_scope,
+            'contract_content'       => $karyawan->custom_contract_content,
+            'rendered_content'       => $contractBody,
+            'file_path'              => $fullPath,
+            'status'                 => 'active',
+            'catatan_perubahan'      => "Manual Archive v{$versionNumber}",
+            'created_by'             => auth()->id(),
+        ]);
+
         KaryawanDokumen::create([
             'id_karyawan'        => $karyawan->id,
             'kategori_dokumen'   => 'kontrak',
-            'judul_dokumen'      => "Surat Perjanjian Kerja ({$contractType}) - Draft Sistem",
+            'judul_dokumen'      => "Surat Perjanjian Kerja ({$contractType}) - v{$versionNumber}",
             'nomor_dokumen'      => $nomorKontrak,
             'file_path'          => $fullPath,
             'file_size'          => strlen($pdfContent),
             'file_extension'     => 'pdf',
             'tanggal_terbit'     => $karyawan->tgl_bergabung ?? now(),
             'tanggal_kadaluarsa' => $karyawan->tanggal_berakhir_kontrak,
-            'catatan'            => 'Draft resmi digenerate otomatis dari template ERP pada ' . now()->translatedFormat('d F Y H:i'),
+            'catatan'            => "Draft resmi v{$versionNumber} digenerate otomatis dari template ERP pada " . now()->translatedFormat('d F Y H:i'),
             'uploaded_by'        => auth()->id(),
         ]);
 
-        return redirect()->back()->with('success', 'Draft Surat Perjanjian Kerja berhasil dibuat dan otomatis diarsipkan ke Dokumen Karyawan.');
+        return redirect()->back()->with('success', "Draft Surat Perjanjian Kerja v{$versionNumber} berhasil dibuat dan otomatis diarsipkan ke Dokumen Karyawan.");
     }
 
     public function getContractPreview(Karyawan $karyawan)

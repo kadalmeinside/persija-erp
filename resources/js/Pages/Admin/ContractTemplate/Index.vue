@@ -7,6 +7,7 @@ import SecondaryButton from '@/Components/SecondaryButton.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
+import ContractWysiwygEditor from '@/Components/ContractWysiwygEditor.vue';
 import { 
     DocumentTextIcon, ArrowPathIcon, CheckCircleIcon, 
     InformationCircleIcon, TagIcon, DocumentDuplicateIcon 
@@ -202,21 +203,18 @@ const handleResetDefault = () => {
                             </div>
                         </div>
 
-                        <!-- Tag Toolbar -->
+                        <!-- WYSIWYG Editor for Contract Master Template -->
                         <div>
                             <div class="flex items-center justify-between mb-1.5">
-                                <InputLabel for="konten" value="Isi Pasal-Pasal & Format Kontrak (HTML / Teks)" />
-                                <span class="text-[11px] text-gray-400">Klik tag di samping untuk menyalin</span>
+                                <InputLabel value="Isi Pasal-Pasal & Format Kontrak (WYSIWYG Rich Text)" />
+                                <span class="text-[11px] text-gray-400">Gunakan toolbar atau klik tag di samping untuk menyisipkan variabel</span>
                             </div>
 
-                            <textarea
-                                id="konten"
+                            <ContractWysiwygEditor
                                 v-model="form.konten"
-                                rows="22"
-                                class="w-full font-mono text-xs p-3.5 rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 focus:border-indigo-500 focus:ring-indigo-500 leading-relaxed"
-                                placeholder="Tuliskan isi pasal-pasal perjanjian kerja disini..."
-                                required
-                            ></textarea>
+                                :availableTags="availableTags"
+                                minHeight="460px"
+                            />
                             <InputError class="mt-1" :message="form.errors.konten" />
                         </div>
 

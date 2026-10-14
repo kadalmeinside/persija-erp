@@ -21,6 +21,7 @@ Route::middleware(['role:Super Admin|HR Manager|HR Staff'])->group(function () {
     Route::post('karyawan/{karyawan}/dokumen', [KaryawanController::class, 'uploadDokumen'])->name('karyawan.dokumen.upload')->withTrashed();
     Route::delete('karyawan/dokumen/{dokumen}', [KaryawanController::class, 'destroyDokumen'])->name('karyawan.dokumen.destroy');
     Route::get('karyawan/{karyawan}/contract-pdf', [KaryawanController::class, 'downloadContractPdf'])->name('karyawan.contract-pdf')->withTrashed();
+    Route::get('karyawan/{karyawan}/contracts/{contract}/download', [KaryawanController::class, 'downloadContractVersionPdf'])->name('karyawan.contracts.download')->withTrashed();
     Route::post('karyawan/{karyawan}/archive-contract', [KaryawanController::class, 'archiveContractPdf'])->name('karyawan.archive-contract')->withTrashed();
     Route::get('karyawan/{karyawan}/contract-preview', [KaryawanController::class, 'getContractPreview'])->name('karyawan.contract-preview')->withTrashed();
     Route::post('karyawan/{karyawan}/reset-contract-content', [KaryawanController::class, 'resetContractContent'])->name('karyawan.reset-contract-content')->withTrashed();
