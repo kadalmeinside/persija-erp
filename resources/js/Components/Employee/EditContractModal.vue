@@ -172,7 +172,10 @@ const close = () => {
                     </div>
 
                     <div>
-                        <InputLabel for="durasi_probation_bulan" value="Masa Percobaan (Bulan)" />
+                        <InputLabel 
+                            for="durasi_probation_bulan" 
+                            :value="form.contract_type === 'PKWT' ? 'Periode Evaluasi Kinerja Berkala (Bulan)' : 'Masa Percobaan / Probation (Bulan)'" 
+                        />
                         <TextInput
                             id="durasi_probation_bulan"
                             type="number"
@@ -181,6 +184,12 @@ const close = () => {
                             class="mt-1 block w-full"
                             v-model="form.durasi_probation_bulan"
                         />
+                        <p v-if="form.contract_type === 'PKWT'" class="text-[11px] text-amber-600 dark:text-amber-400 mt-1">
+                            *UU 13/2003 Ps. 58: PKWT tidak mensyaratkan masa percobaan; difungsikan sebagai evaluasi kinerja berkala.
+                        </p>
+                        <p v-else-if="form.contract_type === 'PKWTT'" class="text-[11px] text-gray-500 mt-1">
+                            *UU 13/2003 Ps. 60: Masa percobaan kerja untuk PKWTT paling lama 3 bulan.
+                        </p>
                         <InputError class="mt-1" :message="form.errors.durasi_probation_bulan" />
                     </div>
 

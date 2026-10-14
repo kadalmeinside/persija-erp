@@ -344,9 +344,9 @@ class KaryawanController extends Controller
         if ($dokumen->file_path && Storage::disk('public')->exists($dokumen->file_path)) {
             Storage::disk('public')->delete($dokumen->file_path);
         }
-        $dokumen->delete();
+        $dokumen->forceDelete();
 
-        return redirect()->back()->with('success', 'Dokumen berhasil dihapus.');
+        return redirect()->back()->with('success', 'Dokumen berhasil dihapus dari arsip.');
     }
 
     public function syncKomponenGaji(Request $request, Karyawan $karyawan)
@@ -437,6 +437,63 @@ class KaryawanController extends Controller
 
         $cleanNik = preg_replace('/[^A-Za-z0-9_\-]/', '_', $karyawan->nomor_induk_karyawan ?? 'KARYAWAN');
         return $pdf->download("Perjanjian_Kerja_{$cleanNik}.pdf");
+    }
+
+    public function archiveContractPdf(Karyawan $karyawan)
+    {
+        $karyawan->load([
+            'departemen.kepala',
+            'lokasiKantor',
+            'rekeningBank',
+            'latestRiwayatKarir',
+            'komponenGaji.komponenGaji'
+        ]);
+
+        $settings = Setting::all()->pluck('value', 'key');
+        
+        $logoPath = null;
+        if (isset($settings['company_logo']) && $settings['company_logo']) {
+            $path = storage_path('app/public/' . $settings['company_logo']);
+            if (file_exists($path)) {
+                $logoPath = $path;
+            }
+        }
+
+        $company = [
+            'name'      => $settings['company_name'] ?? 'PT PERSIJA JAYA JAKARTA',
+            'address'   => $settings['company_address'] ?? 'Rasuna Office Park, Jl. HR Rasuna Said, Kuningan, Jakarta Selatan',
+            'logo_path' => $logoPath,
+        ];
+
+        $pdf = Pdf::loadView('pdf.kontrak_kerja', compact('karyawan', 'company'));
+        $pdf->setPaper('a4', 'portrait');
+        $pdfContent = $pdf->output();
+
+        $cleanNik = preg_replace('/[^A-Za-z0-9_\-]/', '_', $karyawan->nomor_induk_karyawan ?? 'KARYAWAN');
+        $filename = "draft_kontrak_{$cleanNik}_" . time() . ".pdf";
+        $folder = "karyawan_dokumen/{$karyawan->id}";
+        $fullPath = "{$folder}/{$filename}";
+
+        Storage::disk('public')->put($fullPath, $pdfContent);
+
+        $contractType = $karyawan->contract_type ?? 'PKWT';
+        $nomorKontrak = $karyawan->nomor_kontrak ?? ('PKWT/HRD/' . date('Y') . '/' . $karyawan->nomor_induk_karyawan);
+
+        KaryawanDokumen::create([
+            'id_karyawan'        => $karyawan->id,
+            'kategori_dokumen'   => 'kontrak',
+            'judul_dokumen'      => "Surat Perjanjian Kerja ({$contractType}) - Draft Sistem",
+            'nomor_dokumen'      => $nomorKontrak,
+            'file_path'          => $fullPath,
+            'file_size'          => strlen($pdfContent),
+            'file_extension'     => 'pdf',
+            'tanggal_terbit'     => $karyawan->tgl_bergabung ?? now(),
+            'tanggal_kadaluarsa' => $karyawan->tanggal_berakhir_kontrak,
+            'catatan'            => 'Draft resmi digenerate otomatis dari sistem ERP pada ' . now()->translatedFormat('d F Y H:i'),
+            'uploaded_by'        => auth()->id(),
+        ]);
+
+        return redirect()->back()->with('success', 'Draft Surat Perjanjian Kerja berhasil dibuat dan otomatis diarsipkan ke Dokumen Karyawan.');
     }
 
     public function destroy(Karyawan $karyawan)
