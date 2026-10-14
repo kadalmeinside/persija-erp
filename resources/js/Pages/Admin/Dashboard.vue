@@ -139,11 +139,11 @@ const greeting = computed(() => {
                     
                     <!-- Check In Card -->
                     <template v-if="!dashboardData.my_attendance_today || !dashboardData.my_attendance_today.waktu_masuk">
-                        <Link :href="route('admin.absensi.clock')" class="bg-white dark:bg-gray-800 rounded-2xl md:rounded-[2rem] p-4 md:p-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col justify-center items-center h-32 md:h-40 hover:bg-gray-50 dark:hover:bg-gray-750 transition group cursor-pointer">
-                            <div class="bg-[#5B7B6B] text-white w-10 h-10 md:w-14 md:h-14 rounded-full flex items-center justify-center mb-2 md:mb-3 shadow-md group-hover:scale-110 transition-transform">
-                                <ArrowDownLeftIcon class="w-5 h-5 md:w-6 md:h-6" stroke-width="2.5" />
+                        <Link :href="route('admin.absensi.clock')" class="bg-white dark:bg-gray-800 rounded-2xl md:rounded-[2rem] p-4 md:p-6 shadow-sm border border-emerald-100 dark:border-emerald-900/30 flex flex-col justify-center items-center h-32 md:h-40 hover:bg-emerald-50/20 dark:hover:bg-emerald-950/10 hover:border-emerald-400 dark:hover:border-emerald-600 hover:shadow-lg hover:shadow-emerald-500/10 hover:scale-[1.02] transition-all duration-300 group cursor-pointer">
+                            <div class="bg-[#5B7B6B] text-white w-10 h-10 md:w-14 md:h-14 rounded-full flex items-center justify-center mb-2 md:mb-3 shadow-md group-hover:scale-120 group-hover:bg-[#466a57] group-hover:ring-8 group-hover:ring-[#5B7B6B]/25 group-hover:shadow-xl group-hover:shadow-[#5B7B6B]/30 transition-all duration-300 ease-out">
+                                <ArrowDownLeftIcon class="w-5 h-5 md:w-6 md:h-6 transition-transform group-hover:scale-110" stroke-width="2.5" />
                             </div>
-                            <span class="font-bold text-gray-800 dark:text-gray-200 text-sm md:text-lg">Check In</span>
+                            <span class="font-bold text-gray-800 dark:text-gray-200 text-sm md:text-lg group-hover:text-[#466a57] dark:group-hover:text-emerald-400 transition-colors">Check In</span>
                         </Link>
                     </template>
                     <template v-else>
@@ -182,19 +182,19 @@ const greeting = computed(() => {
                         </div>
                     </template>
                     <template v-else-if="dashboardData.my_attendance_today && !dashboardData.my_attendance_today.waktu_keluar">
-                        <!-- Checked in, need to check out -->
-                        <Link :href="route('admin.absensi.clock')" class="bg-white dark:bg-gray-800 rounded-2xl md:rounded-[2rem] p-4 md:p-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col justify-center items-center h-32 md:h-40 hover:bg-gray-50 dark:hover:bg-gray-750 transition group cursor-pointer border-2 !border-gray-200">
-                            <div class="bg-gray-200 text-gray-600 w-10 h-10 md:w-14 md:h-14 rounded-full flex items-center justify-center mb-2 md:mb-3 shadow-md group-hover:scale-110 transition-transform">
-                                <ArrowUpRightIcon class="w-5 h-5 md:w-6 md:h-6" stroke-width="2.5" />
+                        <!-- Checked in, need to check out (Clickable, green, enlarges on hover) -->
+                        <Link :href="route('admin.absensi.clock')" class="bg-white dark:bg-gray-800 rounded-2xl md:rounded-[2rem] p-4 md:p-6 shadow-sm border border-emerald-100 dark:border-emerald-900/30 flex flex-col justify-center items-center h-32 md:h-40 hover:bg-emerald-50/20 dark:hover:bg-emerald-950/10 hover:border-emerald-400 dark:hover:border-emerald-600 hover:shadow-lg hover:shadow-emerald-500/10 hover:scale-[1.02] transition-all duration-300 group cursor-pointer">
+                            <div class="bg-[#5B7B6B] text-white w-10 h-10 md:w-14 md:h-14 rounded-full flex items-center justify-center mb-2 md:mb-3 shadow-md group-hover:scale-120 group-hover:bg-[#466a57] group-hover:ring-8 group-hover:ring-[#5B7B6B]/25 group-hover:shadow-xl group-hover:shadow-[#5B7B6B]/30 transition-all duration-300 ease-out">
+                                <ArrowUpRightIcon class="w-5 h-5 md:w-6 md:h-6 transition-transform group-hover:scale-110" stroke-width="2.5" />
                             </div>
-                            <span class="font-bold text-gray-800 dark:text-gray-200 text-sm md:text-lg">Check Out</span>
+                            <span class="font-bold text-gray-800 dark:text-gray-200 text-sm md:text-lg group-hover:text-[#466a57] dark:group-hover:text-emerald-400 transition-colors">Check Out</span>
                         </Link>
                     </template>
                     <template v-else>
                         <!-- Checked out -->
                         <div class="bg-white dark:bg-gray-800 rounded-2xl md:rounded-[2rem] p-4 md:p-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col justify-between h-32 md:h-40">
                             <div class="flex items-center gap-2 md:gap-4">
-                                <div class="bg-gray-200 text-gray-600 w-8 h-8 md:w-12 md:h-12 flex-shrink-0 rounded-full flex items-center justify-center">
+                                <div class="bg-[#5B7B6B] text-white w-8 h-8 md:w-12 md:h-12 flex-shrink-0 rounded-full flex items-center justify-center">
                                     <ArrowUpRightIcon class="w-4 h-4 md:w-6 md:h-6" stroke-width="2.5" />
                                 </div>
                                 <div>
