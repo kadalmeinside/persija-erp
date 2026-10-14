@@ -127,7 +127,15 @@ class KaryawanController extends Controller
 
     public function show(Karyawan $karyawan)
     {
-        $karyawan->load(['departemen', 'user', 'rekeningBank', 'riwayatKarir.departemen', 'lokasiKantor']);
+        $karyawan->load([
+            'departemen.kepala',
+            'user',
+            'rekeningBank',
+            'riwayatKarir.departemen',
+            'latestRiwayatKarir',
+            'lokasiKantor',
+            'tasksAssigned' => fn($q) => $q->latest()->take(5),
+        ]);
         $karyawan->append('primary_bank');
         
         // Load Leave Balances
@@ -140,11 +148,29 @@ class KaryawanController extends Controller
         $departemens = \App\Models\Departemen::all(); // Needed for Edit Form
         $lokasiKantors = \App\Models\LokasiKantor::where('is_active', true)->get();
 
+        // Check last attendance
+        $lastAttendance = \App\Models\Absensi::where('id_karyawan', $karyawan->id)
+            ->latest('tanggal')
+            ->first();
+
+        // Pagination metadata (all employee IDs)
+        $allIds = Karyawan::whereNull('deleted_at')->orderBy('id', 'asc')->pluck('id')->toArray();
+        $currentIndex = array_search($karyawan->id, $allIds);
+        $prevId = ($currentIndex !== false && $currentIndex > 0) ? $allIds[$currentIndex - 1] : null;
+        $nextId = ($currentIndex !== false && $currentIndex < count($allIds) - 1) ? $allIds[$currentIndex + 1] : null;
+
         return Inertia::render('Admin/Karyawan/Show', [
             'karyawan' => $karyawan,
             'leaveBalances' => $leaveBalances,
             'departemens' => $departemens,
-            'lokasi_kantors' => $lokasiKantors
+            'lokasi_kantors' => $lokasiKantors,
+            'lastClockIn' => $lastAttendance ? ($lastAttendance->tanggal . ' ' . ($lastAttendance->jam_masuk ?? '')) : null,
+            'navigation' => [
+                'current' => $currentIndex !== false ? $currentIndex + 1 : 1,
+                'total' => count($allIds),
+                'prev_id' => $prevId,
+                'next_id' => $nextId,
+            ]
         ]);
     }
 
