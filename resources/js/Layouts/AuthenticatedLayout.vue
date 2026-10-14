@@ -386,6 +386,7 @@ const sidebarMenu = computed(() => {
         hrChildren.push({ name: 'Agenda Perusahaan', route: 'admin.company-events.index', icon: CalendarIcon, current: 'admin.company-events.*' });
         hrChildren.push({ name: 'Rekap Absensi', route: 'admin.absensi.rekap', icon: ClockIcon, current: 'admin.absensi.rekap' });
         hrChildren.push({ name: 'Lokasi Kantor (Cabang)', route: 'admin.lokasi-kantor.index', icon: MapPinIcon, current: 'admin.lokasi-kantor.*' });
+        hrChildren.push({ name: 'Template Kontrak', route: 'admin.contract-templates.index', icon: DocumentTextIcon, current: 'admin.contract-templates.*' });
         
         // Payroll
         hrChildren.push({ 
@@ -399,7 +400,7 @@ const sidebarMenu = computed(() => {
             type: 'dropdown',
             name: 'HR & Payroll',
             icon: UserGroupIcon,
-            current: 'admin.karyawan.* admin.hari-libur.* admin.payrolls.* admin.company-events.* admin.lokasi-kantor.* admin.absensi.rekap',
+            current: 'admin.karyawan.* admin.hari-libur.* admin.payrolls.* admin.company-events.* admin.lokasi-kantor.* admin.absensi.rekap admin.contract-templates.*',
             children: hrChildren
         });
     }

@@ -7,7 +7,10 @@ import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
-import { PlusIcon, TrashIcon, DocumentTextIcon, ClipboardDocumentListIcon } from '@heroicons/vue/24/outline';
+import { 
+    PlusIcon, TrashIcon, DocumentTextIcon, ClipboardDocumentListIcon, 
+    PencilSquareIcon, ArrowPathIcon 
+} from '@heroicons/vue/24/outline';
 import Swal from 'sweetalert2';
 
 const props = defineProps({
@@ -18,7 +21,7 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'saved']);
 
-const activeSubTab = ref('clauses'); // 'clauses' or 'scope'
+const activeSubTab = ref('clauses'); // 'clauses', 'scope', 'content'
 
 const form = useForm({
     nomor_kontrak: '',
@@ -30,9 +33,11 @@ const form = useForm({
     id_lokasi_kantor: '',
     is_strict_location: true,
     working_scope: [],
+    custom_contract_content: '',
 });
 
 const newScopeItem = ref('');
+const isLoadingTemplate = ref(false);
 
 watch(() => props.show, (newVal) => {
     if (newVal && props.employee) {
@@ -44,6 +49,7 @@ watch(() => props.show, (newVal) => {
         form.jam_kerja_mingguan = props.employee.jam_kerja_mingguan ?? 40;
         form.id_lokasi_kantor = props.employee.id_lokasi_kantor || '';
         form.is_strict_location = props.employee.is_strict_location == 1;
+        form.custom_contract_content = props.employee.custom_contract_content || '';
 
         if (Array.isArray(props.employee.working_scope) && props.employee.working_scope.length > 0) {
             form.working_scope = [...props.employee.working_scope];
@@ -73,6 +79,40 @@ const removeScopeItem = (index) => {
     form.working_scope.splice(index, 1);
 };
 
+const loadMasterTemplate = async () => {
+    if (!props.employee) return;
+    isLoadingTemplate.value = true;
+    try {
+        const response = await fetch(route('admin.karyawan.contract-preview', props.employee.id));
+        const data = await response.json();
+        form.custom_contract_content = data.custom_content || data.master_content || '';
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'info',
+            title: 'Teks template master berhasil dimuat',
+            showConfirmButton: false,
+            timer: 1500
+        });
+    } catch (err) {
+        console.error(err);
+    } finally {
+        isLoadingTemplate.value = false;
+    }
+};
+
+const clearCustomContent = () => {
+    form.custom_contract_content = '';
+    Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: 'Kembali menggunakan Template Master standar',
+        showConfirmButton: false,
+        timer: 1500
+    });
+};
+
 const submit = () => {
     form.post(route('admin.karyawan.contract-details.update', props.employee.id), {
         preserveScroll: true,
@@ -82,7 +122,7 @@ const submit = () => {
             Swal.fire({
                 icon: 'success',
                 title: 'Tersimpan',
-                text: 'Klausul kontrak dan lingkup kerja berhasil diperbarui',
+                text: 'Klausul kontrak, lingkup kerja & draf isi kontrak berhasil diperbarui',
                 timer: 1500,
                 showConfirmButton: false
             });
@@ -103,14 +143,14 @@ const close = () => {
                 <div>
                     <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center">
                         <DocumentTextIcon class="w-5 h-5 mr-2 text-indigo-500" />
-                        Pengaturan Klausul Kontrak & Working Scope
+                        Pengaturan Klausul & Generator Kontrak
                     </h2>
                     <p class="text-xs text-gray-500 mt-0.5">{{ employee?.nama_lengkap }} ({{ employee?.jabatan }})</p>
                 </div>
             </div>
 
             <!-- Sub Tabs -->
-            <div class="flex space-x-2 border-b border-gray-100 dark:border-gray-700/60 mb-5">
+            <div class="flex space-x-2 border-b border-gray-100 dark:border-gray-700/60 mb-5 overflow-x-auto">
                 <button
                     type="button"
                     @click="activeSubTab = 'clauses'"
@@ -118,11 +158,11 @@ const close = () => {
                         activeSubTab === 'clauses'
                             ? 'border-indigo-600 text-indigo-600 font-bold border-b-2'
                             : 'text-gray-500 hover:text-gray-700',
-                        'px-4 py-2 text-xs flex items-center transition-colors'
+                        'px-4 py-2 text-xs flex items-center transition-colors shrink-0'
                     ]"
                 >
                     <DocumentTextIcon class="w-4 h-4 mr-1.5" />
-                    Klausul & Kebijakan Kontrak
+                    Klausul & Parameter
                 </button>
                 <button
                     type="button"
@@ -131,11 +171,27 @@ const close = () => {
                         activeSubTab === 'scope'
                             ? 'border-indigo-600 text-indigo-600 font-bold border-b-2'
                             : 'text-gray-500 hover:text-gray-700',
-                        'px-4 py-2 text-xs flex items-center transition-colors'
+                        'px-4 py-2 text-xs flex items-center transition-colors shrink-0'
                     ]"
                 >
                     <ClipboardDocumentListIcon class="w-4 h-4 mr-1.5" />
-                    Working Scope / Tupoksi ({{ form.working_scope.length }})
+                    Working Scope ({{ form.working_scope.length }})
+                </button>
+                <button
+                    type="button"
+                    @click="activeSubTab = 'content'"
+                    :class="[
+                        activeSubTab === 'content'
+                            ? 'border-indigo-600 text-indigo-600 font-bold border-b-2'
+                            : 'text-gray-500 hover:text-gray-700',
+                        'px-4 py-2 text-xs flex items-center transition-colors shrink-0'
+                    ]"
+                >
+                    <PencilSquareIcon class="w-4 h-4 mr-1.5" />
+                    Kustomisasi Isi Kontrak
+                    <span v-if="form.custom_contract_content" class="ml-1.5 px-1.5 py-0.5 text-[9px] rounded-full bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 font-bold">
+                        Custom
+                    </span>
                 </button>
             </div>
 
@@ -147,7 +203,7 @@ const close = () => {
                         <TextInput
                             id="nomor_kontrak"
                             type="text"
-                            class="mt-1 block w-full"
+                            class="mt-1 block w-full text-xs"
                             placeholder="Contoh: 024/PKWT-HRD/PJ/X/2026"
                             v-model="form.nomor_kontrak"
                         />
@@ -159,7 +215,7 @@ const close = () => {
                         <select
                             id="contract_type"
                             v-model="form.contract_type"
-                            class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 rounded-md shadow-xs text-sm"
+                            class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 rounded-md shadow-xs text-xs"
                             required
                         >
                             <option value="PKWT">PKWT (Perjanjian Kerja Waktu Tertentu)</option>
@@ -181,13 +237,13 @@ const close = () => {
                             type="number"
                             min="0"
                             max="12"
-                            class="mt-1 block w-full"
+                            class="mt-1 block w-full text-xs"
                             v-model="form.durasi_probation_bulan"
                         />
-                        <p v-if="form.contract_type === 'PKWT'" class="text-[11px] text-amber-600 dark:text-amber-400 mt-1">
+                        <p v-if="form.contract_type === 'PKWT'" class="text-[10px] text-amber-600 dark:text-amber-400 mt-1">
                             *UU 13/2003 Ps. 58: PKWT tidak mensyaratkan masa percobaan; difungsikan sebagai evaluasi kinerja berkala.
                         </p>
-                        <p v-else-if="form.contract_type === 'PKWTT'" class="text-[11px] text-gray-500 mt-1">
+                        <p v-else-if="form.contract_type === 'PKWTT'" class="text-[10px] text-gray-500 mt-1">
                             *UU 13/2003 Ps. 60: Masa percobaan kerja untuk PKWTT paling lama 3 bulan.
                         </p>
                         <InputError class="mt-1" :message="form.errors.durasi_probation_bulan" />
@@ -200,7 +256,7 @@ const close = () => {
                             type="number"
                             min="0"
                             max="180"
-                            class="mt-1 block w-full"
+                            class="mt-1 block w-full text-xs"
                             v-model="form.notice_period_hari"
                         />
                         <InputError class="mt-1" :message="form.errors.notice_period_hari" />
@@ -213,7 +269,7 @@ const close = () => {
                             type="number"
                             min="1"
                             max="80"
-                            class="mt-1 block w-full"
+                            class="mt-1 block w-full text-xs"
                             v-model="form.jam_kerja_mingguan"
                         />
                         <InputError class="mt-1" :message="form.errors.jam_kerja_mingguan" />
@@ -224,7 +280,7 @@ const close = () => {
                         <select
                             id="id_lokasi_kantor"
                             v-model="form.id_lokasi_kantor"
-                            class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 rounded-md shadow-xs text-sm"
+                            class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 rounded-md shadow-xs text-xs"
                         >
                             <option value="">Kantor Pusat / Bebas (Default)</option>
                             <option v-for="lok in lokasiKantors" :key="lok.id" :value="lok.id">
@@ -233,40 +289,52 @@ const close = () => {
                         </select>
                         <InputError class="mt-1" :message="form.errors.id_lokasi_kantor" />
                     </div>
-                </div>
 
-                <!-- Strict Geofencing Toggle -->
-                <div class="p-3.5 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                    <div>
-                        <p class="text-xs font-bold text-gray-900 dark:text-gray-200">Kebijakan Presensi Lokasi (Strict Geofence)</p>
-                        <p class="text-[11px] text-gray-500 mt-0.5">Jika aktif, karyawan hanya dapat check-in dalam radius GPS kantor yang ditentukan.</p>
+                    <div class="md:col-span-2 pt-2">
+                        <label class="flex items-center space-x-2.5 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                v-model="form.is_strict_location"
+                                class="rounded border-gray-300 dark:border-gray-700 text-indigo-600 shadow-2xs focus:ring-indigo-500"
+                            />
+                            <span class="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                Strict Location Attendance (Wajib presensi di dalam radius koordinat kantor)
+                            </span>
+                        </label>
+                        <p class="text-[11px] text-gray-400 mt-1 pl-6">
+                            Jika dinonaktifkan, karyawan memiliki izin roaming presensi (misal: ofisial, fisioterapis, atau media yang bertugas tandang/lapangan).
+                        </p>
                     </div>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" v-model="form.is_strict_location" class="sr-only peer">
-                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
-                    </label>
                 </div>
             </div>
 
             <!-- SubTab 2: Working Scope -->
-            <div v-show="activeSubTab === 'scope'" class="space-y-3">
-                <p class="text-xs text-gray-500">Tentukan butir-butir tugas pokok & fungsi (Tupoksi) profesional yang tercantum dalam kontrak:</p>
+            <div v-show="activeSubTab === 'scope'" class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold text-gray-700 dark:text-gray-200">Daftar Lingkup Tugas (Tupoksi Jabatan)</p>
+                        <p class="text-[11px] text-gray-400">Butir tugas ini akan dimasukkan ke Pasal 3 Surat Perjanjian Kerja.</p>
+                    </div>
+                    <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                        Total: {{ form.working_scope.length }} Butir
+                    </span>
+                </div>
 
-                <!-- List of Current Scope items -->
-                <div class="space-y-2 max-h-64 overflow-y-auto pr-1">
+                <!-- Scope List -->
+                <div class="space-y-2.5 max-h-[320px] overflow-y-auto pr-1">
                     <div 
                         v-for="(item, idx) in form.working_scope" 
-                        :key="idx"
-                        class="flex items-start justify-between gap-2 p-2.5 bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700 rounded-xl text-xs text-gray-700 dark:text-gray-300"
+                        :key="idx" 
+                        class="flex items-start space-x-2 p-2.5 bg-gray-50/70 dark:bg-gray-900/40 border border-gray-200/80 dark:border-gray-700/80 rounded-xl"
                     >
-                        <div class="flex items-start space-x-2 flex-1">
-                            <span class="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400 font-bold flex items-center justify-center shrink-0 text-[10px]">
-                                {{ idx + 1 }}
-                            </span>
+                        <span class="w-5 h-5 flex items-center justify-center bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-[10px] font-bold rounded-full shrink-0 mt-1">
+                            {{ idx + 1 }}
+                        </span>
+                        <div class="flex-1">
                             <textarea 
                                 v-model="form.working_scope[idx]" 
                                 rows="2" 
-                                class="w-full text-xs bg-transparent border-0 focus:ring-1 focus:ring-indigo-500 rounded p-1 resize-none"
+                                class="w-full text-xs border-0 bg-transparent p-0 focus:ring-0 text-gray-800 dark:text-gray-200 leading-relaxed resize-none"
                             ></textarea>
                         </div>
                         <button 
@@ -295,6 +363,76 @@ const close = () => {
                         class="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 rounded-lg text-xs font-semibold flex items-center"
                     >
                         <PlusIcon class="w-4 h-4 mr-1" /> Tambah
+                    </button>
+                </div>
+            </div>
+
+            <!-- SubTab 3: Custom Contract Content (Editor Pasal-Pasal Dinamis) -->
+            <div v-show="activeSubTab === 'content'" class="space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-gray-50 dark:bg-gray-900/40 border border-gray-200/80 dark:border-gray-700 rounded-xl">
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span 
+                                class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border"
+                                :class="[
+                                    form.custom_contract_content
+                                        ? 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800'
+                                        : 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800'
+                                ]"
+                            >
+                                {{ form.custom_contract_content ? 'Kustom Khusus Karyawan Ini' : `Mengikuti Template Master (${form.contract_type})` }}
+                            </span>
+                        </div>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
+                            Anda dapat mengedit kalimat pasal secara spesifik khusus karyawan ini, atau membiarkannya kosong agar selalu mengikuti template standar perusahaan.
+                        </p>
+                    </div>
+
+                    <div class="flex items-center space-x-2 shrink-0">
+                        <button
+                            type="button"
+                            @click="loadMasterTemplate"
+                            :disabled="isLoadingTemplate"
+                            class="inline-flex items-center px-2.5 py-1.5 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 rounded-lg text-xs font-semibold transition-colors"
+                        >
+                            <ArrowPathIcon class="w-3.5 h-3.5 mr-1" />
+                            {{ form.custom_contract_content ? 'Muat Ulang Template' : 'Buka & Kustomisasi' }}
+                        </button>
+                        <button
+                            v-if="form.custom_contract_content"
+                            type="button"
+                            @click="clearCustomContent"
+                            class="inline-flex items-center px-2.5 py-1.5 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 text-gray-700 dark:text-gray-300 rounded-lg text-xs font-semibold transition-colors"
+                        >
+                            Reset ke Standar
+                        </button>
+                    </div>
+                </div>
+
+                <div v-if="form.custom_contract_content" class="space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <InputLabel for="custom_contract_content" value="Editor Draf Pasal Kontrak (HTML / Teks)" />
+                        <span class="text-[11px] text-gray-400 font-mono">Draf ini akan dicetak ke PDF</span>
+                    </div>
+                    <textarea
+                        id="custom_contract_content"
+                        v-model="form.custom_contract_content"
+                        rows="15"
+                        class="w-full font-mono text-xs p-3.5 rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 focus:border-indigo-500 focus:ring-indigo-500 leading-relaxed"
+                        placeholder="Ketik atau edit draf pasal kontrak disini..."
+                    ></textarea>
+                </div>
+                <div v-else class="text-center py-8 border border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
+                    <DocumentTextIcon class="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                    <p class="text-xs font-semibold text-gray-700 dark:text-gray-200">Kontrak karyawan ini saat ini mengikuti Template Standar {{ form.contract_type }}</p>
+                    <p class="text-[11px] text-gray-400 mt-1 mb-3">Klik tombol di bawah jika ingin menambahkan pasal khusus atau mengubah klausul untuk karyawan ini.</p>
+                    <button
+                        type="button"
+                        @click="loadMasterTemplate"
+                        class="inline-flex items-center px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-xs"
+                    >
+                        <PencilSquareIcon class="w-4 h-4 mr-1.5" />
+                        Mulai Kustomisasi Pasal Kontrak Ini
                     </button>
                 </div>
             </div>

@@ -22,6 +22,13 @@ Route::middleware(['role:Super Admin|HR Manager|HR Staff'])->group(function () {
     Route::delete('karyawan/dokumen/{dokumen}', [KaryawanController::class, 'destroyDokumen'])->name('karyawan.dokumen.destroy');
     Route::get('karyawan/{karyawan}/contract-pdf', [KaryawanController::class, 'downloadContractPdf'])->name('karyawan.contract-pdf')->withTrashed();
     Route::post('karyawan/{karyawan}/archive-contract', [KaryawanController::class, 'archiveContractPdf'])->name('karyawan.archive-contract')->withTrashed();
+    Route::get('karyawan/{karyawan}/contract-preview', [KaryawanController::class, 'getContractPreview'])->name('karyawan.contract-preview')->withTrashed();
+    Route::post('karyawan/{karyawan}/reset-contract-content', [KaryawanController::class, 'resetContractContent'])->name('karyawan.reset-contract-content')->withTrashed();
+
+    // Master Contract Templates
+    Route::resource('contract-templates', \App\Http\Controllers\Admin\ContractTemplateController::class)->only(['index', 'update']);
+    Route::post('contract-templates/{contractTemplate}/reset', [\App\Http\Controllers\Admin\ContractTemplateController::class, 'reset'])->name('contract-templates.reset');
+
     Route::resource('lokasi-kantor', \App\Http\Controllers\Admin\LokasiKantorController::class)->except(['create', 'show', 'edit']);
     Route::post('karyawan/{karyawan}/riwayat-karir', [RiwayatKarirController::class, 'store'])->name('karyawan.riwayat-karir.store')->withTrashed();
     Route::delete('riwayat-karir/{riwayatKarir}', [RiwayatKarirController::class, 'destroy'])->name('karyawan.riwayat-karir.destroy');

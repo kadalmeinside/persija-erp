@@ -37,6 +37,7 @@ class Karyawan extends Model
         'notice_period_hari',
         'jam_kerja_mingguan',
         'working_scope',
+        'custom_contract_content',
         'id_lokasi_kantor',
         'is_strict_location'
     ];

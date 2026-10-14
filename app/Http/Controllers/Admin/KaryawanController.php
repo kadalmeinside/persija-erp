@@ -8,6 +8,7 @@ use App\Models\Departemen;
 use App\Models\User;
 use App\Models\SaldoCuti;
 use App\Models\Setting;
+use App\Models\ContractTemplate;
 use App\Models\KaryawanDokumen;
 use App\Models\KaryawanKomponenGaji;
 use App\Models\GajiKomponen;
@@ -286,6 +287,7 @@ class KaryawanController extends Controller
             'working_scope.*' => 'required|string|max:500',
             'id_lokasi_kantor' => 'nullable|exists:tbl_lokasi_kantor,id',
             'is_strict_location' => 'boolean',
+            'custom_contract_content' => 'nullable|string',
         ]);
 
         DB::transaction(function () use ($karyawan, $validated) {
@@ -299,6 +301,7 @@ class KaryawanController extends Controller
                 'working_scope' => !empty($validated['working_scope']) ? array_values(array_filter($validated['working_scope'])) : null,
                 'id_lokasi_kantor' => $validated['id_lokasi_kantor'] ?? $karyawan->id_lokasi_kantor,
                 'is_strict_location' => $validated['is_strict_location'] ?? $karyawan->is_strict_location,
+                'custom_contract_content' => array_key_exists('custom_contract_content', $validated) ? $validated['custom_contract_content'] : $karyawan->custom_contract_content,
             ]);
         });
 
@@ -405,7 +408,7 @@ class KaryawanController extends Controller
         return redirect()->back()->with('success', 'Data kompensasi, benefit & tunjangan berhasil diperbarui.');
     }
 
-    public function downloadContractPdf(Karyawan $karyawan)
+    protected function prepareContractData(Karyawan $karyawan): array
     {
         $karyawan->load([
             'departemen.kepala',
@@ -415,7 +418,6 @@ class KaryawanController extends Controller
             'komponenGaji.komponenGaji'
         ]);
 
-        // Fetch Company Settings from centralized Settings table (Konsisten dengan modul Pengajuan & Payroll)
         $settings = Setting::all()->pluck('value', 'key');
         
         $logoPath = null;
@@ -432,7 +434,43 @@ class KaryawanController extends Controller
             'logo_path' => $logoPath,
         ];
 
-        $pdf = Pdf::loadView('pdf.kontrak_kerja', compact('karyawan', 'company'));
+        // 1. Check if employee has customized contract text
+        $rawContent = $karyawan->custom_contract_content;
+        $judulSurat = null;
+
+        // 2. If no custom content, load from Master Template based on contract_type
+        if (empty($rawContent)) {
+            $contractType = $karyawan->contract_type ?? 'PKWT';
+            $template = ContractTemplate::where('contract_type', $contractType)
+                ->where('is_active', true)
+                ->first();
+
+            if (!$template) {
+                $template = ContractTemplate::where('contract_type', 'PKWT')->first();
+            }
+
+            $rawContent = $template ? $template->konten : '';
+            $judulSurat = $template ? $template->judul_surat : null;
+        }
+
+        // 3. Parse all placeholders dynamically
+        $contractBody = ContractTemplate::parseContent($rawContent, $karyawan, $company);
+
+        return [
+            'company'      => $company,
+            'contractBody' => $contractBody,
+            'judulSurat'   => $judulSurat,
+        ];
+    }
+
+    public function downloadContractPdf(Karyawan $karyawan)
+    {
+        $data = $this->prepareContractData($karyawan);
+        $company = $data['company'];
+        $contractBody = $data['contractBody'];
+        $judulSurat = $data['judulSurat'];
+
+        $pdf = Pdf::loadView('pdf.kontrak_kerja', compact('karyawan', 'company', 'contractBody', 'judulSurat'));
         $pdf->setPaper('a4', 'portrait');
 
         $cleanNik = preg_replace('/[^A-Za-z0-9_\-]/', '_', $karyawan->nomor_induk_karyawan ?? 'KARYAWAN');
@@ -441,31 +479,12 @@ class KaryawanController extends Controller
 
     public function archiveContractPdf(Karyawan $karyawan)
     {
-        $karyawan->load([
-            'departemen.kepala',
-            'lokasiKantor',
-            'rekeningBank',
-            'latestRiwayatKarir',
-            'komponenGaji.komponenGaji'
-        ]);
+        $data = $this->prepareContractData($karyawan);
+        $company = $data['company'];
+        $contractBody = $data['contractBody'];
+        $judulSurat = $data['judulSurat'];
 
-        $settings = Setting::all()->pluck('value', 'key');
-        
-        $logoPath = null;
-        if (isset($settings['company_logo']) && $settings['company_logo']) {
-            $path = storage_path('app/public/' . $settings['company_logo']);
-            if (file_exists($path)) {
-                $logoPath = $path;
-            }
-        }
-
-        $company = [
-            'name'      => $settings['company_name'] ?? 'PT PERSIJA JAYA JAKARTA',
-            'address'   => $settings['company_address'] ?? 'Rasuna Office Park, Jl. HR Rasuna Said, Kuningan, Jakarta Selatan',
-            'logo_path' => $logoPath,
-        ];
-
-        $pdf = Pdf::loadView('pdf.kontrak_kerja', compact('karyawan', 'company'));
+        $pdf = Pdf::loadView('pdf.kontrak_kerja', compact('karyawan', 'company', 'contractBody', 'judulSurat'));
         $pdf->setPaper('a4', 'portrait');
         $pdfContent = $pdf->output();
 
@@ -489,11 +508,32 @@ class KaryawanController extends Controller
             'file_extension'     => 'pdf',
             'tanggal_terbit'     => $karyawan->tgl_bergabung ?? now(),
             'tanggal_kadaluarsa' => $karyawan->tanggal_berakhir_kontrak,
-            'catatan'            => 'Draft resmi digenerate otomatis dari sistem ERP pada ' . now()->translatedFormat('d F Y H:i'),
+            'catatan'            => 'Draft resmi digenerate otomatis dari template ERP pada ' . now()->translatedFormat('d F Y H:i'),
             'uploaded_by'        => auth()->id(),
         ]);
 
         return redirect()->back()->with('success', 'Draft Surat Perjanjian Kerja berhasil dibuat dan otomatis diarsipkan ke Dokumen Karyawan.');
+    }
+
+    public function getContractPreview(Karyawan $karyawan)
+    {
+        $contractType = $karyawan->contract_type ?? 'PKWT';
+        $template = ContractTemplate::where('contract_type', $contractType)
+            ->where('is_active', true)
+            ->first() ?? ContractTemplate::where('contract_type', 'PKWT')->first();
+
+        return response()->json([
+            'has_custom' => !empty($karyawan->custom_contract_content),
+            'custom_content' => $karyawan->custom_contract_content,
+            'master_content' => $template ? $template->konten : '',
+            'contract_type' => $contractType,
+        ]);
+    }
+
+    public function resetContractContent(Karyawan $karyawan)
+    {
+        $karyawan->update(['custom_contract_content' => null]);
+        return redirect()->back()->with('success', 'Isi kontrak berhasil di-reset kembali ke Template Standar Perusahaan.');
     }
 
     public function destroy(Karyawan $karyawan)

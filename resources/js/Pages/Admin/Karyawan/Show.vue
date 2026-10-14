@@ -787,14 +787,20 @@ const formatLastClockIn = (val) => {
                         <div class="flex items-center justify-between mb-5">
                             <div class="flex items-center space-x-2.5">
                                 <ExclamationTriangleIcon class="w-5 h-5 text-gray-600 dark:text-gray-300" />
-                                <h2 class="font-bold text-base md:text-lg text-gray-900 dark:text-white">Contract Clauses</h2>
+                                <h2 class="font-bold text-base md:text-lg text-gray-900 dark:text-white">Contract Clauses & Content</h2>
+                                <span 
+                                    v-if="karyawan.custom_contract_content"
+                                    class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800"
+                                >
+                                    Custom Content
+                                </span>
                             </div>
                             <button 
                                 @click="openEditContract"
                                 class="inline-flex items-center px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                             >
                                 <PencilSquareIcon class="w-3.5 h-3.5 mr-1" />
-                                Edit
+                                Edit Klausul & Isi
                             </button>
                         </div>
 
