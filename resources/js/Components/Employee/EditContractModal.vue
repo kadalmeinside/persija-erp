@@ -1,6 +1,6 @@
 <script setup>
 import { useForm } from '@inertiajs/vue3';
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import Modal from '@/Components/Modal.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
@@ -10,7 +10,8 @@ import SecondaryButton from '@/Components/SecondaryButton.vue';
 import ContractWysiwygEditor from '@/Components/ContractWysiwygEditor.vue';
 import { 
     PlusIcon, TrashIcon, DocumentTextIcon, ClipboardDocumentListIcon, 
-    PencilSquareIcon, ArrowPathIcon, DocumentDuplicateIcon, ClockIcon
+    PencilSquareIcon, ArrowPathIcon, DocumentDuplicateIcon, ClockIcon,
+    DocumentPlusIcon, CalendarDaysIcon
 } from '@heroicons/vue/24/outline';
 import Swal from 'sweetalert2';
 
@@ -24,9 +25,15 @@ const emit = defineEmits(['close', 'saved']);
 
 const activeSubTab = ref('clauses'); // 'clauses', 'scope', 'content'
 
+const isFirstIssuance = computed(() => {
+    return !props.employee?.contracts || props.employee.contracts.length === 0;
+});
+
 const form = useForm({
     nomor_kontrak: '',
     contract_type: 'PKWT',
+    tanggal_mulai: '',
+    tanggal_selesai: '',
     durasi_probation_bulan: 0,
     tanggal_selesai_probation: '',
     notice_period_hari: 30,
@@ -42,10 +49,30 @@ const form = useForm({
 const newScopeItem = ref('');
 const isLoadingTemplate = ref(false);
 
+const setDuration = (months) => {
+    const start = form.tanggal_mulai ? new Date(form.tanggal_mulai) : new Date();
+    const end = new Date(start);
+    end.setMonth(end.getMonth() + months);
+    end.setDate(end.getDate() - 1);
+    form.tanggal_selesai = end.toISOString().split('T')[0];
+};
+
+watch(() => form.contract_type, (newType) => {
+    if (newType === 'PKWT') {
+        form.durasi_probation_bulan = 0;
+        form.tanggal_selesai_probation = '';
+    } else if (newType === 'PKWTT') {
+        form.durasi_probation_bulan = 3;
+        form.tanggal_selesai = '';
+    }
+});
+
 watch(() => props.show, (newVal) => {
     if (newVal && props.employee) {
         form.nomor_kontrak = props.employee.nomor_kontrak || '';
         form.contract_type = props.employee.contract_type || 'PKWT';
+        form.tanggal_mulai = props.employee.tgl_bergabung || new Date().toISOString().split('T')[0];
+        form.tanggal_selesai = props.employee.contract_type === 'PKWTT' ? '' : (props.employee.tanggal_berakhir_kontrak || '');
         form.durasi_probation_bulan = props.employee.contract_type === 'PKWT' ? 0 : (props.employee.durasi_probation_bulan ?? 3);
         form.tanggal_selesai_probation = props.employee.contract_type === 'PKWT' ? '' : (props.employee.tanggal_selesai_probation || '');
         form.notice_period_hari = props.employee.notice_period_hari ?? 30;
@@ -126,9 +153,11 @@ const submit = () => {
             emit('close');
             Swal.fire({
                 icon: 'success',
-                title: 'Tersimpan',
-                text: 'Klausul kontrak, lingkup kerja & draf isi kontrak berhasil diperbarui',
-                timer: 1500,
+                title: isFirstIssuance.value ? 'Kontrak Berhasil Diterbitkan' : 'Tersimpan',
+                text: isFirstIssuance.value 
+                    ? 'Kontrak kerja perdana v1 berhasil diterbitkan dan otomatis disinkronkan ke riwayat karir.' 
+                    : 'Klausul kontrak, lingkup kerja & draf isi kontrak berhasil diperbarui.',
+                timer: 2000,
                 showConfirmButton: false
             });
         }
@@ -147,10 +176,15 @@ const close = () => {
             <div class="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700 mb-5">
                 <div>
                     <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center">
-                        <DocumentTextIcon class="w-5 h-5 mr-2 text-indigo-500" />
-                        Pengaturan Klausul & Generator Kontrak
+                        <component :is="isFirstIssuance ? DocumentPlusIcon : DocumentTextIcon" class="w-5 h-5 mr-2 text-indigo-500" />
+                        {{ isFirstIssuance ? 'Penerbitan Kontrak Kerja Awal (v1)' : 'Pengaturan Klausul & Generator Kontrak' }}
                     </h2>
-                    <p class="text-xs text-gray-500 mt-0.5">{{ employee?.nama_lengkap }} ({{ employee?.jabatan }})</p>
+                    <p class="text-xs text-gray-500 mt-0.5">
+                        {{ employee?.nama_lengkap }} ({{ employee?.jabatan }})
+                        <span v-if="isFirstIssuance" class="ml-2 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">
+                            Penerbitan Perdana
+                        </span>
+                    </p>
                 </div>
             </div>
 
@@ -216,7 +250,7 @@ const close = () => {
                     </div>
 
                     <div>
-                        <InputLabel for="contract_type" value="Tipe / Jenis Kontrak" />
+                        <InputLabel for="contract_type" value="Tipe / Jenis Kontrak *" />
                         <select
                             id="contract_type"
                             v-model="form.contract_type"
@@ -230,6 +264,68 @@ const close = () => {
                             <option value="Internship">Internship / Magang</option>
                         </select>
                         <InputError class="mt-1" :message="form.errors.contract_type" />
+                    </div>
+
+                    <div>
+                        <InputLabel for="tanggal_mulai" value="Tanggal Mulai Kontrak *" />
+                        <TextInput
+                            id="tanggal_mulai"
+                            type="date"
+                            class="mt-1 block w-full text-xs"
+                            v-model="form.tanggal_mulai"
+                            required
+                        />
+                        <InputError class="mt-1" :message="form.errors.tanggal_mulai" />
+                    </div>
+
+                    <div>
+                        <div class="flex items-center justify-between">
+                            <InputLabel 
+                                for="tanggal_selesai" 
+                                :value="form.contract_type === 'PKWTT' ? 'Tanggal Berakhir Kontrak (Permanen)' : 'Tanggal Berakhir Kontrak *'" 
+                            />
+                            <div v-if="form.contract_type !== 'PKWTT'" class="flex items-center space-x-1">
+                                <button 
+                                    type="button" 
+                                    @click="setDuration(3)" 
+                                    class="px-1.5 py-0.5 text-[10px] font-medium bg-gray-100 hover:bg-indigo-50 dark:bg-gray-800 dark:hover:bg-indigo-950/60 text-gray-600 dark:text-gray-300 hover:text-indigo-600 rounded transition-colors"
+                                >
+                                    +3 Bln
+                                </button>
+                                <button 
+                                    type="button" 
+                                    @click="setDuration(6)" 
+                                    class="px-1.5 py-0.5 text-[10px] font-medium bg-gray-100 hover:bg-indigo-50 dark:bg-gray-800 dark:hover:bg-indigo-950/60 text-gray-600 dark:text-gray-300 hover:text-indigo-600 rounded transition-colors"
+                                >
+                                    +6 Bln
+                                </button>
+                                <button 
+                                    type="button" 
+                                    @click="setDuration(12)" 
+                                    class="px-1.5 py-0.5 text-[10px] font-medium bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 rounded transition-colors font-semibold"
+                                >
+                                    +1 Thn
+                                </button>
+                                <button 
+                                    type="button" 
+                                    @click="setDuration(24)" 
+                                    class="px-1.5 py-0.5 text-[10px] font-medium bg-gray-100 hover:bg-indigo-50 dark:bg-gray-800 dark:hover:bg-indigo-950/60 text-gray-600 dark:text-gray-300 hover:text-indigo-600 rounded transition-colors"
+                                >
+                                    +2 Thn
+                                </button>
+                            </div>
+                        </div>
+                        <TextInput
+                            id="tanggal_selesai"
+                            type="date"
+                            class="mt-1 block w-full text-xs"
+                            v-model="form.tanggal_selesai"
+                            :disabled="form.contract_type === 'PKWTT'"
+                        />
+                        <p v-if="form.contract_type === 'PKWTT'" class="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1">
+                            *PKWTT tidak memiliki tanggal selesai (hubungan kerja permanen).
+                        </p>
+                        <InputError class="mt-1" :message="form.errors.tanggal_selesai" />
                     </div>
 
                     <div>
@@ -440,7 +536,21 @@ const close = () => {
             </div>
 
             <!-- Pilihan Versi Dokumen Kontrak -->
-            <div class="p-3.5 bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/80 rounded-xl mt-4">
+            <div v-if="isFirstIssuance" class="p-4 bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/80 rounded-xl mt-4">
+                <div class="flex items-start space-x-3">
+                    <DocumentPlusIcon class="w-5 h-5 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
+                    <div>
+                        <h4 class="text-xs font-bold text-indigo-900 dark:text-indigo-200">
+                            Penerbitan Kontrak Perdana (v1) & Sinkronisasi Karir
+                        </h4>
+                        <p class="text-[11px] text-indigo-700 dark:text-indigo-300/90 mt-1 leading-relaxed">
+                            Penerbitan kontrak pertama ini akan secara otomatis mencatat riwayat karir <strong>Pengangkatan Awal</strong> serta mengarsipkan draft PDF resmi (v1) ke berkas dokumen karyawan.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div v-else class="p-3.5 bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/80 rounded-xl mt-4">
                 <div class="flex items-center justify-between">
                     <label class="inline-flex items-center cursor-pointer">
                         <input 
@@ -477,7 +587,7 @@ const close = () => {
             <div class="mt-6 flex justify-end space-x-3 pt-4 border-t border-gray-100 dark:border-gray-700">
                 <SecondaryButton @click="close" type="button">Batal</SecondaryButton>
                 <PrimaryButton :disabled="form.processing">
-                    {{ form.processing ? 'Menyimpan...' : 'Simpan Perubahan' }}
+                    {{ form.processing ? (isFirstIssuance ? 'Menerbitkan...' : 'Menyimpan...') : (isFirstIssuance ? 'Terbitkan Kontrak Pertama (v1)' : 'Simpan Perubahan') }}
                 </PrimaryButton>
             </div>
         </form>

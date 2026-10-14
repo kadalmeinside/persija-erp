@@ -12,6 +12,7 @@ use App\Models\ContractTemplate;
 use App\Models\KaryawanDokumen;
 use App\Models\KaryawanKomponenGaji;
 use App\Models\KaryawanContract;
+use App\Models\RiwayatKarir;
 use App\Models\GajiKomponen;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -148,32 +149,6 @@ class KaryawanController extends Controller
             'tasksAssigned' => fn($q) => $q->latest()->take(5),
         ]);
         $karyawan->append('primary_bank');
-
-        // Lazy initialize baseline version 1 if employee has no contract records yet
-        if ($karyawan->contracts->isEmpty() && ($karyawan->nomor_kontrak || $karyawan->contract_type)) {
-            $data = $this->prepareContractData($karyawan);
-            KaryawanContract::create([
-                'id_karyawan'            => $karyawan->id,
-                'version_number'         => 1,
-                'nomor_kontrak'          => $karyawan->nomor_kontrak,
-                'contract_type'          => $karyawan->contract_type ?? 'PKWT',
-                'judul_surat'            => $data['judulSurat'] ?? 'SURAT PERJANJIAN KERJA',
-                'tanggal_mulai'          => $karyawan->tgl_bergabung,
-                'tanggal_selesai'        => $karyawan->tanggal_berakhir_kontrak,
-                'durasi_probation_bulan' => $karyawan->durasi_probation_bulan ?? 0,
-                'notice_period_hari'     => $karyawan->notice_period_hari ?? 30,
-                'jam_kerja_mingguan'     => $karyawan->jam_kerja_mingguan ?? 40,
-                'gaji_pokok'             => $karyawan->gaji_pokok,
-                'working_scope'          => $karyawan->working_scope,
-                'contract_content'       => $karyawan->custom_contract_content,
-                'rendered_content'       => $data['contractBody'],
-                'status'                 => 'active',
-                'catatan_perubahan'      => 'Kontrak Awal Terdaftar',
-                'created_by'             => auth()->id(),
-            ]);
-
-            $karyawan->load('contracts.creator');
-        }
         
         // Load Leave Balances
         $currentYear = date('Y');
@@ -305,6 +280,8 @@ class KaryawanController extends Controller
     public function updateContractDetails(Request $request, Karyawan $karyawan)
     {
         $validated = $request->validate([
+            'tanggal_mulai' => 'required|date',
+            'tanggal_selesai' => 'nullable|date',
             'nomor_kontrak' => 'nullable|string|max:100',
             'contract_type' => 'required|string|in:PKWT,PKWTT,Freelance,Internship,Professional',
             'durasi_probation_bulan' => 'nullable|integer|min:0|max:12',
@@ -327,7 +304,13 @@ class KaryawanController extends Controller
         }
 
         DB::transaction(function () use ($karyawan, $validated, $request) {
+            $statusKaryawan = $validated['contract_type'] === 'PKWTT' 
+                ? 'Tetap' 
+                : ($validated['contract_type'] === 'Internship' ? 'Magang' : 'Kontrak');
+
             $karyawan->update([
+                'tgl_bergabung' => $validated['tanggal_mulai'],
+                'status_karyawan' => $statusKaryawan,
                 'nomor_kontrak' => $validated['nomor_kontrak'] ?? null,
                 'contract_type' => $validated['contract_type'],
                 'durasi_probation_bulan' => $validated['durasi_probation_bulan'] ?? 0,
@@ -340,13 +323,56 @@ class KaryawanController extends Controller
                 'custom_contract_content' => array_key_exists('custom_contract_content', $validated) ? $validated['custom_contract_content'] : $karyawan->custom_contract_content,
             ]);
 
+            // Sync with Riwayat Karir
+            $hasCareerHistory = $karyawan->riwayatKarir()->count() > 0;
+            $isNewVersion = $request->boolean('is_new_version') || $karyawan->contracts()->count() === 0;
+
+            if (!$hasCareerHistory) {
+                // First contract issuance -> initial career event
+                RiwayatKarir::create([
+                    'id_karyawan'              => $karyawan->id,
+                    'tipe_peristiwa'           => 'Pengangkatan Awal',
+                    'tanggal_efektif'          => $validated['tanggal_mulai'],
+                    'tanggal_berakhir_kontrak' => $validated['tanggal_selesai'] ?? null,
+                    'id_departemen'            => $karyawan->id_departemen,
+                    'jabatan'                  => $karyawan->jabatan ?? 'Karyawan',
+                    'status_karyawan'          => $statusKaryawan,
+                    'gaji_pokok'               => $karyawan->gaji_pokok ?? 0,
+                    'catatan'                  => 'Penerbitan Kontrak Kerja Awal (' . $karyawan->contract_type . ')' . (!empty($validated['catatan_perubahan']) ? ': ' . $validated['catatan_perubahan'] : ''),
+                ]);
+            } elseif ($isNewVersion) {
+                // New contract version -> record career event (Perpanjangan / Pengangkatan Tetap)
+                $peristiwa = ($validated['contract_type'] === 'PKWTT' && $karyawan->contract_type !== 'PKWTT')
+                    ? 'Pengangkatan Tetap'
+                    : 'Perpanjangan Kontrak';
+
+                RiwayatKarir::create([
+                    'id_karyawan'              => $karyawan->id,
+                    'tipe_peristiwa'           => $peristiwa,
+                    'tanggal_efektif'          => $validated['tanggal_mulai'],
+                    'tanggal_berakhir_kontrak' => $validated['tanggal_selesai'] ?? null,
+                    'id_departemen'            => $karyawan->id_departemen,
+                    'jabatan'                  => $karyawan->jabatan ?? 'Karyawan',
+                    'status_karyawan'          => $statusKaryawan,
+                    'gaji_pokok'               => $karyawan->gaji_pokok ?? 0,
+                    'catatan'                  => $validated['catatan_perubahan'] ?? 'Perpanjangan Kontrak Kerja',
+                ]);
+            } else {
+                // Minor edit -> keep latest career history dates aligned
+                $latestCareer = $karyawan->latestRiwayatKarir;
+                if ($latestCareer) {
+                    $latestCareer->update([
+                        'tanggal_efektif'          => $validated['tanggal_mulai'],
+                        'tanggal_berakhir_kontrak' => $validated['tanggal_selesai'] ?? null,
+                    ]);
+                }
+            }
+
             $karyawan->refresh();
 
             // Render PDF snapshot
             $pdfResult = $this->generateContractPdfOutput($karyawan, $karyawan->custom_contract_content);
             $cleanNik = preg_replace('/[^A-Za-z0-9_\-]/', '_', $karyawan->nomor_induk_karyawan ?? 'KARYAWAN');
-
-            $isNewVersion = $request->boolean('is_new_version') || $karyawan->contracts()->count() === 0;
 
             if ($isNewVersion) {
                 // Determine next version number
@@ -369,8 +395,8 @@ class KaryawanController extends Controller
                     'nomor_kontrak'          => $karyawan->nomor_kontrak,
                     'contract_type'          => $karyawan->contract_type,
                     'judul_surat'            => $pdfResult['judulSurat'],
-                    'tanggal_mulai'          => $karyawan->tgl_bergabung,
-                    'tanggal_selesai'        => $karyawan->tanggal_berakhir_kontrak,
+                    'tanggal_mulai'          => $validated['tanggal_mulai'],
+                    'tanggal_selesai'        => $validated['tanggal_selesai'] ?? null,
                     'durasi_probation_bulan' => $karyawan->durasi_probation_bulan,
                     'notice_period_hari'     => $karyawan->notice_period_hari,
                     'jam_kerja_mingguan'     => $karyawan->jam_kerja_mingguan,
@@ -393,8 +419,8 @@ class KaryawanController extends Controller
                     'file_path'          => $fullPath,
                     'file_size'          => strlen($pdfResult['pdfContent']),
                     'file_extension'     => 'pdf',
-                    'tanggal_terbit'     => $karyawan->tgl_bergabung ?? now(),
-                    'tanggal_kadaluarsa' => $karyawan->tanggal_berakhir_kontrak,
+                    'tanggal_terbit'     => $validated['tanggal_mulai'],
+                    'tanggal_kadaluarsa' => $validated['tanggal_selesai'] ?? null,
                     'catatan'            => $catatan,
                     'uploaded_by'        => auth()->id(),
                 ]);
@@ -406,6 +432,8 @@ class KaryawanController extends Controller
                         'nomor_kontrak'          => $karyawan->nomor_kontrak,
                         'contract_type'          => $karyawan->contract_type,
                         'judul_surat'            => $pdfResult['judulSurat'],
+                        'tanggal_mulai'          => $validated['tanggal_mulai'],
+                        'tanggal_selesai'        => $validated['tanggal_selesai'] ?? null,
                         'durasi_probation_bulan' => $karyawan->durasi_probation_bulan,
                         'notice_period_hari'     => $karyawan->notice_period_hari,
                         'jam_kerja_mingguan'     => $karyawan->jam_kerja_mingguan,
@@ -422,7 +450,7 @@ class KaryawanController extends Controller
             }
         });
 
-        return redirect()->back()->with('success', 'Rincian klausul kontrak & versi dokumen berhasil disimpan.');
+        return redirect()->back()->with('success', 'Rincian klausul kontrak & riwayat karir berhasil diperbarui secara sinkron.');
     }
 
     public function uploadDokumen(Request $request, Karyawan $karyawan)

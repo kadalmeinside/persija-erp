@@ -10,7 +10,7 @@ import {
     ShieldCheckIcon, EllipsisVerticalIcon, EnvelopeIcon, ArrowDownTrayIcon,
     ClipboardDocumentCheckIcon, ExclamationTriangleIcon, TrashIcon,
     DocumentArrowUpIcon, FolderIcon, TagIcon, ArrowTopRightOnSquareIcon,
-    PlusIcon
+    PlusIcon, DocumentPlusIcon
 } from '@heroicons/vue/24/outline';
 import Swal from 'sweetalert2';
 import CareerHistoryModal from '@/Components/CareerHistoryModal.vue';
@@ -215,8 +215,24 @@ const sendEmail = () => {
     }
 };
 
-// Contract Duration Calculations
+// Contract Active Status & Duration Calculations
+const hasActiveContract = computed(() => {
+    const hasContracts = Array.isArray(props.karyawan.contracts) && props.karyawan.contracts.length > 0;
+    const hasCareer = (Array.isArray(props.karyawan.riwayat_karir) && props.karyawan.riwayat_karir.length > 0) || !!props.karyawan.latest_riwayat_karir;
+    return hasContracts || hasCareer;
+});
+
 const contractInfo = computed(() => {
+    if (!hasActiveContract.value) {
+        return {
+            isPermanent: false,
+            daysRemaining: 0,
+            progressPercent: 0,
+            textLabel: 'Belum Ada Kontrak Aktif',
+            statusColor: 'gray'
+        };
+    }
+
     const startStr = props.karyawan.tgl_bergabung;
     const endStr = props.karyawan.tanggal_berakhir_kontrak;
 
@@ -421,8 +437,8 @@ const formatLastClockIn = (val) => {
                                     @click="openEditContract"
                                     class="w-full text-left px-4 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/60 flex items-center"
                                 >
-                                    <DocumentTextIcon class="w-4 h-4 mr-2.5 text-gray-400" />
-                                    Edit Klausul & Working Scope
+                                    <component :is="hasActiveContract ? DocumentTextIcon : DocumentPlusIcon" class="w-4 h-4 mr-2.5 text-gray-400" />
+                                    {{ hasActiveContract ? 'Edit Klausul & Working Scope' : 'Terbitkan Kontrak Pertama' }}
                                 </button>
                                 <button 
                                     @click="openUploadDokumen"
@@ -432,6 +448,7 @@ const formatLastClockIn = (val) => {
                                     Unggah Berkas / Dokumen
                                 </button>
                                 <button 
+                                    v-if="hasActiveContract"
                                     @click="handleExtendContract"
                                     class="w-full text-left px-4 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/60 flex items-center"
                                 >
@@ -607,8 +624,8 @@ const formatLastClockIn = (val) => {
                 <!-- Left Column (lg:col-span-8): Duration, Position, Compensation, Clauses -->
                 <div class="lg:col-span-8 space-y-6">
 
-                    <!-- Card 1: Contract Duration -->
-                    <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200/80 dark:border-gray-700/70 p-5 md:p-6 shadow-2xs">
+                    <!-- Card 1: Contract Duration (Active) OR Onboarding Empty State (Inactive) -->
+                    <div v-if="hasActiveContract" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200/80 dark:border-gray-700/70 p-5 md:p-6 shadow-2xs">
                         <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
                             <div class="flex items-center space-x-2.5">
                                 <DocumentTextIcon class="w-5 h-5 text-gray-600 dark:text-gray-300" />
@@ -683,6 +700,60 @@ const formatLastClockIn = (val) => {
                                 :style="{ width: `${contractInfo.progressPercent}%` }"
                             ></div>
                         </div>
+                    </div>
+
+                    <!-- Onboarding Empty State Card (When no active contract exists) -->
+                    <div v-else class="bg-gradient-to-br from-indigo-50/80 via-white to-indigo-50/30 dark:from-gray-800 dark:via-gray-800 dark:to-indigo-950/20 rounded-2xl border-2 border-dashed border-indigo-200 dark:border-indigo-800/80 p-6 md:p-8 text-center shadow-xs">
+                        <div class="w-14 h-14 rounded-2xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto mb-4 ring-8 ring-indigo-50 dark:ring-indigo-900/30">
+                            <DocumentPlusIcon class="w-7 h-7" />
+                        </div>
+                        <h3 class="text-lg md:text-xl font-bold text-gray-900 dark:text-white">
+                            Karyawan Belum Memiliki Kontrak Kerja Aktif
+                        </h3>
+                        <p class="text-xs md:text-sm text-gray-500 dark:text-gray-400 max-w-lg mx-auto mt-2 leading-relaxed">
+                            Untuk menjaga integritas data riwayat karir dan legalitas dokumen, terbitkan Surat Perjanjian Kerja perdana (v1) sebelum mengaktifkan aksi perpanjangan atau unduh kontrak.
+                        </p>
+
+                        <!-- Checklist / Features -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 my-6 max-w-2xl mx-auto text-left">
+                            <div class="p-3.5 bg-white dark:bg-gray-900/60 rounded-xl border border-indigo-100 dark:border-indigo-900/50 shadow-2xs">
+                                <div class="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400 font-semibold text-xs mb-1">
+                                    <CheckCircleIcon class="w-4 h-4 shrink-0" />
+                                    <span>Legalitas Kontrak</span>
+                                </div>
+                                <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
+                                    Pilih jenis kontrak (PKWT/PKWTT/dll), durasi masa kerja, probation, dan jam kerja resmi.
+                                </p>
+                            </div>
+                            <div class="p-3.5 bg-white dark:bg-gray-900/60 rounded-xl border border-indigo-100 dark:border-indigo-900/50 shadow-2xs">
+                                <div class="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400 font-semibold text-xs mb-1">
+                                    <CheckCircleIcon class="w-4 h-4 shrink-0" />
+                                    <span>Riwayat Karir Awal</span>
+                                </div>
+                                <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
+                                    Otomatis mencatat peristiwa <em>'Pengangkatan Awal'</em> secara sinkron ke riwayat karir.
+                                </p>
+                            </div>
+                            <div class="p-3.5 bg-white dark:bg-gray-900/60 rounded-xl border border-indigo-100 dark:border-indigo-900/50 shadow-2xs">
+                                <div class="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400 font-semibold text-xs mb-1">
+                                    <CheckCircleIcon class="w-4 h-4 shrink-0" />
+                                    <span>Arsip Dokumen v1</span>
+                                </div>
+                                <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
+                                    Menghasilkan dan mengarsipkan berkas PDF resmi (v1) ke modul Dokumen Karyawan.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Action Button -->
+                        <button
+                            type="button"
+                            @click="openEditContract"
+                            class="inline-flex items-center px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs md:text-sm font-bold shadow-md shadow-indigo-600/20 transition-all hover:scale-[1.02]"
+                        >
+                            <PlusIcon class="w-4 h-4 mr-2" />
+                            Terbitkan Kontrak Pertama (v1)
+                        </button>
                     </div>
 
                     <!-- Card 2: Contract Position Details -->
@@ -853,7 +924,7 @@ const formatLastClockIn = (val) => {
                                 class="inline-flex items-center px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 rounded-lg text-xs font-semibold transition-colors border border-indigo-200 dark:border-indigo-800"
                             >
                                 <PlusIcon class="w-3.5 h-3.5 mr-1" />
-                                Buat Versi Baru / Perpanjang
+                                {{ hasActiveContract ? 'Buat Versi Baru / Perpanjang' : 'Terbitkan Kontrak (v1)' }}
                             </button>
                         </div>
 
@@ -976,14 +1047,17 @@ const formatLastClockIn = (val) => {
                         <div class="space-y-4">
                             <div>
                                 <p class="text-xs text-gray-400 font-medium">Contract ID / No. Perjanjian</p>
-                                <p class="text-sm font-bold text-gray-900 dark:text-white mt-1">
-                                    {{ karyawan.nomor_kontrak || ('#' + karyawan.nomor_induk_karyawan) }}
+                                <p class="text-sm font-bold mt-1" :class="hasActiveContract ? 'text-gray-900 dark:text-white' : 'text-amber-600 dark:text-amber-400'">
+                                    {{ hasActiveContract ? (karyawan.nomor_kontrak || ('#' + karyawan.nomor_induk_karyawan)) : 'Belum Diterbitkan' }}
                                 </p>
                             </div>
                             <div>
                                 <p class="text-xs text-gray-400 font-medium">Contract Type</p>
                                 <p class="text-sm font-bold text-gray-900 dark:text-white mt-1">
                                     {{ karyawan.contract_type || 'PKWT' }}
+                                    <span v-if="!hasActiveContract" class="ml-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">
+                                        Draf Belum Terbit
+                                    </span>
                                 </p>
                             </div>
                             <div>
