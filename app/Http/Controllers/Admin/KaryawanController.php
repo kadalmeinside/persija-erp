@@ -7,6 +7,7 @@ use App\Models\Karyawan;
 use App\Models\Departemen;
 use App\Models\User;
 use App\Models\SaldoCuti;
+use App\Models\Setting;
 use App\Models\KaryawanDokumen;
 use App\Models\KaryawanKomponenGaji;
 use App\Models\GajiKomponen;
@@ -414,7 +415,24 @@ class KaryawanController extends Controller
             'komponenGaji.komponenGaji'
         ]);
 
-        $pdf = Pdf::loadView('pdf.kontrak_kerja', compact('karyawan'));
+        // Fetch Company Settings from centralized Settings table (Konsisten dengan modul Pengajuan & Payroll)
+        $settings = Setting::all()->pluck('value', 'key');
+        
+        $logoPath = null;
+        if (isset($settings['company_logo']) && $settings['company_logo']) {
+            $path = storage_path('app/public/' . $settings['company_logo']);
+            if (file_exists($path)) {
+                $logoPath = $path;
+            }
+        }
+
+        $company = [
+            'name'      => $settings['company_name'] ?? 'PT PERSIJA JAYA JAKARTA',
+            'address'   => $settings['company_address'] ?? 'Rasuna Office Park, Jl. HR Rasuna Said, Kuningan, Jakarta Selatan',
+            'logo_path' => $logoPath,
+        ];
+
+        $pdf = Pdf::loadView('pdf.kontrak_kerja', compact('karyawan', 'company'));
         $pdf->setPaper('a4', 'portrait');
 
         $cleanNik = preg_replace('/[^A-Za-z0-9_\-]/', '_', $karyawan->nomor_induk_karyawan ?? 'KARYAWAN');

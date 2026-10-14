@@ -5,40 +5,72 @@
     <title>Perjanjian Kerja - {{ $karyawan->nama_lengkap }}</title>
     <style>
         @page {
-            margin: 1.8cm 2cm 2cm 2cm;
+            margin: 1.5cm 2cm 2cm 2cm;
             footer: page-footer;
         }
         body {
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            font-size: 11pt;
-            line-height: 1.5;
+            font-size: 10.5pt;
+            line-height: 1.45;
             color: #1a1a1a;
         }
-        .header {
-            text-align: center;
-            border-bottom: 2.5px solid #c91f1f;
+        
+        /* HEADER KOP RESMI (Standardized with Pengajuan Dana & Payslip) */
+        .header-table {
+            width: 100%;
+            border-bottom: 2.5px solid #222222;
             padding-bottom: 12px;
-            margin-bottom: 24px;
-        }
-        .club-name {
-            font-size: 16pt;
-            font-weight: 800;
-            color: #b91c1c;
-            letter-spacing: 1px;
-            margin: 0;
-            text-transform: uppercase;
-        }
-        .company-sub {
-            font-size: 9pt;
-            color: #4b5563;
-            margin-top: 3px;
-        }
-        .title {
-            text-align: center;
             margin-bottom: 20px;
         }
+        .logo-cell {
+            width: 75px;
+            vertical-align: middle;
+        }
+        .logo-container {
+            width: 70px;
+            height: 70px;
+            border: 1px solid #e5e7eb;
+            text-align: center;
+            vertical-align: middle;
+            background-color: #f9fafb;
+        }
+        .logo-img {
+            max-width: 65px;
+            max-height: 65px;
+        }
+        .logo-fallback {
+            font-size: 8pt;
+            font-weight: bold;
+            color: #9ca3af;
+            line-height: 70px;
+        }
+        .company-cell {
+            padding-left: 15px;
+            vertical-align: middle;
+        }
+        .company-name {
+            font-size: 14pt;
+            font-weight: 800;
+            color: #111827;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin: 0;
+        }
+        .company-addr {
+            font-size: 8.5pt;
+            color: #4b5563;
+            margin-top: 3px;
+            line-height: 1.3;
+            white-space: pre-line;
+        }
+
+        /* TITLE & HEADINGS */
+        .title {
+            text-align: center;
+            margin-bottom: 18px;
+        }
         .title h2 {
-            font-size: 13pt;
+            font-size: 12pt;
             font-weight: bold;
             text-transform: uppercase;
             margin: 0;
@@ -46,29 +78,31 @@
             text-decoration: underline;
         }
         .title p {
-            font-size: 10pt;
+            font-size: 9.5pt;
             color: #374151;
-            margin-top: 4px;
+            margin-top: 3px;
         }
         .section-title {
-            font-size: 11pt;
+            font-size: 10pt;
             font-weight: bold;
             text-align: center;
-            margin-top: 16px;
+            margin-top: 14px;
             margin-bottom: 6px;
             text-transform: uppercase;
             background-color: #f3f4f6;
             padding: 3px 0;
+            border-top: 1px solid #e5e7eb;
+            border-bottom: 1px solid #e5e7eb;
         }
         .table-data {
             width: 100%;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             border-collapse: collapse;
         }
         .table-data td {
-            padding: 3px 4px;
+            padding: 2.5px 4px;
             vertical-align: top;
-            font-size: 10.5pt;
+            font-size: 10pt;
         }
         .table-data td.label {
             width: 32%;
@@ -82,22 +116,22 @@
             font-weight: 600;
         }
         ol, ul {
-            margin-top: 4px;
-            margin-bottom: 8px;
-            padding-left: 20px;
+            margin-top: 3px;
+            margin-bottom: 6px;
+            padding-left: 18px;
         }
         li {
-            margin-bottom: 4px;
-            font-size: 10.5pt;
+            margin-bottom: 3px;
+            font-size: 10pt;
             text-align: justify;
         }
         p {
-            margin: 6px 0;
+            margin: 5px 0;
             text-align: justify;
         }
         .signature-table {
             width: 100%;
-            margin-top: 40px;
+            margin-top: 35px;
             page-break-inside: avoid;
         }
         .signature-table td {
@@ -106,45 +140,58 @@
             vertical-align: top;
         }
         .signature-space {
-            height: 70px;
+            height: 65px;
         }
         .stamp-box {
             display: inline-block;
             border: 1px dashed #9ca3af;
             color: #9ca3af;
-            font-size: 8pt;
-            padding: 8px 12px;
-            margin-top: 15px;
+            font-size: 7.5pt;
+            padding: 6px 10px;
+            margin-top: 12px;
         }
     </style>
 </head>
 <body>
 
-    <!-- KOP RESMI -->
-    <div class="header">
-        <h1 class="club-name">PT PERSIJA JAYA JAKARTA</h1>
-        <p class="company-sub">Rasuna Office Park, Jl. HR Rasuna Said, Kuningan, Jakarta Selatan • Website: persija.id</p>
-    </div>
+    <!-- KOP RESMI PERUSAHAAN (Standardized from Central Settings) -->
+    <table class="header-table">
+        <tr>
+            <td class="logo-cell">
+                <div class="logo-container">
+                    @if(isset($company['logo_path']) && $company['logo_path'])
+                        <img src="{{ $company['logo_path'] }}" class="logo-img">
+                    @else
+                        <span class="logo-fallback">LOGO</span>
+                    @endif
+                </div>
+            </td>
+            <td class="company-cell">
+                <div class="company-name">{{ $company['name'] }}</div>
+                <div class="company-addr">{{ $company['address'] }}</div>
+            </td>
+        </tr>
+    </table>
 
     <!-- JUDUL SURAT -->
     <div class="title">
         <h2>SURAT PERJANJIAN KERJA ({{ strtoupper($karyawan->contract_type ?? 'PKWT') }})</h2>
-        <p>Nomor: {{ $karyawan->nomor_kontrak ?? ('PKWT/PJJ/' . date('Y') . '/' . $karyawan->nomor_induk_karyawan) }}</p>
+        <p>Nomor: {{ $karyawan->nomor_kontrak ?? ('PKWT/HRD/' . date('Y') . '/' . $karyawan->nomor_induk_karyawan) }}</p>
     </div>
 
-    <p>Pada hari ini, bertempat di Kantor PT Persija Jaya Jakarta, telah dibuat dan disepakati perjanjian kerja antara pihak-pihak sebagai berikut:</p>
+    <p>Pada hari ini, bertempat di Kantor {{ $company['name'] }}, telah dibuat dan disepakati perjanjian kerja bersama antara pihak-pihak sebagai berikut:</p>
 
-    <!-- PIHAK PERTAMA -->
+    <!-- PIHAK PERTAMA (Pemberi Kerja) -->
     <table class="table-data">
         <tr>
             <td class="label">Nama Perusahaan</td>
             <td class="colon">:</td>
-            <td class="val">PT PERSIJA JAYA JAKARTA</td>
+            <td class="val">{{ $company['name'] }}</td>
         </tr>
         <tr>
             <td class="label">Alamat Kantor</td>
             <td class="colon">:</td>
-            <td class="val">Jakarta Selatan, DKI Jakarta</td>
+            <td class="val">{{ $company['address'] }}</td>
         </tr>
         <tr>
             <td class="label">Kedudukan</td>
@@ -155,7 +202,7 @@
 
     <p>Dan menerangkan bahwa:</p>
 
-    <!-- PIHAK KEDUA -->
+    <!-- PIHAK KEDUA (Pekerja) -->
     <table class="table-data">
         <tr>
             <td class="label">Nama Lengkap</td>
@@ -184,14 +231,14 @@
         </tr>
     </table>
 
-    <p>Kedua belah pihak secara sadar dan sukarela telah sepakat untuk mengikatkan diri dalam Perjanjian Kerja dengan ketentuan dan syarat-syarat yang tercantum dalam pasal-pasal berikut:</p>
+    <p>Kedua belah pihak secara sadar dan sukarela telah sepakat untuk mengikatkan diri dalam Perjanjian Kerja dengan syarat dan ketentuan yang diatur dalam pasal-pasal berikut:</p>
 
     <!-- PASAL 1 -->
-    <div class="section-title">Pasal 1: Posisi, Departemen & Jangka Waktu Kontrak</div>
+    <div class="section-title">Pasal 1: Posisi, Penempatan & Jangka Waktu Kontrak</div>
     <ol>
-        <li>PIHAK PERTAMA menerima PIHAK KEDUA sebagai karyawan dengan jabatan <strong>{{ $karyawan->jabatan }}</strong> pada Departemen <strong>{{ $karyawan->departemen->nama_departemen ?? 'Semua Departemen' }}</strong>.</li>
+        <li>PIHAK PERTAMA mempekerjakan PIHAK KEDUA dengan jabatan <strong>{{ $karyawan->jabatan }}</strong> pada Departemen <strong>{{ $karyawan->departemen->nama_departemen ?? 'Semua Departemen' }}</strong>.</li>
         <li>Hubungan kerja ini berlaku terhitung sejak tanggal <strong>{{ $karyawan->tgl_bergabung ? date('d F Y', strtotime($karyawan->tgl_bergabung)) : '-' }}</strong> sampai dengan tanggal <strong>{{ $karyawan->tanggal_berakhir_kontrak ? date('d F Y', strtotime($karyawan->tanggal_berakhir_kontrak)) : 'Selesai / Evaluasi Berkala' }}</strong>.</li>
-        <li>Masa percobaan (probation) ditetapkan selama <strong>{{ $karyawan->durasi_probation_bulan ?? 3 }} (tiga) bulan</strong>.</li>
+        <li>Masa percobaan (probation) ditetapkan selama <strong>{{ $karyawan->durasi_probation_bulan ?? 3 }} bulan</strong>{{ $karyawan->tanggal_selesai_probation ? (' (berakhir pada ' . date('d F Y', strtotime($karyawan->tanggal_selesai_probation)) . ')') : '' }}.</li>
     </ol>
 
     <!-- PASAL 2 -->
@@ -205,20 +252,20 @@
         @else
             <li>Melaksanakan kewajiban kerja profesional secara penuh dan penuh dedikasi sesuai jabatan {{ $karyawan->jabatan }}.</li>
             <li>Berkoordinasi aktif dengan rekan kerja di bawah supervisi pimpinan departemen terkait.</li>
-            <li>Menjaga integritas, etika profesi, dan mematuhi Standar Operasional Prosedur (SOP) internal PT Persija Jaya Jakarta.</li>
-            <li>Memelihara kerahasiaan seluruh dokumen, data taktis, dan aset milik klub.</li>
+            <li>Menjaga integritas, etika profesi, dan mematuhi Standar Operasional Prosedur (SOP) internal {{ $company['name'] }}.</li>
+            <li>Memelihara kerahasiaan seluruh dokumen, data strategis, dan aset milik perusahaan.</li>
         @endif
     </ul>
 
     <!-- PASAL 3 -->
     <div class="section-title">Pasal 3: Waktu Kerja & Lokasi Penugasan</div>
     <ol>
-        <li>Waktu kerja standar adalah <strong>{{ $karyawan->jam_kerja_mingguan ?? 40 }} jam per minggu</strong>, disesuaikan dengan kebutuhan operasional dan jadwal kompetisi klub.</li>
+        <li>Waktu kerja standar adalah <strong>{{ $karyawan->jam_kerja_mingguan ?? 40 }} jam per minggu</strong>, disesuaikan dengan kebutuhan operasional dan jadwal penugasan.</li>
         <li>Lokasi penempatan kerja utama berada di <strong>{{ $karyawan->lokasiKantor->nama_kantor ?? 'Kantor Pusat / Bebas' }}</strong> dengan kebijakan presensi {{ $karyawan->is_strict_location ? 'STRICT (Wajib di radius kantor)' : 'ROAMING (Diizinkan lintas cabang/dinas)' }}.</li>
     </ol>
 
     <!-- PASAL 4 -->
-    <div class="section-title">Pasal 4: Kompensasi & Tunjangan</div>
+    <div class="section-title">Pasal 4: Kompensasi, Tunjangan & Fasilitas</div>
     <ol>
         <li>PIHAK PERTAMA memberikan Gaji Pokok sebesar <strong>Rp {{ number_format($karyawan->gaji_pokok ?? 0, 0, ',', '.') }}</strong> per bulan kepada PIHAK KEDUA.</li>
         @if($karyawan->komponenGaji && count($karyawan->komponenGaji) > 0)
@@ -237,24 +284,24 @@
     <!-- PASAL 5 -->
     <div class="section-title">Pasal 5: Kerahasiaan & Pengakhiran Hubungan Kerja</div>
     <ol>
-        <li>PIHAK KEDUA dilarang keras membocorkan data strategi, medis atlet, komersial sponsor, maupun informasi rahasia klub kepada pihak manapun.</li>
-        <li>Apabila salah satu pihak berkehendak mengakhiri hubungan kerja sebelum berakhirnya jangka waktu perjanjian, wajib menyampaikan pemberitahuan tertulis (Notice Period) sekurang-kurangnya <strong>{{ $karyawan->notice_period_hari ?? 30 }} (tiga puluh) hari</strong> sebelumnya.</li>
+        <li>PIHAK KEDUA dilarang keras membocorkan data strategi, data medis atlet, rahasia dagang/komersial, maupun informasi konfidensial perusahaan kepada pihak manapun tanpa izin tertulis.</li>
+        <li>Apabila salah satu pihak berkehendak mengakhiri hubungan kerja sebelum berakhirnya jangka waktu perjanjian, wajib menyampaikan pemberitahuan tertulis (Notice Period) sekurang-kurangnya <strong>{{ $karyawan->notice_period_hari ?? 30 }} hari</strong> sebelumnya.</li>
     </ol>
 
-    <!-- TANDA TANGAN -->
+    <!-- TANDA TANGAN KEDUA PIHAK -->
     <table class="signature-table">
         <tr>
             <td>
                 <strong>PIHAK PERTAMA</strong><br>
-                PT PERSIJA JAYA JAKARTA<br>
+                {{ $company['name'] }}<br>
                 <div class="signature-space"></div>
-                <strong>( Direktur / HRD Manager )</strong>
+                <strong>( Manajemen / HRD Manager )</strong>
             </td>
             <td>
                 <strong>PIHAK KEDUA</strong><br>
                 Karyawan Bersangkutan<br>
                 <div class="stamp-box">Materai Rp 10.000</div>
-                <div style="height: 15px;"></div>
+                <div style="height: 12px;"></div>
                 <strong>( {{ strtoupper($karyawan->nama_lengkap) }} )</strong>
             </td>
         </tr>
