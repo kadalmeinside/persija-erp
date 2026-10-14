@@ -7,19 +7,27 @@ import {
     BanknotesIcon, PencilSquareIcon, ArrowLeftIcon, ChevronLeftIcon, ChevronRightIcon,
     IdentificationIcon, CheckBadgeIcon, AtSymbolIcon, BuildingOfficeIcon, CameraIcon,
     UserPlusIcon, CheckCircleIcon, XCircleIcon, ClockIcon, DocumentTextIcon,
-    ShieldCheckIcon, EllipsisVerticalIcon, EnvelopeIcon,
-    ClipboardDocumentCheckIcon, ExclamationTriangleIcon, TrashIcon
+    ShieldCheckIcon, EllipsisVerticalIcon, EnvelopeIcon, ArrowDownTrayIcon,
+    ClipboardDocumentCheckIcon, ExclamationTriangleIcon, TrashIcon,
+    DocumentArrowUpIcon, FolderIcon, TagIcon, ArrowTopRightOnSquareIcon
 } from '@heroicons/vue/24/outline';
+import Swal from 'sweetalert2';
 import CareerHistoryModal from '@/Components/CareerHistoryModal.vue';
 import EditProfileModal from '@/Components/Employee/EditProfileModal.vue';
 import EditEmploymentModal from '@/Components/Employee/EditEmploymentModal.vue';
 import EditFinancialModal from '@/Components/Employee/EditFinancialModal.vue';
+import EditContractModal from '@/Components/Employee/EditContractModal.vue';
+import UploadDokumenModal from '@/Components/Employee/UploadDokumenModal.vue';
 
 const props = defineProps({
     karyawan: Object,
     leaveBalances: Array,
     departemens: Array,
     lokasi_kantors: Array,
+    master_komponen_gaji: {
+        type: Array,
+        default: () => []
+    },
     lastClockIn: String,
     navigation: Object,
 });
@@ -34,7 +42,7 @@ const formatCurrency = (value) => {
 };
 
 // Tabs: matching modern ERP reference layout
-// Options: 'contract' (default), 'profile', 'payroll', 'time', 'history', 'tasks'
+// Options: 'contract' (default), 'profile', 'payroll', 'time', 'document', 'history', 'tasks'
 const activeTab = ref('contract');
 
 // Dropdown Action Menu
@@ -61,11 +69,15 @@ onUnmounted(() => {
 const showEditProfile = ref(false);
 const showEditEmployment = ref(false);
 const showEditFinancial = ref(false);
+const showEditContract = ref(false);
+const showUploadDokumen = ref(false);
 const showCareerHistoryModal = ref(false);
 
 const openEditProfile = () => { showActionMenu.value = false; showEditProfile.value = true; };
 const openEditEmployment = () => { showActionMenu.value = false; showEditEmployment.value = true; };
 const openEditFinancial = () => { showActionMenu.value = false; showEditFinancial.value = true; };
+const openEditContract = () => { showActionMenu.value = false; showEditContract.value = true; };
+const openUploadDokumen = () => { showUploadDokumen.value = true; };
 const closeCareerHistoryModal = () => { showCareerHistoryModal.value = false; };
 const refreshData = () => { router.reload(); };
 
@@ -90,9 +102,20 @@ const handlePhotoUpload = (event) => {
 // Terminate Employee
 const handleTerminate = () => {
     showActionMenu.value = false;
-    if (confirm(`Apakah Anda yakin ingin menonaktifkan karyawan "${props.karyawan.nama_lengkap}"? Karyawan ini akan diubah statusnya menjadi non-aktif.`)) {
-        router.delete(route('admin.karyawan.destroy', props.karyawan.id));
-    }
+    Swal.fire({
+        title: 'Nonaktifkan Karyawan?',
+        text: `Apakah Anda yakin ingin menonaktifkan "${props.karyawan.nama_lengkap}"? Status kepegawaian akan diubah menjadi non-aktif.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Ya, Nonaktifkan',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            router.delete(route('admin.karyawan.destroy', props.karyawan.id));
+        }
+    });
 };
 
 // Extend Contract
@@ -100,12 +123,60 @@ const handleExtendContract = () => {
     showCareerHistoryModal.value = true;
 };
 
+// Download Contract PDF
+const downloadContractPdf = () => {
+    window.open(route('admin.karyawan.contract-pdf', props.karyawan.id), '_blank');
+};
+
+// Delete Document
+const handleDeleteDoc = (doc) => {
+    Swal.fire({
+        title: 'Hapus Dokumen?',
+        text: `Apakah Anda yakin ingin menghapus dokumen "${doc.judul_dokumen}"? Berkas fisik dokumen akan dihapus permanen.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Ya, Hapus',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            router.delete(route('admin.karyawan.dokumen.destroy', doc.id), {
+                preserveScroll: true,
+                onSuccess: () => {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Terhapus',
+                        text: 'Dokumen berhasil dihapus',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                }
+            });
+        }
+    });
+};
+
+// Filtered Documents
+const docCategoryFilter = ref('all');
+const filteredDocuments = computed(() => {
+    if (!props.karyawan.dokumen) return [];
+    if (docCategoryFilter.value === 'all') return props.karyawan.dokumen;
+    return props.karyawan.dokumen.filter(doc => doc.kategori_dokumen === docCategoryFilter.value);
+});
+
+// Total Tunjangan Rutin
+const totalTunjanganRutin = computed(() => {
+    if (!props.karyawan.komponen_gaji) return 0;
+    return props.karyawan.komponen_gaji.reduce((acc, curr) => acc + Number(curr.nominal || 0), 0);
+});
+
 // Send Email
 const sendEmail = () => {
     if (props.karyawan.user?.email) {
         window.location.href = `mailto:${props.karyawan.user.email}`;
     } else {
-        alert('Karyawan belum memiliki email akun terdaftar.');
+        Swal.fire('Email Tidak Tersedia', 'Karyawan belum memiliki email akun terdaftar.', 'info');
     }
 };
 
@@ -288,7 +359,7 @@ const formatLastClockIn = (val) => {
                             <div 
                                 id="employee-action-menu-dropdown"
                                 v-if="showActionMenu"
-                                class="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 py-2 z-50 animate-in fade-in zoom-in-95 duration-150"
+                                class="absolute right-0 mt-2 w-60 bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 py-2 z-50 animate-in fade-in zoom-in-95 duration-150"
                             >
                                 <button 
                                     @click="openEditProfile"
@@ -309,7 +380,21 @@ const formatLastClockIn = (val) => {
                                     class="w-full text-left px-4 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/60 flex items-center"
                                 >
                                     <BanknotesIcon class="w-4 h-4 mr-2.5 text-gray-400" />
-                                    Edit Gaji & Rekening
+                                    Edit Gaji, BPJS & Rekening
+                                </button>
+                                <button 
+                                    @click="openEditContract"
+                                    class="w-full text-left px-4 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/60 flex items-center"
+                                >
+                                    <DocumentTextIcon class="w-4 h-4 mr-2.5 text-gray-400" />
+                                    Edit Klausul & Working Scope
+                                </button>
+                                <button 
+                                    @click="openUploadDokumen"
+                                    class="w-full text-left px-4 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/60 flex items-center"
+                                >
+                                    <DocumentArrowUpIcon class="w-4 h-4 mr-2.5 text-gray-400" />
+                                    Unggah Berkas / Dokumen
                                 </button>
                                 <button 
                                     @click="handleExtendContract"
@@ -426,6 +511,23 @@ const formatLastClockIn = (val) => {
                         Time Management
                     </button>
 
+                    <!-- Documents (Berkas Digital) -->
+                    <button 
+                        @click="activeTab = 'document'"
+                        :class="[
+                            activeTab === 'document'
+                                ? 'text-gray-900 dark:text-white border-b-2 border-slate-900 dark:border-indigo-500 font-bold'
+                                : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 font-medium',
+                            'inline-flex items-center py-2.5 px-3 text-xs md:text-sm transition-colors'
+                        ]"
+                    >
+                        <FolderIcon class="w-4 h-4 mr-2" />
+                        Document
+                        <span class="ml-2 px-1.5 py-0.5 text-[10px] rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-bold">
+                            {{ karyawan.dokumen?.length || 0 }}
+                        </span>
+                    </button>
+
                     <!-- Career History -->
                     <button 
                         @click="activeTab = 'history'"
@@ -478,6 +580,14 @@ const formatLastClockIn = (val) => {
                                 <h2 class="font-bold text-base md:text-lg text-gray-900 dark:text-white">Contract Duration</h2>
                             </div>
                             <div class="flex items-center space-x-2">
+                                <button 
+                                    @click="downloadContractPdf"
+                                    class="inline-flex items-center px-3 py-1.5 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 rounded-lg text-xs font-semibold transition-colors"
+                                    title="Download Cetak Kontrak PDF Resmi"
+                                >
+                                    <ArrowDownTrayIcon class="w-3.5 h-3.5 mr-1.5" />
+                                    Unduh Kontrak PDF
+                                </button>
                                 <button 
                                     v-if="!karyawan.deleted_at"
                                     @click="handleTerminate"
@@ -560,7 +670,9 @@ const formatLastClockIn = (val) => {
                             </div>
                             <div>
                                 <p class="text-xs text-gray-400 font-medium">Expected Work hours per week</p>
-                                <p class="text-sm md:text-base font-bold text-gray-900 dark:text-white mt-1">40 hours</p>
+                                <p class="text-sm md:text-base font-bold text-gray-900 dark:text-white mt-1">
+                                    {{ karyawan.jam_kerja_mingguan || 40 }} hours
+                                </p>
                             </div>
                             <div>
                                 <p class="text-xs text-gray-400 font-medium">Supervisor</p>
@@ -607,12 +719,22 @@ const formatLastClockIn = (val) => {
                                 </p>
                             </div>
                             <div>
+                                <p class="text-xs text-gray-400 font-medium">Tunjangan Rutin Tambahan</p>
+                                <p class="text-sm md:text-base font-bold text-emerald-600 dark:text-emerald-400 mt-1">
+                                    {{ totalTunjanganRutin > 0 ? (formatCurrency(totalTunjanganRutin) + ' / month') : '-' }}
+                                </p>
+                            </div>
+                            <div>
                                 <p class="text-xs text-gray-400 font-medium">Status PTKP</p>
                                 <p class="text-sm md:text-base font-bold text-gray-900 dark:text-white mt-1">{{ karyawan.status_ptkp || '-' }}</p>
                             </div>
                             <div>
-                                <p class="text-xs text-gray-400 font-medium">Allowed to Submit Expenses</p>
-                                <p class="text-sm md:text-base font-bold text-gray-900 dark:text-white mt-1">Yes (Reimbursement & ESS)</p>
+                                <p class="text-xs text-gray-400 font-medium">BPJS Ketenagakerjaan</p>
+                                <p class="text-sm font-bold text-gray-900 dark:text-white mt-1">{{ karyawan.no_bpjs_ketenagakerjaan || 'Belum Terdaftar' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-400 font-medium">BPJS Kesehatan</p>
+                                <p class="text-sm font-bold text-gray-900 dark:text-white mt-1">{{ karyawan.no_bpjs_kesehatan || 'Belum Terdaftar' }}</p>
                             </div>
                         </div>
                     </div>
@@ -625,7 +747,7 @@ const formatLastClockIn = (val) => {
                                 <h2 class="font-bold text-base md:text-lg text-gray-900 dark:text-white">Contract Clauses</h2>
                             </div>
                             <button 
-                                @click="openEditEmployment"
+                                @click="openEditContract"
                                 class="inline-flex items-center px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                             >
                                 <PencilSquareIcon class="w-3.5 h-3.5 mr-1" />
@@ -636,11 +758,18 @@ const formatLastClockIn = (val) => {
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-y-5 gap-x-8">
                             <div>
                                 <p class="text-xs text-gray-400 font-medium">Period of Notice</p>
-                                <p class="text-sm md:text-base font-bold text-gray-900 dark:text-white mt-1">1 Month (30 Days)</p>
+                                <p class="text-sm md:text-base font-bold text-gray-900 dark:text-white mt-1">
+                                    {{ karyawan.notice_period_hari || 30 }} Days (1 Month)
+                                </p>
                             </div>
                             <div>
                                 <p class="text-xs text-gray-400 font-medium">Probation Period</p>
-                                <p class="text-sm md:text-base font-bold text-gray-900 dark:text-white mt-1">3 Months (Selesai)</p>
+                                <p class="text-sm md:text-base font-bold text-gray-900 dark:text-white mt-1">
+                                    {{ karyawan.durasi_probation_bulan || 3 }} Months
+                                    <span v-if="karyawan.tanggal_selesai_probation" class="text-xs text-gray-500 font-normal">
+                                        (Selesai: {{ formatDate(karyawan.tanggal_selesai_probation) }})
+                                    </span>
+                                </p>
                             </div>
                             <div>
                                 <p class="text-xs text-gray-400 font-medium">Work Location</p>
@@ -670,7 +799,7 @@ const formatLastClockIn = (val) => {
                                 <h2 class="font-bold text-base text-gray-900 dark:text-white">Working Scope</h2>
                             </div>
                             <button 
-                                @click="openEditEmployment"
+                                @click="openEditContract"
                                 class="inline-flex items-center px-2.5 py-1 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                             >
                                 <PencilSquareIcon class="w-3.5 h-3.5 mr-1" />
@@ -679,7 +808,16 @@ const formatLastClockIn = (val) => {
                         </div>
 
                         <!-- Scope pill items (Reference style) -->
-                        <div class="space-y-3">
+                        <div v-if="karyawan.working_scope && karyawan.working_scope.length > 0" class="space-y-3">
+                            <div 
+                                v-for="(scope, sIdx) in karyawan.working_scope" 
+                                :key="sIdx"
+                                class="p-3.5 bg-gray-50/70 dark:bg-gray-900/40 border border-gray-200/70 dark:border-gray-700 rounded-xl text-xs md:text-sm text-gray-700 dark:text-gray-300 leading-relaxed hover:border-indigo-300 dark:hover:border-indigo-800 transition-colors"
+                            >
+                                {{ scope }}
+                            </div>
+                        </div>
+                        <div v-else class="space-y-3">
                             <div class="p-3.5 bg-gray-50/70 dark:bg-gray-900/40 border border-gray-200/70 dark:border-gray-700 rounded-xl text-xs md:text-sm text-gray-700 dark:text-gray-300 leading-relaxed hover:border-indigo-300 dark:hover:border-indigo-800 transition-colors">
                                 Menjalankan tugas dan tanggung jawab profesional sesuai jabatan <strong>{{ karyawan.jabatan }}</strong>.
                             </div>
@@ -706,7 +844,7 @@ const formatLastClockIn = (val) => {
                                 <h2 class="font-bold text-base text-gray-900 dark:text-white">Contract Details</h2>
                             </div>
                             <button 
-                                @click="openEditEmployment"
+                                @click="openEditContract"
                                 class="inline-flex items-center px-2.5 py-1 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                             >
                                 <PencilSquareIcon class="w-3.5 h-3.5 mr-1" />
@@ -716,8 +854,16 @@ const formatLastClockIn = (val) => {
 
                         <div class="space-y-4">
                             <div>
-                                <p class="text-xs text-gray-400 font-medium">Contract ID / NIK</p>
-                                <p class="text-sm font-bold text-gray-900 dark:text-white mt-1">#{{ karyawan.nomor_induk_karyawan }}</p>
+                                <p class="text-xs text-gray-400 font-medium">Contract ID / No. Perjanjian</p>
+                                <p class="text-sm font-bold text-gray-900 dark:text-white mt-1">
+                                    {{ karyawan.nomor_kontrak || ('#' + karyawan.nomor_induk_karyawan) }}
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-400 font-medium">Contract Type</p>
+                                <p class="text-sm font-bold text-gray-900 dark:text-white mt-1">
+                                    {{ karyawan.contract_type || 'PKWT' }}
+                                </p>
                             </div>
                             <div>
                                 <p class="text-xs text-gray-400 font-medium">Contractor Country Tax of Residence</p>
@@ -825,7 +971,7 @@ const formatLastClockIn = (val) => {
                     <div class="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-gray-700">
                         <h2 class="text-base md:text-lg font-bold text-gray-900 dark:text-white flex items-center">
                             <BanknotesIcon class="w-5 h-5 mr-2 text-emerald-600" />
-                            Finansial & Gaji Pokok
+                            Finansial, Gaji & BPJS
                         </h2>
                         <button @click="openEditFinancial" class="inline-flex items-center px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
                             <PencilSquareIcon class="w-3.5 h-3.5 mr-1" /> Edit Finansial
@@ -846,6 +992,27 @@ const formatLastClockIn = (val) => {
                                 {{ karyawan.status_ptkp || '-' }}
                             </p>
                             <p class="text-xs text-gray-400 mt-0.5">Penghasilan Tidak Kena Pajak</p>
+                        </div>
+                    </div>
+
+                    <!-- Tunjangan Rutin List -->
+                    <div v-if="karyawan.komponen_gaji && karyawan.komponen_gaji.length > 0" class="pt-4 border-t border-gray-100 dark:border-gray-700">
+                        <h3 class="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider mb-3">
+                            Rincian Tunjangan Rutin
+                        </h3>
+                        <div class="space-y-2">
+                            <div 
+                                v-for="komponen in karyawan.komponen_gaji" 
+                                :key="komponen.id"
+                                class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-700 rounded-xl text-xs"
+                            >
+                                <span class="font-semibold text-gray-800 dark:text-gray-200">
+                                    {{ komponen.komponen_gaji?.nama_komponen }} ({{ komponen.keterangan || 'Rutin' }})
+                                </span>
+                                <span class="font-bold text-emerald-600 dark:text-emerald-400">
+                                    {{ formatCurrency(komponen.nominal) }}
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -943,7 +1110,132 @@ const formatLastClockIn = (val) => {
             </div>
 
             <!-- ═════════════════════════════════════════════════════════════════ -->
-            <!-- 7. TAB 5: CAREER HISTORY (TIMELINE)                             -->
+            <!-- 7. TAB 5: DOCUMENT MANAGEMENT (Berkas Digital Karyawan)         -->
+            <!-- ═════════════════════════════════════════════════════════════════ -->
+            <div v-else-if="activeTab === 'document'" class="space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-900 dark:text-white flex items-center">
+                            <FolderIcon class="w-5 h-5 mr-2 text-indigo-500" />
+                            Dokumen & Berkas Digital Karyawan
+                        </h2>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Kelola arsip surat kontrak, SK, KTP, NPWP, BPJS, dan sertifikasi.</p>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <button 
+                            @click="downloadContractPdf"
+                            class="inline-flex items-center px-3.5 py-2 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-xl text-xs font-semibold shadow-2xs"
+                        >
+                            <ArrowDownTrayIcon class="w-4 h-4 mr-1.5 text-gray-500" />
+                            Cetak Kontrak Kerja
+                        </button>
+                        <button 
+                            @click="openUploadDokumen"
+                            class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-xs"
+                        >
+                            <DocumentArrowUpIcon class="w-4 h-4 mr-1.5" />
+                            + Unggah Dokumen
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Filter Pills -->
+                <div class="flex items-center space-x-2 overflow-x-auto pb-1 text-xs">
+                    <button 
+                        @click="docCategoryFilter = 'all'"
+                        :class="[
+                            docCategoryFilter === 'all'
+                                ? 'bg-slate-900 text-white dark:bg-indigo-600'
+                                : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-200',
+                            'px-3 py-1.5 rounded-full font-medium transition-colors shrink-0'
+                        ]"
+                    >
+                        Semua Dokumen ({{ karyawan.dokumen?.length || 0 }})
+                    </button>
+                    <button 
+                        v-for="cat in [
+                            { key: 'kontrak', label: 'Kontrak Kerja' },
+                            { key: 'sk', label: 'Surat Keputusan (SK)' },
+                            { key: 'ktp', label: 'KTP' },
+                            { key: 'npwp', label: 'NPWP' },
+                            { key: 'bpjs', label: 'BPJS' },
+                            { key: 'ijazah_sertifikat', label: 'Ijazah & Lisensi' },
+                            { key: 'lainnya', label: 'Lainnya' },
+                        ]"
+                        :key="cat.key"
+                        @click="docCategoryFilter = cat.key"
+                        :class="[
+                            docCategoryFilter === cat.key
+                                ? 'bg-slate-900 text-white dark:bg-indigo-600'
+                                : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300 hover:bg-gray-200',
+                            'px-3 py-1.5 rounded-full font-medium transition-colors shrink-0'
+                        ]"
+                    >
+                        {{ cat.label }}
+                    </button>
+                </div>
+
+                <!-- Documents Grid -->
+                <div v-if="filteredDocuments.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div 
+                        v-for="doc in filteredDocuments" 
+                        :key="doc.id"
+                        class="bg-white dark:bg-gray-800 border border-gray-200/80 dark:border-gray-700 rounded-2xl p-4 shadow-2xs hover:shadow-md transition-shadow flex flex-col justify-between"
+                    >
+                        <div>
+                            <div class="flex items-start justify-between gap-2 mb-2">
+                                <span class="px-2 py-0.5 text-[10px] font-bold rounded-full uppercase tracking-wider bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800">
+                                    {{ doc.kategori_dokumen }}
+                                </span>
+                                <span class="text-[10px] text-gray-400 font-mono">{{ doc.formatted_size }}</span>
+                            </div>
+
+                            <h3 class="text-sm font-bold text-gray-900 dark:text-white line-clamp-2 mt-1" :title="doc.judul_dokumen">
+                                {{ doc.judul_dokumen }}
+                            </h3>
+                            <p v-if="doc.nomor_dokumen" class="text-xs text-gray-500 font-mono mt-0.5">
+                                No: {{ doc.nomor_dokumen }}
+                            </p>
+                            <p v-if="doc.catatan" class="text-xs text-gray-400 italic line-clamp-2 mt-1.5">
+                                "{{ doc.catatan }}"
+                            </p>
+                        </div>
+
+                        <div class="pt-3 mt-3 border-t border-gray-100 dark:border-gray-700/60 flex items-center justify-between text-xs">
+                            <span class="text-[11px] text-gray-400">
+                                {{ formatDate(doc.created_at) }}
+                            </span>
+                            <div class="flex items-center space-x-2">
+                                <a 
+                                    :href="doc.file_url" 
+                                    target="_blank" 
+                                    class="p-1.5 text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 rounded-lg transition-colors"
+                                    title="Buka / Unduh Berkas"
+                                >
+                                    <ArrowTopRightOnSquareIcon class="w-4 h-4" />
+                                </a>
+                                <button 
+                                    type="button" 
+                                    @click="handleDeleteDoc(doc)"
+                                    class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors"
+                                    title="Hapus Dokumen"
+                                >
+                                    <TrashIcon class="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div v-else class="py-14 text-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl">
+                    <FolderIcon class="w-10 h-10 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
+                    <p class="text-xs font-semibold text-gray-600 dark:text-gray-300">Belum ada dokumen pada kategori ini</p>
+                    <p class="text-[11px] text-gray-400 mt-1">Klik tombol "+ Unggah Dokumen" di atas untuk menambahkan berkas baru.</p>
+                </div>
+            </div>
+
+            <!-- ═════════════════════════════════════════════════════════════════ -->
+            <!-- 8. TAB 6: CAREER HISTORY (TIMELINE)                             -->
             <!-- ═════════════════════════════════════════════════════════════════ -->
             <div v-else-if="activeTab === 'history'" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200/80 dark:border-gray-700/70 p-6 shadow-2xs space-y-6">
                 <div class="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-gray-700">
@@ -992,7 +1284,7 @@ const formatLastClockIn = (val) => {
             </div>
 
             <!-- ═════════════════════════════════════════════════════════════════ -->
-            <!-- 8. TAB 6: TASKS                                                 -->
+            <!-- 9. TAB 7: TASKS                                                 -->
             <!-- ═════════════════════════════════════════════════════════════════ -->
             <div v-else-if="activeTab === 'tasks'" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200/80 dark:border-gray-700/70 p-6 shadow-2xs space-y-4">
                 <h2 class="text-base md:text-lg font-bold text-gray-900 dark:text-white flex items-center pb-4 border-b border-gray-100 dark:border-gray-700">
@@ -1023,7 +1315,7 @@ const formatLastClockIn = (val) => {
         </div>
 
         <!-- ═════════════════════════════════════════════════════════════════ -->
-        <!-- 9. MODALS                                                       -->
+        <!-- 10. MODALS (Integrated, Non-Redundant, Preserving Data Integrity) -->
         <!-- ═════════════════════════════════════════════════════════════════ -->
         <EditProfileModal 
             :show="showEditProfile" 
@@ -1044,7 +1336,23 @@ const formatLastClockIn = (val) => {
         <EditFinancialModal 
             :show="showEditFinancial" 
             :employee="karyawan" 
+            :masterKomponenGaji="master_komponen_gaji"
             @close="showEditFinancial = false"
+            @saved="refreshData"
+        />
+
+        <EditContractModal
+            :show="showEditContract"
+            :employee="karyawan"
+            :lokasiKantors="lokasi_kantors"
+            @close="showEditContract = false"
+            @saved="refreshData"
+        />
+
+        <UploadDokumenModal
+            :show="showUploadDokumen"
+            :employee="karyawan"
+            @close="showUploadDokumen = false"
             @saved="refreshData"
         />
 

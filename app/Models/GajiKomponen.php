@@ -22,4 +22,9 @@ class GajiKomponen extends Model
     {
         return $this->belongsTo(AkunGl::class, 'id_akun_gl');
     }
+
+    public function karyawanKomponen()
+    {
+        return $this->hasMany(KaryawanKomponenGaji::class, 'id_komponen_gaji');
+    }
 }

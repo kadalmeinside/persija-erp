@@ -16,11 +16,14 @@ class Karyawan extends Model
         'user_id',
         'id_departemen',
         'nomor_induk_karyawan', // NIK
+        'nomor_kontrak',
         'nama_lengkap',
         'foto',
         'jabatan',
         'gaji_pokok',
         'status_ptkp',
+        'no_bpjs_ketenagakerjaan',
+        'no_bpjs_kesehatan',
         'jenis_kelamin',
         'info_bank',
         'tgl_bergabung',
@@ -28,12 +31,24 @@ class Karyawan extends Model
         'tgl_lahir',
         'alamat',
         'status_karyawan',
+        'contract_type',
+        'durasi_probation_bulan',
+        'tanggal_selesai_probation',
+        'notice_period_hari',
+        'jam_kerja_mingguan',
+        'working_scope',
         'id_lokasi_kantor',
         'is_strict_location'
     ];
 
     protected $casts = [
         'is_strict_location' => 'boolean',
+        'working_scope' => 'array',
+        'tanggal_selesai_probation' => 'date',
+        'durasi_probation_bulan' => 'integer',
+        'notice_period_hari' => 'integer',
+        'jam_kerja_mingguan' => 'integer',
+        'gaji_pokok' => 'decimal:2',
     ];
 
     protected $appends = ['foto_url', 'tanggal_berakhir_kontrak'];
@@ -163,5 +178,21 @@ class Karyawan extends Model
     public function lokasiKantor()
     {
         return $this->belongsTo(LokasiKantor::class, 'id_lokasi_kantor');
+    }
+
+    /**
+     * Relasi ke Dokumen & Berkas Digital Karyawan.
+     */
+    public function dokumen()
+    {
+        return $this->hasMany(KaryawanDokumen::class, 'id_karyawan')->latest();
+    }
+
+    /**
+     * Relasi ke Komponen Gaji / Tunjangan Rutin Karyawan.
+     */
+    public function komponenGaji()
+    {
+        return $this->hasMany(KaryawanKomponenGaji::class, 'id_karyawan');
     }
 }
