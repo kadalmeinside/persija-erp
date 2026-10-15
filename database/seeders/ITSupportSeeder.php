@@ -46,13 +46,11 @@ class ITSupportSeeder extends Seeder
         }
 
         // 5. Create Karyawan Record linked to User
-        if (!$user->karyawan) {
-            Karyawan::create([
-                'user_id' => $user->id,
+        Karyawan::updateOrCreate(
+            ['user_id' => $user->id],
+            [
                 'nama_lengkap' => $user->name,
-                'nomor_induk_karyawan' => 'IT-'.rand(100,999),
-                // 'email' => $user->email, // Not in fillable/table likely
-                // 'no_hp' => '08123456789', // Not in fillable
+                'nomor_induk_karyawan' => 'IT-001',
                 'alamat' => 'Jakarta',
                 'tgl_lahir' => '1995-01-01',
                 'tgl_bergabung' => now(),
@@ -60,8 +58,8 @@ class ITSupportSeeder extends Seeder
                 'id_departemen' => $dept->id,
                 'jabatan' => 'IT Staff', 
                 'gaji_pokok' => 5000000,
-            ]);
-        }
+            ]
+        );
         
         $this->command->info('IT Support Role, User, and Employee created successfully.');
     }

@@ -52,8 +52,7 @@ class E2ETestingSeeder extends Seeder
             );
 
             DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-            // Hapus data testing sebelumnya (berdasarkan email testing)
-            User::whereIn('email', [
+            $testEmails = [
                 'test.admin@persija.id',
                 'test.direktur@persija.id', 
                 'test.finance@persija.id', 
@@ -61,18 +60,39 @@ class E2ETestingSeeder extends Seeder
                 'test.staf1@persija.id',
                 'test.staf2@persija.id',
                 'test.freelance@persija.id'
-            ])->forceDelete();
+            ];
+            $testUsers = User::whereIn('email', $testEmails)->get();
+            $testUserIds = $testUsers->pluck('id')->toArray();
+
+            $testKaryawan = Karyawan::withTrashed()
+                ->whereIn('user_id', $testUserIds)
+                ->orWhere('nomor_induk_karyawan', 'LIKE', 'TEST-%')
+                ->get();
+            $testKaryawanIds = $testKaryawan->pluck('id')->toArray();
+
+            if (!empty($testKaryawanIds)) {
+                \App\Models\RiwayatKarir::whereIn('id_karyawan', $testKaryawanIds)->delete();
+                \App\Models\KaryawanContract::whereIn('id_karyawan', $testKaryawanIds)->delete();
+                \App\Models\KaryawanDokumen::whereIn('id_karyawan', $testKaryawanIds)->delete();
+                \App\Models\KaryawanKomponenGaji::whereIn('id_karyawan', $testKaryawanIds)->delete();
+                \App\Models\PengajuanCuti::whereIn('id_karyawan', $testKaryawanIds)->delete();
+                \App\Models\Pinjaman::whereIn('id_karyawan', $testKaryawanIds)->delete();
+                \App\Models\PengajuanHeader::whereIn('id_pengaju', $testKaryawanIds)->orWhereIn('id_karyawan_penerima', $testKaryawanIds)->delete();
+                Karyawan::whereIn('id', $testKaryawanIds)->forceDelete();
+            }
+
+            User::whereIn('email', $testEmails)->forceDelete();
             DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
             $this->command->info('1. Membuat Karyawan (Super Admin, Direktur, Finance, HR, Staf, Freelance)...');
 
-            $superAdmin = $this->createUserAndKaryawan('Super Admin Testing', 'test.admin@persija.id', 'Super Admin', $deptIT->id, $lokasi->id);
-            $direktur = $this->createUserAndKaryawan('Direktur Testing', 'test.direktur@persija.id', 'Direktur', $deptExecutive->id, $lokasi->id);
-            $finance = $this->createUserAndKaryawan('Finance Testing', 'test.finance@persija.id', 'Finance', $deptFinance->id, $lokasi->id);
-            $hr = $this->createUserAndKaryawan('HR Testing', 'test.hr@persija.id', 'HR Staff', $deptHr->id, $lokasi->id);
-            $staf1 = $this->createUserAndKaryawan('Staf 1 Testing', 'test.staf1@persija.id', 'Staf', $deptIT->id, $lokasi->id);
-            $staf2 = $this->createUserAndKaryawan('Staf 2 Testing', 'test.staf2@persija.id', 'Staf', $deptIT->id, $lokasi->id);
-            $freelance = $this->createUserAndKaryawan('Freelance Testing', 'test.freelance@persija.id', 'Freelance', $deptIT->id, $lokasi->id);
+            $superAdmin = $this->createUserAndKaryawan('Super Admin Testing', 'test.admin@persija.id', 'Super Admin', $deptIT->id, $lokasi->id, 'TEST-ADM-01');
+            $direktur = $this->createUserAndKaryawan('Direktur Testing', 'test.direktur@persija.id', 'Direktur', $deptExecutive->id, $lokasi->id, 'TEST-DIR-01');
+            $finance = $this->createUserAndKaryawan('Finance Testing', 'test.finance@persija.id', 'Finance', $deptFinance->id, $lokasi->id, 'TEST-FIN-01');
+            $hr = $this->createUserAndKaryawan('HR Testing', 'test.hr@persija.id', 'HR Staff', $deptHr->id, $lokasi->id, 'TEST-HRD-01');
+            $staf1 = $this->createUserAndKaryawan('Staf 1 Testing', 'test.staf1@persija.id', 'Staf', $deptIT->id, $lokasi->id, 'TEST-STF-01');
+            $staf2 = $this->createUserAndKaryawan('Staf 2 Testing', 'test.staf2@persija.id', 'Staf', $deptIT->id, $lokasi->id, 'TEST-STF-02');
+            $freelance = $this->createUserAndKaryawan('Freelance Testing', 'test.freelance@persija.id', 'Freelance', $deptIT->id, $lokasi->id, 'TEST-FRL-01');
 
             ApprovalRule::where('tipe', 'Pengajuan')->delete();
             ApprovalRule::create(['id_departemen' => $deptIT->id, 'tipe' => 'Pengajuan', 'level_order' => 1, 'id_karyawan_approver' => $direktur->id, 'label_aksi' => 'Disetujui Lvl 1']);
@@ -235,7 +255,7 @@ class E2ETestingSeeder extends Seeder
         }
     }
 
-    private function createUserAndKaryawan($name, $email, $roleName, $deptId, $lokasiId)
+    private function createUserAndKaryawan($name, $email, $roleName, $deptId, $lokasiId, $nik)
     {
         $user = User::create([
             'name' => $name,
@@ -251,7 +271,7 @@ class E2ETestingSeeder extends Seeder
 
         $karyawan = Karyawan::create([
             'user_id' => $user->id,
-            'nomor_induk_karyawan' => 'TEST-' . rand(1000, 9999),
+            'nomor_induk_karyawan' => $nik,
             'nama_lengkap' => $name,
             'id_departemen' => $deptId,
             'id_lokasi_kantor' => $lokasiId,
