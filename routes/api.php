@@ -98,6 +98,7 @@ Route::prefix('v1')->group(function () {
             // Calendar Module
             Route::prefix('calendar')->group(function () {
                 Route::get('/', [\App\Http\Controllers\Api\CalendarController::class, 'index']);
+                Route::post('/events', [\App\Http\Controllers\Api\CalendarController::class, 'store']);
             });
 
             // ESS (Employee Self-Service) Module

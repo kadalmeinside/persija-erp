@@ -229,4 +229,63 @@ class PublicCalendarAndConflictTest extends TestCase
         $this->assertStringContainsString('BEGIN:VCALENDAR', $response->getContent());
         $this->assertStringContainsString('Rapat Koordinasi ICS', $response->getContent());
     }
+
+    public function test_mobile_api_agenda_creation_restricted_to_hr_with_conflict_validation(): void
+    {
+        Role::firstOrCreate(['name' => 'HR Staff']);
+        Role::firstOrCreate(['name' => 'Staf']);
+
+        $hrUser = User::factory()->create();
+        $hrUser->assignRole('HR Staff');
+
+        $staffUser = User::factory()->create();
+        $staffUser->assignRole('Staf');
+
+        // 1. Non-HR user attempt -> 403 Forbidden
+        $responseStaff = $this->actingAs($staffUser, 'sanctum')->postJson('/api/v1/calendar/events', [
+            'title' => 'Meeting Tidak Sah',
+            'category' => 'meeting',
+            'start_date' => '2026-12-01 09:00:00',
+            'end_date' => '2026-12-01 10:00:00',
+            'location' => 'Ruang Rapat Utama (Lt. 2)',
+        ]);
+        $responseStaff->assertStatus(403);
+
+        // 2. HR user creates meeting -> 201 Created
+        $responseHr = $this->actingAs($hrUser, 'sanctum')->postJson('/api/v1/calendar/events', [
+            'title' => 'Rapat Evaluasi HR',
+            'category' => 'meeting',
+            'start_date' => '2026-12-01 09:00:00',
+            'end_date' => '2026-12-01 11:00:00',
+            'location' => 'Ruang Rapat Utama (Lt. 2)',
+            'description' => 'Evaluasi KPI'
+        ]);
+        $responseHr->assertStatus(201);
+        $this->assertDatabaseHas('company_events', [
+            'title' => 'Rapat Evaluasi HR',
+            'category' => 'meeting',
+            'location' => 'Ruang Rapat Utama (Lt. 2)'
+        ]);
+
+        // 3. Overlapping meeting in the same room -> 422 Unprocessable Entity
+        $responseConflict = $this->actingAs($hrUser, 'sanctum')->postJson('/api/v1/calendar/events', [
+            'title' => 'Rapat Bentrok',
+            'category' => 'meeting',
+            'start_date' => '2026-12-01 10:00:00',
+            'end_date' => '2026-12-01 12:00:00',
+            'location' => 'ruang rapat utama (lt. 2)',
+        ]);
+        $responseConflict->assertStatus(422);
+        $responseConflict->assertJsonValidationErrors('location');
+
+        // 4. Overlapping non-meeting category (e.g. general event) -> Allowed (201 Created)
+        $responseGeneral = $this->actingAs($hrUser, 'sanctum')->postJson('/api/v1/calendar/events', [
+            'title' => 'Acara Santai / Gathering',
+            'category' => 'general',
+            'start_date' => '2026-12-01 10:00:00',
+            'end_date' => '2026-12-01 12:00:00',
+            'location' => 'Ruang Rapat Utama (Lt. 2)',
+        ]);
+        $responseGeneral->assertStatus(201);
+    }
 }
