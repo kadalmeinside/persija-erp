@@ -538,6 +538,11 @@ const formatDate = (dateStr) => {
     return new Date(dateStr).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' });
 };
 
+const formatTime = (dateStr) => {
+    if (!dateStr) return '';
+    return new Date(dateStr).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+};
+
 </script>
 
 <template>
@@ -700,7 +705,11 @@ const formatDate = (dateStr) => {
                                               :class="getEventColor(event)">
                                             {{ event.type === 'holiday' ? 'Libur Nasional' : (event.type === 'event' ? 'Agenda Perusahaan' : (event.type === 'task' ? 'Tugas' : (event.is_own ? 'Cuti Saya' : 'Cuti Rekan'))) }}
                                         </span>
-                                        <span class="text-sm text-gray-500">{{ formatDate(event.start) }} <span v-if="event.end && event.end !== event.start">- {{ formatDate(event.end) }}</span></span>
+                                        <span class="text-sm text-gray-500">
+                                            {{ formatDate(event.start) }}
+                                            <span v-if="event.type === 'event' && event.start" class="font-semibold text-gray-700"> ({{ formatTime(event.start) }}<span v-if="event.end"> - {{ formatTime(event.end) }}</span> WIB)</span>
+                                            <span v-else-if="event.end && event.end !== event.start && event.type !== 'holiday'"> - {{ formatDate(event.end) }}</span>
+                                        </span>
                                     </div>
                                     <h4 class="text-base font-medium text-gray-900">{{ event.title }}</h4>
                                     <p v-if="event.details || event.description" class="text-sm text-gray-600 mt-1">{{ event.details || event.description }}</p>
@@ -868,10 +877,16 @@ const formatDate = (dateStr) => {
                         <div>
                             <strong class="block text-gray-700 dark:text-gray-300">Mulai:</strong>
                             {{ selectedDetailEvent?.start ? formatDate(selectedDetailEvent.start) : '-' }}
+                            <span v-if="selectedDetailEvent?.type === 'event' && selectedDetailEvent?.start" class="block text-xs font-semibold text-indigo-600 mt-0.5">
+                                Pukul {{ formatTime(selectedDetailEvent.start) }} WIB
+                            </span>
                         </div>
                         <div v-if="selectedDetailEvent?.end">
                             <strong class="block text-gray-700 dark:text-gray-300">Selesai:</strong>
                             {{ formatDate(selectedDetailEvent.end) }}
+                            <span v-if="selectedDetailEvent?.type === 'event' && selectedDetailEvent?.end" class="block text-xs font-semibold text-indigo-600 mt-0.5">
+                                Pukul {{ formatTime(selectedDetailEvent.end) }} WIB
+                            </span>
                         </div>
                     </div>
                     
