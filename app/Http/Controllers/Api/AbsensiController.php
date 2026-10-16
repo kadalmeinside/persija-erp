@@ -198,11 +198,23 @@ class AbsensiController extends Controller
         $request->validate([
             'month' => 'nullable|integer|between:1,12',
             'year' => 'nullable|integer|digits:4',
+            'limit' => 'nullable|integer|between:1,50',
+            'recent' => 'nullable|boolean',
         ]);
 
         $karyawan = $request->user()->karyawan;
         if (!$karyawan) {
             return response()->json(['message' => 'Data karyawan tidak ditemukan.'], 403);
+        }
+
+        if ($request->boolean('recent') || ($request->has('limit') && !$request->has('month') && !$request->has('year'))) {
+            $limit = min((int) $request->query('limit', 5), 50);
+            $history = \App\Models\Absensi::where('id_karyawan', $karyawan->id)
+                ->orderBy('tanggal', 'desc')
+                ->limit($limit)
+                ->get();
+
+            return \App\Http\Resources\AbsensiResource::collection($history);
         }
 
         $month = $request->query('month', date('m'));
@@ -212,7 +224,7 @@ class AbsensiController extends Controller
             ->whereMonth('tanggal', $month)
             ->whereYear('tanggal', $year)
             ->orderBy('tanggal', 'desc')
-            ->paginate(10);
+            ->paginate($request->query('limit', 10));
 
         return \App\Http\Resources\AbsensiResource::collection($history);
     }

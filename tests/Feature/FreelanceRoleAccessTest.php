@@ -90,6 +90,47 @@ class FreelanceRoleAccessTest extends TestCase
         $response->assertOk();
     }
 
+    public function test_freelance_can_fetch_recent_attendance_history(): void
+    {
+        $token = $this->freelanceUser->createToken('test-token')->plainTextToken;
+
+        // Create dummy absensi for this employee
+        \App\Models\Absensi::create([
+            'id_karyawan' => $this->freelanceKaryawan->id,
+            'tanggal' => now()->subDays(2)->toDateString(),
+            'waktu_masuk' => '08:00:00',
+            'waktu_keluar' => '17:00:00',
+            'status_kehadiran' => 'Hadir',
+        ]);
+        \App\Models\Absensi::create([
+            'id_karyawan' => $this->freelanceKaryawan->id,
+            'tanggal' => now()->subDays(1)->toDateString(),
+            'waktu_masuk' => '08:05:00',
+            'waktu_keluar' => '17:02:00',
+            'status_kehadiran' => 'Hadir',
+        ]);
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->getJson('/api/v1/absensi/history?recent=1&limit=5');
+
+        $response->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'date',
+                        'clock_in',
+                        'clock_out',
+                        'status',
+                    ]
+                ]
+            ]);
+
+        $data = $response->json('data');
+        $this->assertCount(2, $data);
+        $this->assertEquals(now()->subDays(1)->toDateString(), $data[0]['date']);
+    }
+
     public function test_freelance_is_blocked_from_non_attendance_api_endpoints(): void
     {
         $token = $this->freelanceUser->createToken('test-token')->plainTextToken;
