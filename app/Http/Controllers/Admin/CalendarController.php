@@ -10,6 +10,7 @@ use App\Models\PengajuanCuti;
 use App\Enums\Role;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Setting;
 
 class CalendarController extends Controller
 {
@@ -152,11 +153,65 @@ class CalendarController extends Controller
 
         $canManageEvents = $user->hasRole(Role::hrRoles());
 
+        // Share Settings for Public Calendar
+        $shareToken = Setting::where('key', 'calendar_share_token')->value('value');
+        if (!$shareToken) {
+            $shareToken = \Illuminate\Support\Str::random(40);
+            Setting::updateOrCreate(['key' => 'calendar_share_token'], ['value' => $shareToken]);
+        }
+
+        $shareEnabled = Setting::where('key', 'calendar_share_enabled')->value('value');
+        if ($shareEnabled === null) {
+            $shareEnabled = '1';
+            Setting::updateOrCreate(['key' => 'calendar_share_enabled'], ['value' => '1']);
+        }
+
+        $shareShowDetails = Setting::where('key', 'calendar_share_show_details')->value('value');
+        if ($shareShowDetails === null) {
+            $shareShowDetails = '1';
+            Setting::updateOrCreate(['key' => 'calendar_share_show_details'], ['value' => '1']);
+        }
+
+        $shareSettings = [
+            'enabled' => $shareEnabled === '1',
+            'showDetails' => $shareShowDetails !== '0',
+            'token' => $shareToken,
+            'shareUrl' => url('/shared/calendar/' . $shareToken),
+        ];
+
         return Inertia::render('Admin/Calendar/Index', [
             'events' => $events,
             'currentMonth' => (int)$month,
             'currentYear' => (int)$year,
-            'canManageEvents' => $canManageEvents
+            'canManageEvents' => $canManageEvents,
+            'shareSettings' => $shareSettings,
         ]);
+    }
+
+    /**
+     * Update share status and privacy settings for public calendar.
+     */
+    public function updateShareSettings(Request $request)
+    {
+        $request->validate([
+            'enabled' => 'required|boolean',
+            'show_details' => 'required|boolean',
+        ]);
+
+        Setting::updateOrCreate(['key' => 'calendar_share_enabled'], ['value' => $request->enabled ? '1' : '0']);
+        Setting::updateOrCreate(['key' => 'calendar_share_show_details'], ['value' => $request->show_details ? '1' : '0']);
+
+        return redirect()->back()->with('success', 'Pengaturan tautan kalender publik berhasil diperbarui.');
+    }
+
+    /**
+     * Regenerate secret share token to revoke previously distributed links.
+     */
+    public function regenerateShareToken()
+    {
+        $newToken = \Illuminate\Support\Str::random(40);
+        Setting::updateOrCreate(['key' => 'calendar_share_token'], ['value' => $newToken]);
+
+        return redirect()->back()->with('success', 'Tautan kalender publik berhasil di-reset. Tautan lama otomatis tidak aktif.');
     }
 }

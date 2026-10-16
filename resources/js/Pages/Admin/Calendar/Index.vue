@@ -1,21 +1,43 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import { ref, computed, reactive } from 'vue';
-import { PlusIcon, FunnelIcon, Squares2X2Icon, ListBulletIcon, ChevronLeftIcon, ChevronRightIcon, XMarkIcon } from '@heroicons/vue/24/outline';
+import { ref, computed, reactive, watch } from 'vue';
+import { 
+    PlusIcon, 
+    FunnelIcon, 
+    Squares2X2Icon, 
+    ListBulletIcon, 
+    ChevronLeftIcon, 
+    ChevronRightIcon, 
+    XMarkIcon,
+    ShareIcon,
+    ClipboardDocumentIcon,
+    ClipboardDocumentCheckIcon,
+    ArrowPathIcon,
+    ShieldCheckIcon,
+    GlobeAltIcon,
+    EyeIcon,
+    EyeSlashIcon
+} from '@heroicons/vue/24/outline';
 import Modal from '@/Components/Modal.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
+import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
+import Swal from 'sweetalert2';
+import { useToast } from '@/Composables/useToast';
 
 const props = defineProps({
     events: Array,
     currentMonth: Number,
     currentYear: Number,
-    canManageEvents: Boolean
+    canManageEvents: Boolean,
+    shareSettings: Object
 });
+
+const toast = useToast();
 
 const monthNames = [
     "Januari", "Februari", "Maret", "April", "Mei", "Juni",
@@ -98,11 +120,79 @@ const submitEvent = () => {
 
 const deleteEvent = () => {
     if (!editingEvent.value) return;
-    if (confirm('Yakin ingin menghapus agenda ini?')) {
-        router.delete(route('admin.company-events.destroy', editingEvent.value.real_id), {
-            onSuccess: () => { showEventModal.value = false; }
-        });
+    Swal.fire({
+        title: 'Hapus Agenda?',
+        text: `Agenda "${editingEvent.value.title}" akan dihapus permanen.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e11d48',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Ya, Hapus'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            router.delete(route('admin.company-events.destroy', editingEvent.value.real_id), {
+                onSuccess: () => { showEventModal.value = false; }
+            });
+        }
+    });
+};
+
+// --- SHARE CALENDAR STATE & ACTIONS ---
+const showShareModal = ref(false);
+const shareForm = useForm({
+    enabled: props.shareSettings?.enabled ?? true,
+    show_details: props.shareSettings?.showDetails ?? true
+});
+
+watch(() => props.shareSettings, (newVal) => {
+    if (newVal) {
+        shareForm.enabled = newVal.enabled;
+        shareForm.show_details = newVal.showDetails;
     }
+}, { deep: true });
+
+const saveShareSettings = () => {
+    shareForm.post(route('admin.calendar.share-settings'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            toast.success('Pengaturan kalender publik berhasil disimpan.');
+        }
+    });
+};
+
+const copied = ref(false);
+const copyShareUrl = async () => {
+    if (props.shareSettings?.shareUrl) {
+        try {
+            await navigator.clipboard.writeText(props.shareSettings.shareUrl);
+            copied.value = true;
+            toast.success('Tautan kalender publik berhasil disalin!');
+            setTimeout(() => { copied.value = false; }, 3000);
+        } catch (e) {
+            toast.error('Gagal menyalin tautan.');
+        }
+    }
+};
+
+const regenerateToken = () => {
+    Swal.fire({
+        title: 'Reset Tautan Kalender?',
+        text: 'Tautan lama akan langsung hangus dan tidak dapat diakses lagi oleh siapa pun. Anda akan mendapatkan tautan baru.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e11d48',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Ya, Reset Tautan'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            router.post(route('admin.calendar.regenerate-share-token'), {}, {
+                preserveScroll: true,
+                onSuccess: () => {
+                    toast.success('Tautan kalender baru berhasil dibuat.');
+                }
+            });
+        }
+    });
 };
 
 // --- COMPUTED ---
@@ -254,10 +344,16 @@ const formatDate = (dateStr) => {
                                 </div>
                             </div>
 
-                            <!-- Add Event Button -->
-                            <PrimaryButton v-if="canManageEvents" @click="openCreateModal" class="flex justify-center items-center gap-2 w-full md:w-auto order-first md:order-none">
-                                <PlusIcon class="w-4 h-4" /> Tambah Agenda
-                            </PrimaryButton>
+                            <!-- Add Event & Share Buttons -->
+                            <div class="flex items-center gap-2 w-full md:w-auto order-first md:order-none">
+                                <PrimaryButton v-if="canManageEvents" @click="openCreateModal" class="flex-1 md:flex-initial justify-center items-center gap-1.5">
+                                    <PlusIcon class="w-4 h-4" /> Tambah Agenda
+                                </PrimaryButton>
+                                <SecondaryButton v-if="canManageEvents" @click="showShareModal = true" class="flex-1 md:flex-initial justify-center items-center gap-1.5">
+                                    <ShareIcon class="w-4 h-4 text-indigo-600" />
+                                    <span>Bagikan</span>
+                                </SecondaryButton>
+                            </div>
 
                             <!-- Filters -->
                             <div :class="{'hidden md:flex': !showFilters, 'grid grid-cols-2 mt-2 gap-2 md:mt-0 md:flex': showFilters}" class="bg-transparent md:bg-gray-50 md:px-3 md:py-2 rounded-lg md:border md:border-gray-200 w-full md:w-auto items-center">
@@ -391,34 +487,55 @@ const formatDate = (dateStr) => {
         <Modal :show="showEventModal" @close="showEventModal = false">
             <div class="p-6">
                 <h2 class="text-lg font-medium text-gray-900 mb-4">
-                    {{ editingEvent ? 'Edit Agenda' : 'Tambah Agenda Baru' }}
+                    {{ editingEvent ? 'Edit Agenda Perusahaan' : 'Tambah Agenda / Booking Ruangan' }}
                 </h2>
                 
                 <div class="space-y-4">
                     <div>
-                        <InputLabel value="Judul Agenda" />
-                        <TextInput v-model="form.title" class="w-full mt-1" placeholder="Rapat Bulanan..." />
+                        <InputLabel value="Judul Agenda *" />
+                        <TextInput v-model="form.title" class="w-full mt-1" placeholder="Rapat Evaluasi Tim / Pertemuan Sponsor..." />
+                        <InputError :message="form.errors.title" class="mt-1" />
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <InputLabel value="Mulai" />
+                            <InputLabel value="Mulai *" />
                             <TextInput type="datetime-local" v-model="form.start_date" class="w-full mt-1" />
+                            <InputError :message="form.errors.start_date" class="mt-1" />
                         </div>
                         <div>
                             <InputLabel value="Selesai" />
                             <TextInput type="datetime-local" v-model="form.end_date" class="w-full mt-1" />
+                            <InputError :message="form.errors.end_date" class="mt-1" />
                         </div>
                     </div>
 
                     <div>
-                        <InputLabel value="Lokasi (Opsional)" />
-                        <TextInput v-model="form.location" class="w-full mt-1" placeholder="Ruang Meeting Lt. 2..." />
+                        <InputLabel value="Ruangan / Lokasi (Pencegah Bentrok)" />
+                        <TextInput 
+                            v-model="form.location" 
+                            list="common-meeting-rooms"
+                            class="w-full mt-1" 
+                            placeholder="Pilih atau ketik nama ruangan, misal: Ruang Rapat Utama..." 
+                        />
+                        <datalist id="common-meeting-rooms">
+                            <option value="Ruang Rapat Utama (Lt. 2)" />
+                            <option value="Ruang Meeting Direksi" />
+                            <option value="Ruang Briefing Tim" />
+                            <option value="Press Conference Room" />
+                            <option value="Studio Konten & Media" />
+                            <option value="Online / Zoom Meeting" />
+                        </datalist>
+                        <InputError :message="form.errors.location" class="mt-1 font-semibold text-rose-600" />
+                        <p class="text-[11px] text-gray-500 mt-1">
+                            Sistem otomatis memvalidasi jadwal agar tidak terjadi double-booking pada ruangan dan jam yang sama.
+                        </p>
                     </div>
 
                     <div>
-                        <InputLabel value="Deskripsi" />
-                        <textarea v-model="form.description" class="w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500" rows="3"></textarea>
+                        <InputLabel value="Deskripsi / Catatan Agenda" />
+                        <textarea v-model="form.description" class="w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm" rows="3" placeholder="Rincian pembahasan, peserta rapat, atau perlengkapan yang dibutuhkan..."></textarea>
+                        <InputError :message="form.errors.description" class="mt-1" />
                     </div>
                 </div>
 
@@ -430,7 +547,7 @@ const formatDate = (dateStr) => {
 
                     <div class="flex gap-2">
                         <SecondaryButton @click="showEventModal = false">Batal</SecondaryButton>
-                        <PrimaryButton @click="submitEvent" :disabled="form.processing">Simpan</PrimaryButton>
+                        <PrimaryButton @click="submitEvent" :disabled="form.processing">Simpan Agenda</PrimaryButton>
                     </div>
                 </div>
             </div>
@@ -490,6 +607,101 @@ const formatDate = (dateStr) => {
                 </div>
                 <div class="flex justify-end border-t border-gray-200 dark:border-gray-700 pt-4" v-else>
                     <PrimaryButton @click="showDetailModal = false">Tutup</PrimaryButton>
+                </div>
+            </div>
+        </Modal>
+
+        <!-- Share Calendar Modal -->
+        <Modal :show="showShareModal" @close="showShareModal = false" maxWidth="lg">
+            <div class="p-6">
+                <div class="flex items-center justify-between pb-4 border-b border-gray-200">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
+                            <ShareIcon class="w-5 h-5" />
+                        </div>
+                        <div>
+                            <h2 class="text-lg font-bold text-gray-900">Publikasi & Bagikan Kalender</h2>
+                            <p class="text-xs text-gray-500">Tautan rahasia (unlisted) dengan proteksi anti-crawler & bot AI</p>
+                        </div>
+                    </div>
+                    <button @click="showShareModal = false" class="text-gray-400 hover:text-gray-600 p-1 rounded-lg">
+                        <XMarkIcon class="w-5 h-5" />
+                    </button>
+                </div>
+
+                <div class="mt-5 space-y-4">
+                    <!-- Toggle Enable/Disable -->
+                    <div class="flex items-center justify-between p-3.5 bg-gray-50 rounded-xl border border-gray-200">
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-800">Status Tautan Publik</h4>
+                            <p class="text-xs text-gray-500">Izinkan siapapun yang memiliki tautan melihat kalender agenda tanpa login</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" v-model="shareForm.enabled" @change="saveShareSettings" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                        </label>
+                    </div>
+
+                    <!-- Share URL Box -->
+                    <div v-if="shareForm.enabled" class="space-y-2">
+                        <InputLabel value="Tautan Kalender Publik (Secret Token)" />
+                        <div class="flex gap-2">
+                            <TextInput 
+                                :modelValue="shareSettings?.shareUrl" 
+                                readonly 
+                                class="w-full bg-gray-50 text-xs font-mono text-gray-700 select-all" 
+                            />
+                            <PrimaryButton @click="copyShareUrl" class="shrink-0 flex items-center gap-1.5">
+                                <component :is="copied ? ClipboardDocumentCheckIcon : ClipboardDocumentIcon" class="w-4 h-4" />
+                                <span>{{ copied ? 'Tersalin' : 'Salin' }}</span>
+                            </PrimaryButton>
+                        </div>
+                        <p class="text-[11px] text-gray-500">
+                            Bagikan tautan ini kepada pihak luar, staf, atau rekanan yang memerlukan informasi ketersediaan ruangan.
+                        </p>
+                    </div>
+
+                    <!-- Privacy Detail Toggle -->
+                    <div v-if="shareForm.enabled" class="flex items-center justify-between p-3.5 bg-gray-50 rounded-xl border border-gray-200">
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-800">Tampilkan Detail Agenda</h4>
+                            <p class="text-xs text-gray-500">
+                                {{ shareForm.show_details ? 'Judul, waktu, ruangan, dan deskripsi ditampilkan lengkap.' : 'Judul disamarkan sebagai "Jadwal Agenda/Pertemuan" untuk menjaga kerahasiaan topik internal.' }}
+                            </p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" v-model="shareForm.show_details" @change="saveShareSettings" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                        </label>
+                    </div>
+
+                    <!-- Security Callout -->
+                    <div class="p-4 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-800 space-y-1.5">
+                        <div class="flex items-center gap-1.5 font-bold">
+                            <ShieldCheckIcon class="w-4 h-4 text-emerald-600 shrink-0" />
+                            <span>Perlindungan Privasi & Anti-Bot AI Aktif</span>
+                        </div>
+                        <ul class="list-disc list-inside space-y-0.5 text-[11px] text-emerald-700">
+                            <li>Tidak terindeks oleh Google / Bing (HTTP Header <code class="bg-emerald-100 px-1 rounded">X-Robots-Tag: noindex</code>).</li>
+                            <li>Bot AI crawler (GPTBot, ClaudeBot, CCBot, dll.) otomatis ditolak oleh server.</li>
+                            <li>Data Cuti dan Tugas internal staf tidak pernah ditampilkan di halaman publik.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Reset Token Action -->
+                    <div v-if="shareForm.enabled" class="pt-2 border-t border-gray-200 flex items-center justify-between">
+                        <div>
+                            <h5 class="text-xs font-semibold text-gray-700">Tautan Terlanjur Bocor?</h5>
+                            <p class="text-[11px] text-gray-500">Ganti token baru dan batalkan akses tautan lama seketika.</p>
+                        </div>
+                        <DangerButton @click="regenerateToken" class="text-xs">
+                            <ArrowPathIcon class="w-3.5 h-3.5 mr-1" /> Reset Tautan
+                        </DangerButton>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-end">
+                    <SecondaryButton @click="showShareModal = false">Tutup</SecondaryButton>
                 </div>
             </div>
         </Modal>

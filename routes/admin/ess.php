@@ -29,6 +29,8 @@ Route::middleware(["role:{$essRoles}"])->group(function () {
     // Kalender & Hari Libur
     // ----------------------------------------------------------------
     Route::get('calendar', [CalendarController::class, 'index'])->name('calendar.index');
+    Route::post('calendar/share-settings', [CalendarController::class, 'updateShareSettings'])->name('calendar.share-settings');
+    Route::post('calendar/regenerate-share-token', [CalendarController::class, 'regenerateShareToken'])->name('calendar.regenerate-share-token');
     Route::resource('hari-libur', HariLiburController::class);
     Route::post('hari-libur/fetch', [HariLiburController::class, 'fetch'])->name('hari-libur.fetch');
 

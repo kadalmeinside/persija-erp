@@ -27,6 +27,12 @@ use Illuminate\Support\Facades\Route;
 // -----------------------------------------------------------------------
 Route::get('/', [WelcomeController::class, 'index']);
 Route::get('/verify/{uuid}', [PublicVerificationController::class, 'verify'])->name('public.verify');
+Route::get('/shared/calendar/{token}.ics', [\App\Http\Controllers\Public\PublicCalendarController::class, 'ics'])
+    ->where('token', '[a-zA-Z0-9_\-]+')
+    ->name('public.calendar.ics');
+Route::get('/shared/calendar/{token}', [\App\Http\Controllers\Public\PublicCalendarController::class, 'show'])
+    ->where('token', '[a-zA-Z0-9_\-]+')
+    ->name('public.calendar.show');
 
 // -----------------------------------------------------------------------
 // Dashboard Redirect
