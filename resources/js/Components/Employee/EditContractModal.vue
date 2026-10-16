@@ -13,7 +13,7 @@ import {
     PencilSquareIcon, ArrowPathIcon, DocumentDuplicateIcon, ClockIcon,
     DocumentPlusIcon, CalendarDaysIcon
 } from '@heroicons/vue/24/outline';
-import Swal from 'sweetalert2';
+import { useToast } from '@/Composables/useToast';
 
 const props = defineProps({
     show: Boolean,
@@ -22,6 +22,7 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['close', 'saved']);
+const toast = useToast();
 
 const activeSubTab = ref('clauses'); // 'clauses', 'scope', 'content'
 
@@ -118,14 +119,7 @@ const loadMasterTemplate = async () => {
         const response = await fetch(route('admin.karyawan.contract-preview', props.employee.id));
         const data = await response.json();
         form.custom_contract_content = data.custom_content || data.master_content || '';
-        Swal.fire({
-            toast: true,
-            position: 'top-end',
-            icon: 'info',
-            title: 'Teks template master berhasil dimuat',
-            showConfirmButton: false,
-            timer: 1500
-        });
+        toast.info('Teks template master berhasil dimuat');
     } catch (err) {
         console.error(err);
     } finally {
@@ -135,14 +129,7 @@ const loadMasterTemplate = async () => {
 
 const clearCustomContent = () => {
     form.custom_contract_content = '';
-    Swal.fire({
-        toast: true,
-        position: 'top-end',
-        icon: 'success',
-        title: 'Kembali menggunakan Template Master standar',
-        showConfirmButton: false,
-        timer: 1500
-    });
+    toast.success('Kembali menggunakan Template Master standar');
 };
 
 const submit = () => {
@@ -151,15 +138,6 @@ const submit = () => {
         onSuccess: () => {
             emit('saved');
             emit('close');
-            Swal.fire({
-                icon: 'success',
-                title: isFirstIssuance.value ? 'Kontrak Berhasil Diterbitkan' : 'Tersimpan',
-                text: isFirstIssuance.value 
-                    ? 'Kontrak kerja perdana v1 berhasil diterbitkan dan otomatis disinkronkan ke riwayat karir.' 
-                    : 'Klausul kontrak, lingkup kerja & draf isi kontrak berhasil diperbarui.',
-                timer: 2000,
-                showConfirmButton: false
-            });
         }
     });
 };

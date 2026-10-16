@@ -7,7 +7,6 @@ import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
-import Swal from 'sweetalert2';
 
 const props = defineProps({
     show: Boolean,
@@ -63,13 +62,6 @@ const submit = () => {
             emit('saved');
             emit('close');
             form.reset();
-            Swal.fire({
-                title: 'Berhasil',
-                text: 'Riwayat karir berhasil ditambahkan dan data profil otomatis diperbarui!',
-                icon: 'success',
-                timer: 2000,
-                showConfirmButton: false
-            });
         }
     });
 };

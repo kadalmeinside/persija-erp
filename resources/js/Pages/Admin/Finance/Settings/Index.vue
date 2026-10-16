@@ -5,7 +5,6 @@ import { computed } from 'vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import InputError from '@/Components/InputError.vue';
-import Toast from '@/Components/Toast.vue';
 
 const props = defineProps({
     settings: Object,
@@ -17,8 +16,6 @@ const props = defineProps({
 });
 
 const page = usePage();
-const flashMessage = computed(() => page.props.flash?.message);
-const flashType = computed(() => page.props.flash?.type || 'info');
 
 const form = useForm({
     account_receivable_employee: props.settings.account_receivable_employee || '',
@@ -48,8 +45,6 @@ function submit() {
                 {{ pageTitle }}
             </h2>
         </template>
-
-        <Toast :message="flashMessage" :type="flashType" />
 
         <div class="py-12 pt-4">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">

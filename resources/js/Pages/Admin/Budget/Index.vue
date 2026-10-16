@@ -9,6 +9,7 @@ import {
 import { ref, watch, computed } from 'vue';
 import { debounce } from 'lodash';
 import Swal from 'sweetalert2';
+import { useToast } from '@/Composables/useToast';
 import { Line, Doughnut } from 'vue-chartjs';
 import { 
     Chart as ChartJS, 
@@ -34,6 +35,8 @@ const props = defineProps({
     expenseSummary: Object, // { total: 0, used: 0, remaining: 0 }
     revenueSummary: Object // { target: 0, realized: 0, achievement: 0 }
 });
+
+const toast = useToast();
 
 const search = ref(props.filters.search || '');
 const filterPeriode = ref(props.filters.id_periode || props.activePeriodId);
@@ -162,8 +165,7 @@ const deleteBudget = (id) => {
     }).then((result) => {
         if (result.isConfirmed) {
             router.delete(route('admin.budget.destroy', id), {
-                onSuccess: () => Swal.fire('Terhapus!', 'Anggaran berhasil dihapus.', 'success'),
-                onError: () => Swal.fire('Gagal!', 'Anggaran tidak bisa dihapus karena sudah ada realisasi.', 'error')
+                onError: () => toast.error('Anggaran tidak bisa dihapus karena sudah ada realisasi.')
             });
         }
     });
@@ -184,18 +186,14 @@ const handleImport = (e) => {
     formData.append('file', file);
 
     isImporting.value = true;
-    console.log("Memulai proses import Excel...", file.name);
     
     router.post(route('admin.budget.import'), formData, {
         forceFormData: true,
-        onSuccess: (page) => {
-            console.log("✅ IMPORT BERHASIL!", page);
-            Swal.fire('Berhasil!', 'Data anggaran berhasil di-import.', 'success');
+        onSuccess: () => {
             fileInput.value.value = '';
         },
         onError: (errors) => {
-            console.error("❌ IMPORT GAGAL!", errors);
-            Swal.fire('Gagal!', errors.error || 'Terjadi kesalahan saat import. Cek console log.', 'error');
+            toast.error(errors.error || 'Terjadi kesalahan saat import.');
             fileInput.value.value = '';
         },
         onFinish: () => {
@@ -229,8 +227,7 @@ const resetPeriod = () => {
             router.post(route('admin.budget.reset-period'), {
                 id_periode: activePeriod.value.id
             }, {
-                onSuccess: () => Swal.fire('Tereset!', 'Anggaran periode berhasil dibersihkan.', 'success'),
-                onError: (errors) => Swal.fire('Gagal!', errors.error || 'Terjadi kesalahan.', 'error')
+                onError: (errors) => toast.error(errors.error || 'Terjadi kesalahan.')
             });
         }
     });

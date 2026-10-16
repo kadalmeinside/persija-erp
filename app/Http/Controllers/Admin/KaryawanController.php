@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Database\Seeders\ContractTemplateSeeder;
 
 class KaryawanController extends Controller
 {
@@ -615,6 +616,10 @@ class KaryawanController extends Controller
 
         // 2. If no custom content, load from Master Template based on contract_type
         if (empty($rawContent)) {
+            if (ContractTemplate::count() === 0) {
+                (new ContractTemplateSeeder())->run();
+            }
+
             $contractType = ($contract ? $contract->contract_type : $karyawan->contract_type) ?? 'PKWT';
             $template = ContractTemplate::where('contract_type', $contractType)
                 ->where('is_active', true)
@@ -737,6 +742,10 @@ class KaryawanController extends Controller
 
     public function getContractPreview(Karyawan $karyawan)
     {
+        if (ContractTemplate::count() === 0) {
+            (new ContractTemplateSeeder())->run();
+        }
+
         $contractType = $karyawan->contract_type ?? 'PKWT';
         $template = ContractTemplate::where('contract_type', $contractType)
             ->where('is_active', true)

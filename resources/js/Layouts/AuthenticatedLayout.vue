@@ -5,7 +5,8 @@ import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import JobStatusToast from '@/Components/JobStatusToast.vue';
 import NavbarNotification from '@/Components/NavbarNotification.vue';
-// import Toast from '@/Components/Toast.vue'; // Removed custom Toast
+import Toast from '@/Components/Toast.vue';
+import { useToast } from '@/Composables/useToast';
 import Modal from '@/Components/Modal.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import DangerButton from '@/Components/DangerButton.vue';
@@ -70,38 +71,47 @@ const isQuickActionsHidden = computed(() => {
     return false;
 });
 
-// --- SWEETALERT2 TOAST CONFIG ---
-const Toast = Swal.mixin({
-    toast: true,
-    position: 'top-end',
-    showConfirmButton: false,
-    timer: 3000,
-    timerProgressBar: true,
-    didOpen: (toast) => {
-        toast.onmouseenter = Swal.stopTimer;
-        toast.onmouseleave = Swal.resumeTimer;
-    }
-});
+// --- TAILWIND TOAST CONFIG & FLASH WATCHER ---
+const toast = useToast();
+let lastFlashSig = '';
 
-// Watch Flash Messages
-watch(() => page.props.flash, (flash) => {
-    if (flash?.message) {
-        let icon = flash.type || 'success';
-        if (icon === 'danger') icon = 'error'; // Map danger to error
+watch(
+    () => page.props.flash,
+    (flash) => {
+        if (!flash) return;
 
-        Toast.fire({
-            icon: icon,
-            title: flash.message
-        });
-    }
-    // Handle specific keys if flash structure is different (e.g. flash.success, flash.error)
-    if (flash?.success) {
-        Toast.fire({ icon: 'success', title: flash.success });
-    }
-    if (flash?.error) {
-        Toast.fire({ icon: 'error', title: flash.error });
-    }
-}, { deep: true, immediate: true });
+        const flashMsg = flash.message || null;
+        const flashSuccess = flash.success || null;
+        const flashError = flash.error || null;
+        const flashType = flash.type || null;
+
+        // Reset tracker when flash is empty
+        if (!flashMsg && !flashSuccess && !flashError) {
+            lastFlashSig = '';
+            return;
+        }
+
+        const currentSig = `${flashSuccess}|${flashError}|${flashMsg}|${flashType}`;
+        if (currentSig === lastFlashSig) {
+            return; // Already processed this exact flash update
+        }
+        lastFlashSig = currentSig;
+
+        // Display single toast, prioritizing specific flash keys
+        if (flashSuccess) {
+            toast.success(flashSuccess);
+        } else if (flashError) {
+            toast.error(flashError);
+        } else if (flashMsg) {
+            const normalizedType = flashType === 'danger' ? 'error' : (flashType || 'info');
+            toast.show({
+                message: flashMsg,
+                type: normalizedType,
+            });
+        }
+    },
+    { deep: true, immediate: true }
+);
 
 const showJobToast = ref(false);
 const jobStatus = ref('');
@@ -715,7 +725,8 @@ watch(sidebarMenu, (menu) => {
 
 <template>
     <div>
-        <!-- <Toast :message="$page.props.flash.message" :type="$page.props.flash.type" /> Replaced by SweetAlert2 -->
+        <!-- Global Tailwind Toast Container with Entrance and Exit Animations -->
+        <Toast />
         
         <div class="h-screen flex bg-gray-100 dark:bg-gray-900 relative">
 

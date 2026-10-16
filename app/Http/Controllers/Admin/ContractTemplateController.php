@@ -12,6 +12,11 @@ class ContractTemplateController extends Controller
 {
     public function index()
     {
+        // Auto-seed default templates if none exist (e.g. fresh production deployment)
+        if (ContractTemplate::count() === 0) {
+            (new ContractTemplateSeeder())->run();
+        }
+
         $templates = ContractTemplate::orderBy('id')->get();
 
         $availableTags = [
@@ -49,8 +54,10 @@ class ContractTemplateController extends Controller
         ]);
     }
 
-    public function update(Request $request, ContractTemplate $contractTemplate)
+    public function update(Request $request, $id)
     {
+        $contractTemplate = ContractTemplate::findOrFail($id);
+
         $validated = $request->validate([
             'nama_template' => 'required|string|max:255',
             'judul_surat'   => 'required|string|max:255',
@@ -63,12 +70,15 @@ class ContractTemplateController extends Controller
         return redirect()->back()->with('success', "Template kontrak {$contractTemplate->nama_template} berhasil diperbarui.");
     }
 
-    public function reset(ContractTemplate $contractTemplate)
+    public function reset($id = null)
     {
         // Re-run the seeder to restore official default clauses
         $seeder = new ContractTemplateSeeder();
         $seeder->run();
 
-        return redirect()->back()->with('success', "Template {$contractTemplate->nama_template} berhasil di-reset ke standar hukum ketenagakerjaan resmi.");
+        $contractTemplate = $id ? ContractTemplate::find($id) : null;
+        $name = $contractTemplate ? $contractTemplate->nama_template : 'Standar Resmi';
+
+        return redirect()->back()->with('success', "Template {$name} berhasil di-reset ke standar hukum ketenagakerjaan resmi.");
     }
 }

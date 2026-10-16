@@ -7,8 +7,9 @@ import InputLabel from '@/Components/InputLabel.vue';
 import InputError from '@/Components/InputError.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { DocumentPlusIcon, DocumentMinusIcon, PlusCircleIcon, TrashIcon, PhotoIcon, DocumentTextIcon } from '@heroicons/vue/24/outline';
-import Swal from 'sweetalert2';
+import { useToast } from '@/Composables/useToast';
 
+const toast = useToast();
 const activeTab = ref('merge'); // 'merge' or 'split'
 
 // --- MERGE FORM ---
@@ -66,7 +67,7 @@ const submitMerge = async () => {
         link.click();
         link.remove();
         
-        Swal.fire('Berhasil!', 'File PDF berhasil digabungkan.', 'success');
+        toast.success('File PDF berhasil digabungkan.');
         mergeFiles.value = [];
     } catch (error) {
         let msg = 'Gagal menggabungkan PDF.';
@@ -77,7 +78,7 @@ const submitMerge = async () => {
                  msg = json.message || msg;
              } catch(e) {}
         }
-        Swal.fire('Error!', msg, 'error');
+        toast.error(msg);
     } finally {
         isMerging.value = false;
     }
@@ -138,7 +139,7 @@ const submitSplit = async () => {
         link.click();
         link.remove();
         
-        Swal.fire('Berhasil!', 'File PDF berhasil dipisahkan.', 'success');
+        toast.success('File PDF berhasil dipisahkan.');
         splitFile.value = null;
         splitPages.value = '';
     } catch (error) {
@@ -150,7 +151,7 @@ const submitSplit = async () => {
                  msg = json.message || msg;
              } catch(e) {}
         }
-        Swal.fire('Error!', msg, 'error');
+        toast.error(msg);
     } finally {
         isSplitting.value = false;
     }
@@ -211,7 +212,7 @@ const submitConvertImage = async () => {
         link.click();
         link.remove();
         
-        Swal.fire('Berhasil!', 'Gambar berhasil dikonversi ke PDF.', 'success');
+        toast.success('Gambar berhasil dikonversi ke PDF.');
         convertImageFiles.value = [];
     } catch (error) {
         let msg = 'Gagal mengonversi gambar ke PDF.';
@@ -222,7 +223,7 @@ const submitConvertImage = async () => {
                  msg = json.message || msg;
              } catch(e) {}
         }
-        Swal.fire('Error!', msg, 'error');
+        toast.error(msg);
     } finally {
         isConvertingImage.value = false;
     }
@@ -277,7 +278,7 @@ const submitConvertWord = async () => {
         link.click();
         link.remove();
         
-        Swal.fire('Berhasil!', 'File Word berhasil dikonversi ke PDF.', 'success');
+        toast.success('File Word berhasil dikonversi ke PDF.');
         convertWordFile.value = null;
     } catch (error) {
         let msg = 'Gagal mengonversi Word ke PDF. Beberapa format kompleks mungkin tidak didukung.';
@@ -288,7 +289,7 @@ const submitConvertWord = async () => {
                  msg = json.message || msg;
              } catch(e) {}
         }
-        Swal.fire('Error!', msg, 'error');
+        toast.error(msg);
     } finally {
         isConvertingWord.value = false;
     }

@@ -12,11 +12,14 @@ import DangerButton from '@/Components/DangerButton.vue';
 import Pagination from '@/Components/Pagination.vue';
 import { PlusIcon, ArrowPathIcon, PencilSquareIcon, TrashIcon } from '@heroicons/vue/24/solid';
 import Swal from 'sweetalert2';
+import { useToast } from '@/Composables/useToast';
 
 const props = defineProps({
     holidays: Object,
     filters: Object
 });
+
+const toast = useToast();
 
 const search = ref(props.filters.search || '');
 const showModal = ref(false);
@@ -73,14 +76,12 @@ const submit = () => {
         form.put(route('admin.hari-libur.update', form.id), {
             onSuccess: () => {
                 closeModal();
-                Swal.fire('Berhasil', 'Data berhasil diperbarui', 'success');
             }
         });
     } else {
         form.post(route('admin.hari-libur.store'), {
             onSuccess: () => {
                 closeModal();
-                Swal.fire('Berhasil', 'Data berhasil ditambahkan', 'success');
             }
         });
     }
@@ -97,9 +98,7 @@ const deleteHoliday = (id) => {
         confirmButtonText: 'Ya, hapus!'
     }).then((result) => {
         if (result.isConfirmed) {
-            router.delete(route('admin.hari-libur.destroy', id), {
-                onSuccess: () => Swal.fire('Terhapus!', 'Data berhasil dihapus.', 'success')
-            });
+            router.delete(route('admin.hari-libur.destroy', id));
         }
     });
 };
@@ -114,8 +113,7 @@ const syncHolidays = () => {
     }).then((result) => {
         if (result.isConfirmed) {
             syncForm.post(route('admin.hari-libur.fetch'), {
-                onSuccess: () => Swal.fire('Berhasil', 'Data berhasil disinkronisasi.', 'success'),
-                onError: () => Swal.fire('Gagal', 'Gagal sinkronisasi.', 'error')
+                onError: () => toast.error('Gagal sinkronisasi data libur.')
             });
         }
     });

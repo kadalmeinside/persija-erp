@@ -8,7 +8,7 @@ import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import { ArrowUpTrayIcon, DocumentArrowUpIcon } from '@heroicons/vue/24/outline';
-import Swal from 'sweetalert2';
+import { useToast } from '@/Composables/useToast';
 
 const props = defineProps({
     show: Boolean,
@@ -16,6 +16,7 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['close', 'saved']);
+const toast = useToast();
 
 const fileInput = ref(null);
 const selectedFileName = ref('');
@@ -44,7 +45,7 @@ const handleFileChange = (e) => {
 
 const submit = () => {
     if (!form.file) {
-        Swal.fire('File Belum Dipilih', 'Silakan pilih berkas dokumen yang ingin diunggah.', 'warning');
+        toast.warning('Silakan pilih berkas dokumen yang ingin diunggah.', 'File Belum Dipilih');
         return;
     }
 
@@ -54,13 +55,6 @@ const submit = () => {
         onSuccess: () => {
             emit('saved');
             close();
-            Swal.fire({
-                icon: 'success',
-                title: 'Berhasil',
-                text: 'Dokumen berhasil diunggah ke berkas karyawan',
-                timer: 1500,
-                showConfirmButton: false
-            });
         }
     });
 };

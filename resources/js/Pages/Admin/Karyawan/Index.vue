@@ -73,9 +73,7 @@ const deleteItem = (item) => {
         cancelButtonText: 'Batal'
     }).then((result) => {
         if (result.isConfirmed) {
-            router.delete(route('admin.karyawan.destroy', item.id), {
-                onSuccess: () => Swal.fire('Terhapus!', 'Data karyawan telah dihapus.', 'success')
-            });
+            router.delete(route('admin.karyawan.destroy', item.id));
         }
     });
 };

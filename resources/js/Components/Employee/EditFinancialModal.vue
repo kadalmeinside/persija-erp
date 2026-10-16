@@ -8,7 +8,7 @@ import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import { PlusIcon, TrashIcon, BanknotesIcon, ShieldCheckIcon } from '@heroicons/vue/24/outline';
-import Swal from 'sweetalert2';
+import { useToast } from '@/Composables/useToast';
 
 const props = defineProps({
     show: Boolean,
@@ -20,6 +20,7 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['close', 'saved']);
+const toast = useToast();
 
 const form = useForm({
     gaji_pokok: 0,
@@ -66,7 +67,7 @@ watch(() => props.show, (newVal) => {
 
 const addKomponen = () => {
     if (props.masterKomponenGaji.length === 0) {
-        Swal.fire('Info', 'Belum ada data master komponen gaji di sistem. Silakan atur di modul Payroll terlebih dahulu.', 'info');
+        toast.info('Belum ada data master komponen gaji di sistem. Silakan atur di modul Payroll terlebih dahulu.');
         return;
     }
     form.komponen.push({
@@ -86,13 +87,6 @@ const submit = () => {
         onSuccess: () => {
             emit('saved');
             emit('close');
-            Swal.fire({
-                icon: 'success',
-                title: 'Berhasil',
-                text: 'Data finansial, BPJS dan tunjangan rutin berhasil diperbarui',
-                timer: 1500,
-                showConfirmButton: false
-            });
         }
     });
 };

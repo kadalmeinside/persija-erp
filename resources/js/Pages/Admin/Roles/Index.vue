@@ -9,7 +9,6 @@ import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
 import Checkbox from '@/Components/Checkbox.vue';
-import Toast from '@/Components/Toast.vue';
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/vue/20/solid';
 import { ref, watch, computed, onMounted } from 'vue';
 import { debounce } from 'lodash';
@@ -19,8 +18,6 @@ const roles = computed(() => page.props.roles);
 const filters = computed(() => page.props.filters || {});
 const allPermissions = computed(() => page.props.allPermissions || []);
 const can = computed(() => page.props.can || {});
-const flashMessage = computed(() => page.props.flash?.message);
-const flashType = computed(() => page.props.flash?.type || 'info');
 const showRoleModal = ref(false);
 const isEditMode = ref(false);
 const form = useForm({
@@ -125,8 +122,6 @@ onMounted(() => {
         <template #header>
             <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">Role Management</h2>
         </template>
-
-        <Toast :message="flashMessage" :type="flashType" />
 
         <div class="pb-12 pt-4">
             <div class="max-w-7xl mx-auto">

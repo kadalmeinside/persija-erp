@@ -13,6 +13,7 @@ import {
     PlusIcon, DocumentPlusIcon
 } from '@heroicons/vue/24/outline';
 import Swal from 'sweetalert2';
+import { useToast } from '@/Composables/useToast';
 import CareerHistoryModal from '@/Components/CareerHistoryModal.vue';
 import EditProfileModal from '@/Components/Employee/EditProfileModal.vue';
 import EditEmploymentModal from '@/Components/Employee/EditEmploymentModal.vue';
@@ -32,6 +33,8 @@ const props = defineProps({
     lastClockIn: String,
     navigation: Object,
 });
+
+const toast = useToast();
 
 const formatDate = (dateString) => {
     if (!dateString) return '-';
@@ -148,15 +151,6 @@ const handleArchiveContract = () => {
                 preserveScroll: true,
                 onFinish: () => {
                     isArchiving.value = false;
-                },
-                onSuccess: () => {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil Diarsipkan',
-                        text: 'Draft Surat Perjanjian Kerja tersimpan di Berkas Dokumen Karyawan.',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
                 }
             });
         }
@@ -177,16 +171,7 @@ const handleDeleteDoc = (doc) => {
     }).then((result) => {
         if (result.isConfirmed) {
             router.delete(route('admin.karyawan.dokumen.destroy', doc.id), {
-                preserveScroll: true,
-                onSuccess: () => {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Terhapus',
-                        text: 'Dokumen berhasil dihapus',
-                        timer: 1500,
-                        showConfirmButton: false
-                    });
-                }
+                preserveScroll: true
             });
         }
     });
@@ -211,7 +196,7 @@ const sendEmail = () => {
     if (props.karyawan.user?.email) {
         window.location.href = `mailto:${props.karyawan.user.email}`;
     } else {
-        Swal.fire('Email Tidak Tersedia', 'Karyawan belum memiliki email akun terdaftar.', 'info');
+        toast.info('Karyawan belum memiliki email akun terdaftar.', 'Email Tidak Tersedia');
     }
 };
 

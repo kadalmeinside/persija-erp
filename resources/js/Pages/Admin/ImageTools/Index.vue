@@ -6,8 +6,9 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import { ArrowsPointingInIcon, ArrowsPointingOutIcon, PhotoIcon } from '@heroicons/vue/24/outline';
-import Swal from 'sweetalert2';
+import { useToast } from '@/Composables/useToast';
 
+const toast = useToast();
 const activeTab = ref('compress'); // 'compress' or 'upscale'
 
 // --- COMPRESS FORM ---
@@ -61,7 +62,7 @@ const submitCompress = async () => {
         link.click();
         link.remove();
         
-        Swal.fire('Berhasil!', 'Gambar berhasil dikompres dan diunduh.', 'success');
+        toast.success('Gambar berhasil dikompres dan diunduh.');
         compressFile.value = null;
     } catch (error) {
         let msg = 'Gagal mengompres gambar.';
@@ -72,7 +73,7 @@ const submitCompress = async () => {
                  msg = json.message || msg;
              } catch(e) {}
         }
-        Swal.fire('Error!', msg, 'error');
+        toast.error(msg);
     } finally {
         isCompressing.value = false;
     }
@@ -129,7 +130,7 @@ const submitUpscale = async () => {
         link.click();
         link.remove();
         
-        Swal.fire('Berhasil!', 'Resolusi gambar berhasil dibesarkan.', 'success');
+        toast.success('Resolusi gambar berhasil dibesarkan.');
         upscaleFile.value = null;
     } catch (error) {
         let msg = 'Gagal membesarkan gambar.';
@@ -140,7 +141,7 @@ const submitUpscale = async () => {
                  msg = json.message || msg;
              } catch(e) {}
         }
-        Swal.fire('Error!', msg, 'error');
+        toast.error(msg);
     } finally {
         isUpscaling.value = false;
     }

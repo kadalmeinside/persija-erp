@@ -13,12 +13,14 @@ import {
     InformationCircleIcon, TagIcon, DocumentDuplicateIcon 
 } from '@heroicons/vue/24/outline';
 import Swal from 'sweetalert2';
+import { useToast } from '@/Composables/useToast';
 
 const props = defineProps({
     templates: Array,
     availableTags: Array,
 });
 
+const toast = useToast();
 const selectedTemplateId = ref(props.templates[0]?.id || null);
 
 const activeTemplate = computed(() => {
@@ -57,28 +59,12 @@ const insertTag = (tag) => {
 
 const copyTag = (tag) => {
     navigator.clipboard.writeText(tag);
-    Swal.fire({
-        toast: true,
-        position: 'top-end',
-        icon: 'success',
-        title: `Tag ${tag} disalin ke clipboard`,
-        showConfirmButton: false,
-        timer: 1500
-    });
+    toast.success(`Tag ${tag} disalin ke clipboard`);
 };
 
 const submitUpdate = () => {
     form.put(route('admin.contract-templates.update', selectedTemplateId.value), {
-        preserveScroll: true,
-        onSuccess: () => {
-            Swal.fire({
-                icon: 'success',
-                title: 'Berhasil Disimpan',
-                text: 'Template kontrak kerja berhasil diperbarui',
-                timer: 1800,
-                showConfirmButton: false
-            });
-        }
+        preserveScroll: true
     });
 };
 
@@ -100,13 +86,6 @@ const handleResetDefault = () => {
                     // Update active form with latest template
                     const refreshed = props.templates.find(t => t.id === selectedTemplateId.value);
                     if (refreshed) initForm(refreshed);
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil Di-reset',
-                        text: 'Template kontrak telah dikembalikan ke standar resmi.',
-                        timer: 1800,
-                        showConfirmButton: false
-                    });
                 }
             });
         }

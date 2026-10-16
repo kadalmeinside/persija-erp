@@ -1,10 +1,50 @@
 <script setup>
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
+import Toast from '@/Components/Toast.vue';
+import { useToast } from '@/Composables/useToast';
+import { watch } from 'vue';
+
+const page = usePage();
+const toast = useToast();
+let lastFlashSig = '';
+
+watch(
+    () => page.props.flash,
+    (flash) => {
+        if (!flash) return;
+        const flashMsg = flash.message || null;
+        const flashSuccess = flash.success || null;
+        const flashError = flash.error || null;
+        const flashType = flash.type || null;
+
+        if (!flashMsg && !flashSuccess && !flashError) {
+            lastFlashSig = '';
+            return;
+        }
+
+        const currentSig = `${flashSuccess}|${flashError}|${flashMsg}|${flashType}`;
+        if (currentSig === lastFlashSig) return;
+        lastFlashSig = currentSig;
+
+        if (flashSuccess) {
+            toast.success(flashSuccess);
+        } else if (flashError) {
+            toast.error(flashError);
+        } else if (flashMsg) {
+            toast.show({
+                message: flashMsg,
+                type: flashType === 'danger' ? 'error' : (flashType || 'info'),
+            });
+        }
+    },
+    { deep: true, immediate: true }
+);
 </script>
 
 <template>
     <div class="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-slate-950 selection:bg-slate-700 selection:text-white">
+        <Toast />
         <!-- Liquid Blobs Background (Dark/Grey Mode) - Optimized for Performance -->
         <!-- Mengganti blur-[100px] dan mix-blend-screen dengan blur-3xl dan radial-gradients murni untuk mengurangi beban GPU -->
         <div class="absolute top-0 -left-4 w-96 h-96 bg-slate-800 rounded-full filter blur-3xl opacity-50 animate-blob will-change-transform"></div>

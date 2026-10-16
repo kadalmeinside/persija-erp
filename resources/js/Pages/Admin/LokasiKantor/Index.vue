@@ -63,7 +63,6 @@ const submit = () => {
             preserveScroll: true,
             onSuccess: () => {
                 closeModal();
-                Swal.fire('Berhasil', 'Data cabang diperbarui.', 'success');
             }
         });
     } else {
@@ -71,7 +70,6 @@ const submit = () => {
             preserveScroll: true,
             onSuccess: () => {
                 closeModal();
-                Swal.fire('Berhasil', 'Cabang baru ditambahkan.', 'success');
             }
         });
     }
@@ -89,9 +87,7 @@ const deleteItem = (item) => {
         cancelButtonText: 'Batal'
     }).then((result) => {
         if (result.isConfirmed) {
-            router.delete(route('admin.lokasi-kantor.destroy', item.id), {
-                onSuccess: () => Swal.fire('Terhapus!', 'Cabang telah dihapus.', 'success')
-            });
+            router.delete(route('admin.lokasi-kantor.destroy', item.id));
         }
     });
 };

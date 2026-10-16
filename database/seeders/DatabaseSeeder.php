@@ -19,7 +19,8 @@ class DatabaseSeeder extends Seeder
             MasterDataFinanceSeeder::class, // Base GL Accounts
             MasterDataTaxSeeder::class, // Base Taxes
             MasterDataCutiSeeder::class, // Base Cuti Types
-            HariLiburSeeder::class // Base Public Holidays
+            HariLiburSeeder::class, // Base Public Holidays
+            ContractTemplateSeeder::class, // Base Contract Templates (PKWT, PKWTT, Professional)
         ]);
     }
 }

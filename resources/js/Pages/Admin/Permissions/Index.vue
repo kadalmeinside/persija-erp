@@ -8,7 +8,6 @@ import Modal from '@/Components/Modal.vue';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
-import Toast from '@/Components/Toast.vue';
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/vue/20/solid';
 import { ref, watch, computed, onMounted } from 'vue';
 import { debounce } from 'lodash';
@@ -18,8 +17,6 @@ const page = usePage();
 const permissions = computed(() => page.props.permissions);
 const filters = computed(() => page.props.filters || {});
 const can = computed(() => page.props.can || {});
-const flashMessage = computed(() => page.props.flash?.message);
-const flashType = computed(() => page.props.flash?.type || 'info');
 
 const showPermissionModal = ref(false);
 const isEditMode = ref(false);
@@ -127,8 +124,6 @@ onMounted(() => {
         <template #header>
             <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">Permission Management</h2>
         </template>
-
-        <Toast :message="flashMessage" :type="flashType" />
 
         <div class="pb-12 pt-4">
             <div class="max-w-7xl mx-auto">

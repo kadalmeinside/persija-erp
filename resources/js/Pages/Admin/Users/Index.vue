@@ -9,7 +9,6 @@ import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
 import Checkbox from '@/Components/Checkbox.vue';
-import Toast from '@/Components/Toast.vue';
 // Jika Anda membuat komponen Pagination.vue, uncomment dan gunakan. Jika tidak, render manual.
 // import Pagination from '@/Components/Pagination.vue';
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/vue/20/solid';
@@ -23,8 +22,6 @@ const users = computed(() => page.props.users);
 const filters = computed(() => page.props.filters || {}); // Default ke objek kosong jika tidak ada
 const allRoles = computed(() => page.props.allRoles || []);
 const can = computed(() => page.props.can || {});
-const flashMessage = computed(() => page.props.flash?.message);
-const flashType = computed(() => page.props.flash?.type || 'info');
 
 // State untuk Modal
 const showUserModal = ref(false);
@@ -159,8 +156,6 @@ watch(users, (newComputedUsers) => {
         <template #header>
             <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">User Management</h2>
         </template>
-
-        <Toast :message="flashMessage" :type="flashType" />
 
         <div class="pb-12 pt-4">
             <div class="max-w-7xl mx-auto">

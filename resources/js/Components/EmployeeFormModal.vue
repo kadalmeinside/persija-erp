@@ -8,7 +8,6 @@ import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import { CameraIcon, UserIcon } from '@heroicons/vue/24/outline';
-import Swal from 'sweetalert2';
 import { useClientValidation } from '@/Composables/useClientValidation';
 
 const props = defineProps({
@@ -147,7 +146,6 @@ const submit = () => {
             onSuccess: () => {
                 emit('saved');
                 emit('close');
-                Swal.fire('Berhasil', 'Data karyawan berhasil diperbarui', 'success');
             }
         });
     } else {
@@ -156,7 +154,6 @@ const submit = () => {
             onSuccess: () => {
                 emit('saved');
                 emit('close');
-                Swal.fire('Berhasil', 'Karyawan baru berhasil ditambahkan', 'success');
             }
         });
     }

@@ -28,7 +28,7 @@ Route::middleware(['role:Super Admin|HR Manager|HR Staff'])->group(function () {
 
     // Master Contract Templates
     Route::resource('contract-templates', \App\Http\Controllers\Admin\ContractTemplateController::class)->only(['index', 'update']);
-    Route::post('contract-templates/{contractTemplate}/reset', [\App\Http\Controllers\Admin\ContractTemplateController::class, 'reset'])->name('contract-templates.reset');
+    Route::post('contract-templates/{id?}/reset', [\App\Http\Controllers\Admin\ContractTemplateController::class, 'reset'])->name('contract-templates.reset');
 
     Route::resource('lokasi-kantor', \App\Http\Controllers\Admin\LokasiKantorController::class)->except(['create', 'show', 'edit']);
     Route::post('karyawan/{karyawan}/riwayat-karir', [RiwayatKarirController::class, 'store'])->name('karyawan.riwayat-karir.store')->withTrashed();
