@@ -760,22 +760,13 @@ const formatTime = (dateStr) => {
                             v-model="form.category" 
                             class="w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm font-medium"
                         >
-                            <option value="meeting">🏢 Rapat / Meeting Ruangan (Cek Bentrok Ruangan & Jam)</option>
-                            <option value="general">📢 Kegiatan Umum Perusahaan (Boleh Bersamaan/Bentrok)</option>
-                            <option value="training">🎓 Pelatihan / Workshop (Boleh Bersamaan/Bentrok)</option>
-                            <option value="online">💻 Meeting Online / Virtual (Zoom/GMeet - Boleh Bersamaan)</option>
-                            <option value="other">📌 Agenda Lainnya (Boleh Bersamaan)</option>
+                            <option value="meeting">Rapat / Meeting Ruangan</option>
+                            <option value="general">Kegiatan Umum Perusahaan</option>
+                            <option value="training">Pelatihan / Workshop</option>
+                            <option value="online">Meeting Online / Virtual</option>
+                            <option value="other">Agenda Lainnya</option>
                         </select>
                         <InputError :message="form.errors.category" class="mt-1" />
-                        
-                        <div class="mt-1.5 p-2.5 rounded-lg text-xs leading-relaxed" :class="form.category === 'meeting' ? 'bg-amber-50 text-amber-800 border border-amber-200' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'">
-                            <span v-if="form.category === 'meeting'" class="font-medium">
-                                ⚠️ <strong>Pencegahan Bentrok Aktif:</strong> Ruangan dan jam yang sama tidak dapat digunakan lebih dari 1 meeting secara bersamaan.
-                            </span>
-                            <span v-else class="font-medium">
-                                ℹ️ <strong>Fleksibel:</strong> Agenda jenis ini bebas diadakan bersamaan dengan agenda lain pada jam yang sama (tidak dicek bentrok).
-                            </span>
-                        </div>
                     </div>
 
                     <div>
@@ -798,28 +789,19 @@ const formatTime = (dateStr) => {
                     </div>
 
                     <div>
-                        <div class="flex items-center justify-between">
-                            <InputLabel :value="form.category === 'meeting' ? 'Ruangan / Lokasi Rapat (Bebas diisi)' : 'Ruangan / Lokasi (Opsional)'" />
-                            <span v-if="form.category === 'meeting'" class="text-[11px] font-bold text-indigo-600">Validasi Ruang</span>
-                        </div>
+                        <InputLabel value="Ruangan/Tempat" />
                         <TextInput 
                             v-model="form.location" 
                             list="common-meeting-rooms"
                             class="w-full mt-1" 
-                            :placeholder="form.category === 'meeting' ? 'Ketik nama ruangan bebas atau pilih dari opsi...' : 'Lokasi agenda (boleh dikosongkan)'" 
+                            placeholder="Pilih atau ketik ruangan/tempat..." 
                         />
                         <datalist id="common-meeting-rooms">
-                            <option value="Ruang Rapat Utama (Lt. 2)" />
-                            <option value="Ruang Meeting Direksi" />
-                            <option value="Ruang Diskusi & Briefing" />
-                            <option value="Press Conference Room" />
-                            <option value="Studio Konten & Media" />
-                            <option value="Aula Serbaguna" />
+                            <option value="Ruang Meeting Utama" />
+                            <option value="Ruang Meeting 2" />
+                            <option value="Ruang Basecamp" />
                         </datalist>
                         <InputError :message="form.errors.location" class="mt-1 font-semibold text-rose-600" />
-                        <p class="text-[11px] text-gray-500 mt-1">
-                            Nama ruangan bebas Anda ketik. Sistem hanya menolak jika ada meeting lain di ruangan dan jam yang persis sama.
-                        </p>
                     </div>
 
                     <div>
@@ -866,7 +848,7 @@ const formatTime = (dateStr) => {
                                 'bg-sky-100 text-sky-700 border border-sky-200': selectedDetailEvent.category === 'online',
                                 'bg-slate-100 text-slate-700 border border-slate-200': selectedDetailEvent.category === 'other' || !selectedDetailEvent.category
                               }">
-                            {{ selectedDetailEvent.category === 'meeting' ? '🏢 Rapat / Meeting Ruangan' : selectedDetailEvent.category === 'general' ? '📢 Kegiatan Umum Perusahaan' : selectedDetailEvent.category === 'training' ? '🎓 Pelatihan / Workshop' : selectedDetailEvent.category === 'online' ? '💻 Meeting Online / Virtual' : '📌 Agenda Lainnya' }}
+                            {{ selectedDetailEvent.category === 'meeting' ? 'Rapat / Meeting Ruangan' : selectedDetailEvent.category === 'general' ? 'Kegiatan Umum Perusahaan' : selectedDetailEvent.category === 'training' ? 'Pelatihan / Workshop' : selectedDetailEvent.category === 'online' ? 'Meeting Online / Virtual' : 'Agenda Lainnya' }}
                         </span>
                         <span v-else class="capitalize px-2 py-1 bg-gray-100 rounded text-gray-700 inline-block mt-1">
                             {{ selectedDetailEvent?.type === 'holiday' ? 'Hari Libur' : selectedDetailEvent?.type === 'leave' ? 'Cuti' : 'Tugas' }}
