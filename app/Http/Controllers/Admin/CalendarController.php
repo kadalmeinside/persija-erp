@@ -91,10 +91,11 @@ class CalendarController extends Controller
                     'id' => 'event-' . $event->id,
                     'real_id' => $event->id, // For edit/delete
                     'title' => $event->title,
+                    'category' => $event->category ?? 'meeting',
                     'start' => $event->start_date->format('Y-m-d H:i:s'), // Full datetime for events
                     'end' => $event->end_date ? $event->end_date->format('Y-m-d H:i:s') : null,
                     'type' => 'event',
-                    'color' => $event->color, // purple
+                    'color' => $event->color, // purple, emerald, amber, sky
                     'description' => $event->description,
                     'location' => $event->location,
                     'is_managed' => true // Flag for UI to allow edit if admin

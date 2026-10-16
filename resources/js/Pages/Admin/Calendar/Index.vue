@@ -79,19 +79,31 @@ const handleEventClick = (event) => {
 
 const form = useForm({
     title: '',
+    category: 'meeting',
     start_date: '',
     end_date: '',
     description: '',
     location: ''
 });
 
-const openCreateModal = () => {
+const openCreateModal = (defaultDate = null) => {
     editingEvent.value = null;
     form.reset();
-    // Default date to today
-    const today = new Date().toISOString().slice(0, 10);
-    form.start_date = today;
-    form.end_date = today;
+    form.clearErrors();
+    form.category = 'meeting';
+
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    let datePart = '';
+
+    if (defaultDate && typeof defaultDate === 'string') {
+        datePart = defaultDate;
+    } else {
+        datePart = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    }
+
+    form.start_date = `${datePart}T09:00`;
+    form.end_date = `${datePart}T10:00`;
     showEventModal.value = true;
 };
 
@@ -99,10 +111,9 @@ const openEditModal = (event) => {
     if (event.type !== 'event' || !props.canManageEvents) return;
     
     editingEvent.value = event;
+    form.clearErrors();
     form.title = event.title;
-    // Strip time for simpler date input, or keep if using datetime-local
-    // For simplicity, let's use date input for now, or text with datetime logic.
-    // The Controller returns Y-m-d H:i:s.
+    form.category = event.category || 'meeting';
     form.start_date = event.start.slice(0, 16); // YYYY-MM-DDTHH:mm for datetime-local
     form.end_date = event.end ? event.end.slice(0, 16) : '';
     form.description = event.description;
@@ -445,7 +456,13 @@ const sortedEvents = computed(() => {
 
 const getEventColor = (event) => {
     if (event.type === 'holiday') return 'bg-red-100 text-red-800 border-red-200';
-    if (event.type === 'event') return 'bg-purple-100 text-purple-800 border-purple-200'; // Company Event
+    if (event.type === 'event') {
+        if (event.category === 'general') return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+        if (event.category === 'training') return 'bg-amber-100 text-amber-800 border-amber-200';
+        if (event.category === 'online') return 'bg-sky-100 text-sky-800 border-sky-200';
+        if (event.category === 'other') return 'bg-slate-100 text-slate-800 border-slate-200';
+        return 'bg-purple-100 text-purple-800 border-purple-200'; // Default Meeting
+    }
     if (event.type === 'task') {
         if (event.color === 'green') return 'bg-green-100 text-green-800 border-green-200';
         if (event.color === 'red') return 'bg-red-100 text-red-800 border-red-200';
@@ -636,16 +653,22 @@ const formatDate = (dateStr) => {
 
                             <!-- Calendar Days -->
                             <div v-for="(day, index) in calendarDays" :key="index" 
-                                 class="bg-white min-h-[120px] p-2 transition hover:bg-gray-50"
-                                 :class="{ 'bg-gray-50': day.isPadding }">
+                                 class="bg-white min-h-[120px] p-2 transition group"
+                                 :class="[
+                                    day.isPadding ? 'bg-gray-50' : (canManageEvents ? 'cursor-pointer hover:bg-indigo-50/20' : 'hover:bg-gray-50')
+                                 ]"
+                                 @click="!day.isPadding && canManageEvents && openCreateModal(day.fullDate)">
                                 
                                 <div v-if="!day.isPadding">
-                                    <span class="text-sm font-medium text-gray-700 block mb-1">{{ day.date }}</span>
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="text-sm font-medium text-gray-700">{{ day.date }}</span>
+                                        <span v-if="canManageEvents" class="opacity-0 group-hover:opacity-100 text-[11px] font-bold text-indigo-500 hover:text-indigo-700 transition" title="Tambah Agenda di tanggal ini">+</span>
+                                    </div>
                                     
                                     <!-- Events List -->
                                     <div class="space-y-1">
                                         <div v-for="event in day.events" :key="event.id" 
-                                             @click="handleEventClick(event)"
+                                             @click.stop="handleEventClick(event)"
                                              class="text-xs px-1.5 py-0.5 rounded border truncate cursor-pointer hover:opacity-80 transition"
                                              :class="[getEventColor(event)]"
                                              :title="event.title">
@@ -721,44 +744,72 @@ const formatDate = (dateStr) => {
                 </h2>
                 
                 <div class="space-y-4">
+                    <!-- Jenis / Kategori Agenda -->
+                    <div>
+                        <InputLabel value="Jenis Agenda *" />
+                        <select 
+                            v-model="form.category" 
+                            class="w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm font-medium"
+                        >
+                            <option value="meeting">🏢 Rapat / Meeting Ruangan (Cek Bentrok Ruangan & Jam)</option>
+                            <option value="general">📢 Kegiatan Umum Perusahaan (Boleh Bersamaan/Bentrok)</option>
+                            <option value="training">🎓 Pelatihan / Workshop (Boleh Bersamaan/Bentrok)</option>
+                            <option value="online">💻 Meeting Online / Virtual (Zoom/GMeet - Boleh Bersamaan)</option>
+                            <option value="other">📌 Agenda Lainnya (Boleh Bersamaan)</option>
+                        </select>
+                        <InputError :message="form.errors.category" class="mt-1" />
+                        
+                        <div class="mt-1.5 p-2.5 rounded-lg text-xs leading-relaxed" :class="form.category === 'meeting' ? 'bg-amber-50 text-amber-800 border border-amber-200' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'">
+                            <span v-if="form.category === 'meeting'" class="font-medium">
+                                ⚠️ <strong>Pencegahan Bentrok Aktif:</strong> Ruangan dan jam yang sama tidak dapat digunakan lebih dari 1 meeting secara bersamaan.
+                            </span>
+                            <span v-else class="font-medium">
+                                ℹ️ <strong>Fleksibel:</strong> Agenda jenis ini bebas diadakan bersamaan dengan agenda lain pada jam yang sama (tidak dicek bentrok).
+                            </span>
+                        </div>
+                    </div>
+
                     <div>
                         <InputLabel value="Judul Agenda *" />
                         <TextInput v-model="form.title" class="w-full mt-1" placeholder="Rapat Evaluasi Tim / Pertemuan Sponsor..." />
                         <InputError :message="form.errors.title" class="mt-1" />
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <InputLabel value="Mulai *" />
+                            <InputLabel value="Waktu Mulai *" />
                             <TextInput type="datetime-local" v-model="form.start_date" class="w-full mt-1" />
                             <InputError :message="form.errors.start_date" class="mt-1" />
                         </div>
                         <div>
-                            <InputLabel value="Selesai" />
+                            <InputLabel value="Waktu Selesai" />
                             <TextInput type="datetime-local" v-model="form.end_date" class="w-full mt-1" />
                             <InputError :message="form.errors.end_date" class="mt-1" />
                         </div>
                     </div>
 
                     <div>
-                        <InputLabel value="Ruangan / Lokasi (Pencegah Bentrok)" />
+                        <div class="flex items-center justify-between">
+                            <InputLabel :value="form.category === 'meeting' ? 'Ruangan / Lokasi Rapat (Bebas diisi)' : 'Ruangan / Lokasi (Opsional)'" />
+                            <span v-if="form.category === 'meeting'" class="text-[11px] font-bold text-indigo-600">Validasi Ruang</span>
+                        </div>
                         <TextInput 
                             v-model="form.location" 
                             list="common-meeting-rooms"
                             class="w-full mt-1" 
-                            placeholder="Pilih atau ketik nama ruangan, misal: Ruang Rapat Utama..." 
+                            :placeholder="form.category === 'meeting' ? 'Ketik nama ruangan bebas atau pilih dari opsi...' : 'Lokasi agenda (boleh dikosongkan)'" 
                         />
                         <datalist id="common-meeting-rooms">
                             <option value="Ruang Rapat Utama (Lt. 2)" />
                             <option value="Ruang Meeting Direksi" />
-                            <option value="Ruang Briefing Tim" />
+                            <option value="Ruang Diskusi & Briefing" />
                             <option value="Press Conference Room" />
                             <option value="Studio Konten & Media" />
-                            <option value="Online / Zoom Meeting" />
+                            <option value="Aula Serbaguna" />
                         </datalist>
                         <InputError :message="form.errors.location" class="mt-1 font-semibold text-rose-600" />
                         <p class="text-[11px] text-gray-500 mt-1">
-                            Sistem otomatis memvalidasi jadwal agar tidak terjadi double-booking pada ruangan dan jam yang sama.
+                            Nama ruangan bebas Anda ketik. Sistem hanya menolak jika ada meeting lain di ruangan dan jam yang persis sama.
                         </p>
                     </div>
 
@@ -798,7 +849,19 @@ const formatDate = (dateStr) => {
                 <div class="space-y-4 mb-6 text-sm text-gray-600 dark:text-gray-400">
                     <div>
                         <strong class="block text-gray-700 dark:text-gray-300">Kategori:</strong>
-                        <span class="capitalize px-2 py-1 bg-gray-100 rounded text-gray-700 inline-block mt-1">{{ selectedDetailEvent?.type === 'event' ? 'Agenda Perusahaan' : selectedDetailEvent?.type === 'holiday' ? 'Hari Libur' : selectedDetailEvent?.type === 'leave' ? 'Cuti' : 'Tugas' }}</span>
+                        <span v-if="selectedDetailEvent?.type === 'event'" class="px-2.5 py-0.5 rounded-full text-xs font-semibold inline-block mt-1"
+                              :class="{
+                                'bg-purple-100 text-purple-700 border border-purple-200': selectedDetailEvent.category === 'meeting',
+                                'bg-emerald-100 text-emerald-700 border border-emerald-200': selectedDetailEvent.category === 'general',
+                                'bg-amber-100 text-amber-700 border border-amber-200': selectedDetailEvent.category === 'training',
+                                'bg-sky-100 text-sky-700 border border-sky-200': selectedDetailEvent.category === 'online',
+                                'bg-slate-100 text-slate-700 border border-slate-200': selectedDetailEvent.category === 'other' || !selectedDetailEvent.category
+                              }">
+                            {{ selectedDetailEvent.category === 'meeting' ? '🏢 Rapat / Meeting Ruangan' : selectedDetailEvent.category === 'general' ? '📢 Kegiatan Umum Perusahaan' : selectedDetailEvent.category === 'training' ? '🎓 Pelatihan / Workshop' : selectedDetailEvent.category === 'online' ? '💻 Meeting Online / Virtual' : '📌 Agenda Lainnya' }}
+                        </span>
+                        <span v-else class="capitalize px-2 py-1 bg-gray-100 rounded text-gray-700 inline-block mt-1">
+                            {{ selectedDetailEvent?.type === 'holiday' ? 'Hari Libur' : selectedDetailEvent?.type === 'leave' ? 'Cuti' : 'Tugas' }}
+                        </span>
                     </div>
                     
                     <div class="grid grid-cols-2 gap-4">

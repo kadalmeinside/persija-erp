@@ -62,12 +62,13 @@ class PublicCalendarController extends Controller
             return [
                 'id' => 'event-' . $event->id,
                 'title' => $showDetails ? $event->title : 'Jadwal Agenda / Pertemuan',
+                'category' => $event->category ?? 'meeting',
                 'start' => $event->start_date->format('Y-m-d H:i:s'),
                 'end' => $event->end_date ? $event->end_date->format('Y-m-d H:i:s') : null,
                 'location' => $event->location,
                 'description' => $showDetails ? $event->description : null,
                 'type' => 'event',
-                'color' => 'purple',
+                'color' => $event->color ?: 'purple',
             ];
         });
 

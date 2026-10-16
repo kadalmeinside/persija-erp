@@ -37,28 +37,41 @@ class CompanyEventController extends Controller
     {
         $request->validate([
             'title' => 'required|string|max:255',
+            'category' => 'nullable|string|in:meeting,general,training,online,other',
             'start_date' => 'required|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
             'description' => 'nullable|string',
             'location' => 'nullable|string|max:255',
         ]);
 
+        $category = $request->input('category', 'meeting') ?: 'meeting';
         $startDate = \Carbon\Carbon::parse($request->start_date);
         $endDate = $request->end_date ? \Carbon\Carbon::parse($request->end_date) : $startDate->copy()->addHour();
         if ($endDate->lte($startDate)) {
             $endDate = $startDate->copy()->addHour();
         }
 
-        // Check for room/location conflicts
-        $this->validateRoomAvailability($request->location, $startDate, $endDate);
+        // Color coding based on category
+        $colorMap = [
+            'meeting' => 'purple',
+            'general' => 'emerald',
+            'training' => 'amber',
+            'online' => 'sky',
+            'other' => 'indigo',
+        ];
+        $color = $colorMap[$category] ?? 'purple';
+
+        // Check for room/location conflicts ONLY IF category is 'meeting'
+        $this->validateRoomAvailability($category, $request->location, $startDate, $endDate);
 
         CompanyEvent::create([
             'title' => $request->title,
+            'category' => $category,
             'start_date' => $startDate,
             'end_date' => $endDate,
             'description' => $request->description,
             'location' => $request->location ? trim($request->location) : null,
-            'color' => 'purple', // Default color
+            'color' => $color,
             'created_by' => Auth::id(),
         ]);
 
@@ -72,27 +85,40 @@ class CompanyEventController extends Controller
     {
         $request->validate([
             'title' => 'required|string|max:255',
+            'category' => 'nullable|string|in:meeting,general,training,online,other',
             'start_date' => 'required|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
             'description' => 'nullable|string',
             'location' => 'nullable|string|max:255',
         ]);
 
+        $category = $request->input('category', $companyEvent->category ?? 'meeting') ?: 'meeting';
         $startDate = \Carbon\Carbon::parse($request->start_date);
         $endDate = $request->end_date ? \Carbon\Carbon::parse($request->end_date) : $startDate->copy()->addHour();
         if ($endDate->lte($startDate)) {
             $endDate = $startDate->copy()->addHour();
         }
 
+        $colorMap = [
+            'meeting' => 'purple',
+            'general' => 'emerald',
+            'training' => 'amber',
+            'online' => 'sky',
+            'other' => 'indigo',
+        ];
+        $color = $colorMap[$category] ?? 'purple';
+
         // Check for room/location conflicts ignoring current event
-        $this->validateRoomAvailability($request->location, $startDate, $endDate, $companyEvent->id);
+        $this->validateRoomAvailability($category, $request->location, $startDate, $endDate, $companyEvent->id);
 
         $companyEvent->update([
             'title' => $request->title,
+            'category' => $category,
             'start_date' => $startDate,
             'end_date' => $endDate,
             'description' => $request->description,
             'location' => $request->location ? trim($request->location) : null,
+            'color' => $color,
         ]);
 
         return redirect()->back()->with('success', 'Agenda perusahaan berhasil diperbarui.');
@@ -109,16 +135,27 @@ class CompanyEventController extends Controller
 
     /**
      * Validate whether the selected room/location is available during the time window.
+     * Overlap prevention ONLY triggers if category is 'meeting' (or meeting room booking)
+     * and location is filled. Other types (general events, trainings, online) ARE ALLOWED TO OVERLAP.
      */
-    protected function validateRoomAvailability(?string $location, \Carbon\Carbon $start, \Carbon\Carbon $end, ?int $ignoreId = null): void
+    protected function validateRoomAvailability(string $category, ?string $location, \Carbon\Carbon $start, \Carbon\Carbon $end, ?int $ignoreId = null): void
     {
+        // 1. Yang lain boleh bentrok! Hanya jenis 'meeting' yang divalidasi bentrok ruangan.
+        if ($category !== 'meeting') {
+            return;
+        }
+
         $normalizedLocation = trim($location ?? '');
         if (empty($normalizedLocation)) {
             return;
         }
 
-        // Check for time overlap in the same room/location
-        $query = CompanyEvent::whereNotNull('location')
+        // Check for time overlap in the same room/location among meetings
+        $query = CompanyEvent::where(function ($q) {
+                $q->where('category', 'meeting')
+                  ->orWhereNull('category');
+            })
+            ->whereNotNull('location')
             ->where('location', '!=', '')
             ->whereRaw('LOWER(TRIM(location)) = ?', [strtolower($normalizedLocation)])
             ->where(function ($q) use ($start, $end) {
@@ -143,7 +180,7 @@ class CompanyEventController extends Controller
             $conflictEnd = $conflict->end_date ? $conflict->end_date->format('d/m/Y H:i') : $conflictStart;
 
             throw \Illuminate\Validation\ValidationException::withMessages([
-                'location' => "Bentrok Jadwal! Lokasi/Ruangan '{$conflict->location}' sudah terpakai oleh agenda '{$conflict->title}' pada {$conflictStart} s/d {$conflictEnd}. Silakan gunakan ruangan lain atau ubah jam pelaksanaan.",
+                'location' => "Bentrok Ruang Rapat! Ruangan '{$conflict->location}' sudah digunakan untuk meeting '{$conflict->title}' pada jam {$conflictStart} s/d {$conflictEnd}. Silakan gunakan ruangan lain atau ubah jam rapat.",
             ]);
         }
     }

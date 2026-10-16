@@ -32,6 +32,7 @@ class PublicCalendarAndConflictTest extends TestCase
         // 1. Create first meeting in "Ruang Rapat Utama" from 10:00 to 12:00
         $response1 = $this->actingAs($this->admin)->post(route('admin.company-events.store'), [
             'title' => 'Meeting Internal Tim A',
+            'category' => 'meeting',
             'start_date' => '2026-11-10 10:00:00',
             'end_date' => '2026-11-10 12:00:00',
             'location' => 'Ruang Rapat Utama (Lt. 2)',
@@ -40,12 +41,14 @@ class PublicCalendarAndConflictTest extends TestCase
         $response1->assertRedirect();
         $this->assertDatabaseHas('company_events', [
             'title' => 'Meeting Internal Tim A',
+            'category' => 'meeting',
             'location' => 'Ruang Rapat Utama (Lt. 2)'
         ]);
 
-        // 2. Attempt to create overlapping meeting in the same room (11:00 to 13:00)
+        // 2. Attempt to create overlapping meeting in the same room (11:00 to 13:00) -> MUST FAIL
         $response2 = $this->actingAs($this->admin)->post(route('admin.company-events.store'), [
             'title' => 'Meeting Klien Tim B',
+            'category' => 'meeting',
             'start_date' => '2026-11-10 11:00:00',
             'end_date' => '2026-11-10 13:00:00',
             'location' => 'ruang rapat utama (lt. 2)', // Case-insensitive check
@@ -53,9 +56,25 @@ class PublicCalendarAndConflictTest extends TestCase
         ]);
         $response2->assertSessionHasErrors('location');
 
-        // 3. Attempt in a DIFFERENT room at the same time succeeds
+        // 3. Non-meeting category (e.g. general event) at the same time and same location -> ALLOWED TO OVERLAP
+        $responseGeneral = $this->actingAs($this->admin)->post(route('admin.company-events.store'), [
+            'title' => 'Kegiatan Pengumuman Umum / Gathering',
+            'category' => 'general',
+            'start_date' => '2026-11-10 10:30:00',
+            'end_date' => '2026-11-10 12:30:00',
+            'location' => 'Ruang Rapat Utama (Lt. 2)',
+            'description' => 'Kegiatan umum non-meeting boleh diadakan bersamaan'
+        ]);
+        $responseGeneral->assertRedirect();
+        $this->assertDatabaseHas('company_events', [
+            'title' => 'Kegiatan Pengumuman Umum / Gathering',
+            'category' => 'general'
+        ]);
+
+        // 4. Attempt meeting in a DIFFERENT room at the same time -> SUCCEEDS
         $response3 = $this->actingAs($this->admin)->post(route('admin.company-events.store'), [
             'title' => 'Meeting Klien Tim B',
+            'category' => 'meeting',
             'start_date' => '2026-11-10 11:00:00',
             'end_date' => '2026-11-10 13:00:00',
             'location' => 'Ruang Meeting Direksi',
@@ -64,6 +83,7 @@ class PublicCalendarAndConflictTest extends TestCase
         $response3->assertRedirect();
         $this->assertDatabaseHas('company_events', [
             'title' => 'Meeting Klien Tim B',
+            'category' => 'meeting',
             'location' => 'Ruang Meeting Direksi'
         ]);
     }
