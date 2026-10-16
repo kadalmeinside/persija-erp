@@ -172,11 +172,25 @@ class CalendarController extends Controller
             Setting::updateOrCreate(['key' => 'calendar_share_show_details'], ['value' => '1']);
         }
 
+        $shareUrl = url('/shared/calendar/' . $shareToken);
+        $companyName = Setting::where('key', 'company_name')->value('value') ?? 'Persija ERP';
+        $companyLogo = Setting::where('key', 'company_logo')->value('value');
+        $companyLogoUrl = $companyLogo ? asset('storage/' . $companyLogo) : null;
+
+        $rawSvg = (string) \SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')
+            ->size(350)
+            ->margin(1)
+            ->generate($shareUrl);
+
         $shareSettings = [
             'enabled' => $shareEnabled === '1',
             'showDetails' => $shareShowDetails !== '0',
             'token' => $shareToken,
-            'shareUrl' => url('/shared/calendar/' . $shareToken),
+            'shareUrl' => $shareUrl,
+            'qrCodeSvg' => 'data:image/svg+xml;base64,' . base64_encode($rawSvg),
+            'rawSvg' => $rawSvg,
+            'companyName' => $companyName,
+            'companyLogoUrl' => $companyLogoUrl,
         ];
 
         return Inertia::render('Admin/Calendar/Index', [

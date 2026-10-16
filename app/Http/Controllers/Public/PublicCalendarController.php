@@ -74,13 +74,25 @@ class PublicCalendarController extends Controller
         $events = $holidays->merge($companyEvents);
 
         $companyName = Setting::where('key', 'company_name')->value('value') ?? 'Persija ERP';
+        $companyLogo = Setting::where('key', 'company_logo')->value('value');
+        $companyLogoUrl = $companyLogo ? asset('storage/' . $companyLogo) : null;
+        $shareUrl = url('/shared/calendar/' . $token);
+
+        $rawSvg = (string) \SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')
+            ->size(350)
+            ->margin(1)
+            ->generate($shareUrl);
 
         $response = Inertia::render('Public/Calendar', [
             'events' => $events,
             'currentMonth' => $month,
             'currentYear' => $year,
             'companyName' => $companyName,
+            'companyLogoUrl' => $companyLogoUrl,
             'token' => $token,
+            'qrCodeSvg' => 'data:image/svg+xml;base64,' . base64_encode($rawSvg),
+            'rawSvg' => $rawSvg,
+            'shareUrl' => $shareUrl,
         ])->toResponse($request);
 
         $response->headers->set('X-Robots-Tag', 'noindex, nofollow, noarchive, nosnippet, noimageindex');

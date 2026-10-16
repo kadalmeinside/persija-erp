@@ -11,7 +11,9 @@ import {
     ClockIcon, 
     XMarkIcon,
     ShieldCheckIcon,
-    ArrowDownTrayIcon
+    ArrowDownTrayIcon,
+    QrCodeIcon,
+    PrinterIcon
 } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
@@ -19,7 +21,11 @@ const props = defineProps({
     currentMonth: Number,
     currentYear: Number,
     companyName: String,
+    companyLogoUrl: String,
     token: String,
+    qrCodeSvg: String,
+    rawSvg: String,
+    shareUrl: String,
 });
 
 const monthNames = [
@@ -32,6 +38,116 @@ const daysOfWeek = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
 const viewMode = ref('grid');
 const showDetailModal = ref(false);
 const selectedEvent = ref(null);
+const showQrModal = ref(false);
+
+const downloadQrPng = () => {
+    if (!props.qrCodeSvg) return;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 1000;
+        canvas.height = 1000;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, 1000, 1000);
+        ctx.drawImage(img, 60, 60, 880, 880);
+
+        const link = document.createElement('a');
+        link.download = `qrcode-agenda-${props.token ? props.token.substring(0, 8) : 'persija'}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    };
+    img.src = props.qrCodeSvg;
+};
+
+const downloadQrSvg = () => {
+    if (!props.rawSvg) return;
+    const blob = new Blob([props.rawSvg], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = `qrcode-agenda-${props.token ? props.token.substring(0, 8) : 'persija'}.svg`;
+    link.href = url;
+    link.click();
+    URL.revokeObjectURL(url);
+};
+
+const printQrCard = () => {
+    const printWindow = window.open('', '_blank', 'width=850,height=950');
+    if (!printWindow) {
+        alert('Gagal membuka jendela cetak. Periksa izin pop-up browser.');
+        return;
+    }
+
+    const companyName = props.companyName || 'Persija ERP';
+    const companyLogo = props.companyLogoUrl 
+        ? `<img src="${props.companyLogoUrl}" style="height: 52px; max-width: 180px; object-fit: contain; margin-bottom: 14px;" />` 
+        : '';
+    const qrSvg = props.qrCodeSvg || '';
+    const shareUrl = props.shareUrl || window.location.href;
+
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html lang="id">
+        <head>
+            <meta charset="utf-8">
+            <title>Lembar Cetak QR Code Agenda & Ruang Rapat - \${companyName}</title>
+            <style>
+                @page { size: A4 portrait; margin: 15mm; }
+                * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+                body { background-color: #f8fafc; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 24px; }
+                .sheet-card { background: #ffffff; width: 100%; max-width: 520px; border: 2px solid #e2e8f0; border-radius: 24px; padding: 44px 36px; text-align: center; }
+                .badge { display: inline-block; padding: 6px 16px; background: #eef2ff; color: #4f46e5; font-size: 12px; font-weight: 700; border-radius: 9999px; margin-bottom: 16px; }
+                h1 { font-size: 24px; font-weight: 800; color: #0f172a; margin-bottom: 6px; }
+                .company { font-size: 15px; font-weight: 600; color: #64748b; margin-bottom: 24px; }
+                .qr-frame { background: #ffffff; border: 2px solid #e2e8f0; border-radius: 20px; padding: 20px; display: inline-block; margin-bottom: 22px; }
+                .qr-frame img { width: 250px; height: 250px; display: block; }
+                .instruction-title { font-size: 16px; font-weight: 700; color: #1e293b; margin-bottom: 8px; }
+                .instruction-desc { font-size: 13px; color: #475569; line-height: 1.55; margin-bottom: 20px; }
+                .url-container { background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 10px; padding: 10px 14px; font-size: 11px; color: #475569; font-family: monospace; word-break: break-all; margin-bottom: 22px; }
+                .footer-bar { font-size: 11px; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 16px; display: flex; justify-content: space-between; }
+                @media print {
+                    body { background: #ffffff; padding: 0; }
+                    .sheet-card { border: 2px solid #0f172a; box-shadow: none; max-width: 100%; padding: 36px 30px; }
+                    .badge { border-color: #000; color: #000; background: #f1f5f9; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="sheet-card">
+                \${companyLogo}
+                <div><span class="badge">Jadwal Agenda & Ruang Meeting</span></div>
+                <h1>Ketersediaan Jadwal & Ruangan</h1>
+                <div class="company">\${companyName}</div>
+
+                <div class="qr-frame">
+                    <img src="\${qrSvg}" alt="QR Code Kalender" />
+                </div>
+
+                <div class="instruction-title">Pindai Menggunakan Kamera Smartphone</div>
+                <div class="instruction-desc">
+                    Arahkan kamera smartphone Anda ke QR code di atas untuk memeriksa jadwal agenda, rapat, dan ketersediaan ruang pertemuan secara langsung tanpa perlu login.
+                </div>
+
+                <div class="url-container">
+                    Tautan Kalender: \${shareUrl}
+                </div>
+
+                <div class="footer-bar">
+                    <span>Terproteksi Tautan Rahasia (Unlisted)</span>
+                    <span>Pembaruan Real-Time</span>
+                </div>
+            </div>
+            <script>
+                window.onload = function() {
+                    setTimeout(function() { window.print(); }, 350);
+                };
+            <\/script>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+};
 
 const changeMonth = (delta) => {
     let newMonth = props.currentMonth + delta;
@@ -145,12 +261,20 @@ const getEventBadgeClass = (event) => {
                     </div>
                 </div>
 
-                <!-- Security & Anti-Bot Tag -->
+                <!-- Security & Anti-Bot Tag & Actions -->
                 <div class="flex items-center gap-2">
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span class="hidden md:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
                         <ShieldCheckIcon class="w-3.5 h-3.5 text-emerald-600" />
                         Akses Tautan Terproteksi (Unlisted)
                     </span>
+                    <button 
+                        @click="showQrModal = true"
+                        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition-colors cursor-pointer"
+                        title="Pindai atau Cetak QR Code"
+                    >
+                        <QrCodeIcon class="w-3.5 h-3.5" />
+                        <span>QR Code</span>
+                    </button>
                     <a 
                         :href="route('public.calendar.ics', token)" 
                         download="agenda.ics"
@@ -407,6 +531,77 @@ const getEventBadgeClass = (event) => {
                     >
                         Tutup
                     </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- QR Code Modal -->
+        <div 
+            v-if="showQrModal"
+            class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4"
+            @click.self="showQrModal = false"
+        >
+            <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
+                            <QrCodeIcon class="w-5 h-5" />
+                        </div>
+                        <div>
+                            <h3 class="text-base font-bold text-slate-900">QR Code Kalender</h3>
+                            <p class="text-[11px] text-slate-500">Pindai atau cetak untuk akses cepat di HP</p>
+                        </div>
+                    </div>
+                    <button @click="showQrModal = false" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                        <XMarkIcon class="w-5 h-5" />
+                    </button>
+                </div>
+
+                <!-- Printable Card Preview -->
+                <div class="mt-4 p-5 bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center text-center">
+                    <img v-if="companyLogoUrl" :src="companyLogoUrl" alt="Logo" class="h-9 max-w-[140px] object-contain mb-2" />
+                    <span class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-indigo-50 text-indigo-700 border border-indigo-200 mb-1.5">
+                        Agenda & Ruangan
+                    </span>
+                    <h4 class="text-sm font-extrabold text-slate-900 leading-tight">
+                        {{ companyName }}
+                    </h4>
+                    
+                    <div class="bg-white p-2.5 rounded-xl border border-slate-200 shadow-xs my-3 inline-block">
+                        <img v-if="qrCodeSvg" :src="qrCodeSvg" alt="QR Code" class="w-40 h-40 block mx-auto" />
+                    </div>
+
+                    <p class="text-[11px] font-semibold text-slate-700 mb-0.5">Pindai Menggunakan Kamera Smartphone</p>
+                    <p class="text-[10px] text-slate-500 max-w-xs mb-2">
+                        Buka agenda kegiatan dan ketersediaan ruang rapat terkini secara langsung.
+                    </p>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="mt-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+                    <button 
+                        @click="printQrCard" 
+                        class="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
+                    >
+                        <PrinterIcon class="w-4 h-4" />
+                        <span>Cetak Lembar</span>
+                    </button>
+                    <div class="flex items-center gap-1.5">
+                        <button 
+                            @click="downloadQrPng" 
+                            class="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold border border-slate-200 transition"
+                        >
+                            <ArrowDownTrayIcon class="w-3.5 h-3.5 text-indigo-600" />
+                            <span>PNG</span>
+                        </button>
+                        <button 
+                            @click="downloadQrSvg" 
+                            class="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold border border-slate-200 transition"
+                        >
+                            <ArrowDownTrayIcon class="w-3.5 h-3.5 text-purple-600" />
+                            <span>SVG</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

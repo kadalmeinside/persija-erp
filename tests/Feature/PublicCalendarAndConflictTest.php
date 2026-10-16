@@ -121,6 +121,20 @@ class PublicCalendarAndConflictTest extends TestCase
 
         $response->assertOk();
         $response->assertHeader('X-Robots-Tag', 'noindex, nofollow, noarchive, nosnippet, noimageindex');
+        $response->assertInertia(fn ($page) => $page
+            ->component('Public/Calendar')
+            ->has('qrCodeSvg')
+            ->has('shareUrl')
+            ->where('token', $token)
+        );
+
+        // Admin Calendar index also receives QR code in shareSettings
+        $adminResp = $this->actingAs($this->admin)->get(route('admin.calendar.index'));
+        $adminResp->assertInertia(fn ($page) => $page
+            ->component('Admin/Calendar/Index')
+            ->has('shareSettings.qrCodeSvg')
+            ->has('shareSettings.rawSvg')
+        );
 
         // Invalid token returns 404
         $invalidResponse = $this->get(route('public.calendar.show', ['token' => 'wrong-token-abc']));
