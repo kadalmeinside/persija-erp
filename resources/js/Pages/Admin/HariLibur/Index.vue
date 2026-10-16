@@ -104,14 +104,24 @@ const deleteHoliday = (id) => {
 };
 
 const syncHolidays = () => {
+    const currentYear = new Date().getFullYear();
     Swal.fire({
-        title: 'Sinkronisasi Online',
-        text: `Ambil data libur tahun ${syncForm.year}?`,
-        icon: 'question',
+        title: 'Sinkronisasi Hari Libur',
+        text: 'Masukkan tahun yang ingin disinkronkan dari Google Calendar:',
+        input: 'number',
+        inputValue: syncForm.year || currentYear,
         showCancelButton: true,
-        confirmButtonText: 'Ya, Sinkronisasi'
+        confirmButtonText: 'Sinkronisasi Sekarang',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#2563eb',
+        inputValidator: (value) => {
+            if (!value || value < 2020 || value > 2035) {
+                return 'Masukkan tahun yang valid antara 2020 dan 2035!';
+            }
+        }
     }).then((result) => {
         if (result.isConfirmed) {
+            syncForm.year = parseInt(result.value);
             syncForm.post(route('admin.hari-libur.fetch'), {
                 onError: () => toast.error('Gagal sinkronisasi data libur.')
             });
@@ -140,7 +150,7 @@ const syncHolidays = () => {
                             </PrimaryButton>
                             <SecondaryButton @click="syncHolidays" :disabled="syncForm.processing">
                                 <ArrowPathIcon class="w-5 h-5 mr-2" :class="{'animate-spin': syncForm.processing}" /> 
-                                Sync Online ({{ syncForm.year }})
+                                Sync Google Calendar
                             </SecondaryButton>
                         </div>
                         <div class="w-full md:w-1/3">
