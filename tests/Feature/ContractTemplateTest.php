@@ -36,11 +36,13 @@ class ContractTemplateTest extends TestCase
         $response = $this->actingAs($this->admin)->get(route('admin.contract-templates.index'));
         $response->assertOk();
 
-        // 3 default templates should now exist (PKWT, PKWTT, Professional)
-        $this->assertGreaterThanOrEqual(3, ContractTemplate::count());
+        // 5 default templates should now exist (PKWT, PKWTT, Professional, Freelance, Internship)
+        $this->assertGreaterThanOrEqual(5, ContractTemplate::count());
         $this->assertDatabaseHas('tbl_contract_templates', ['contract_type' => 'PKWT']);
         $this->assertDatabaseHas('tbl_contract_templates', ['contract_type' => 'PKWTT']);
         $this->assertDatabaseHas('tbl_contract_templates', ['contract_type' => 'Professional']);
+        $this->assertDatabaseHas('tbl_contract_templates', ['contract_type' => 'Freelance']);
+        $this->assertDatabaseHas('tbl_contract_templates', ['contract_type' => 'Internship']);
     }
 
     public function test_contract_template_can_be_updated(): void

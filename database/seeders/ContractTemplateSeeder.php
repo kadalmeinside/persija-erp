@@ -353,6 +353,278 @@ HTML;
             $pkwtContent
         );
 
+        // 4. TEMPLATE FREELANCE / HARIAN LEPAS
+        $freelanceContent = <<<'HTML'
+<p>Pada hari ini, <strong>{TANGGAL_HARI_INI}</strong>, bertempat di kantor <strong>{COMPANY_NAME}</strong>, telah dibuat dan disepakati Perjanjian Kerja Lepas / Freelance antara pihak-pihak sebagai berikut:</p>
+
+<table class="party-table">
+    <tr>
+        <td class="party-label">Nama Perusahaan</td>
+        <td class="party-colon">:</td>
+        <td class="party-val"><strong>{COMPANY_NAME}</strong></td>
+    </tr>
+    <tr>
+        <td class="party-label">Alamat Kantor</td>
+        <td class="party-colon">:</td>
+        <td class="party-val">{COMPANY_ADDRESS}</td>
+    </tr>
+    <tr>
+        <td class="party-label">Diwakili Oleh</td>
+        <td class="party-colon">:</td>
+        <td class="party-val">Direksi / Manajemen yang berwenang bertindak untuk dan atas nama Perseroan</td>
+    </tr>
+    <tr>
+        <td class="party-label">Kedudukan</td>
+        <td class="party-colon">:</td>
+        <td class="party-val">Pemberi Kerja / Klien (disebut sebagai <strong>"PIHAK PERTAMA"</strong>)</td>
+    </tr>
+</table>
+
+<p style="margin-top: 6px; margin-bottom: 2px;">Dan menerangkan identitas pekerja lepas:</p>
+
+<table class="party-table">
+    <tr>
+        <td class="party-label">Nama Lengkap</td>
+        <td class="party-colon">:</td>
+        <td class="party-val"><strong>{NAMA_KARYAWAN}</strong></td>
+    </tr>
+    <tr>
+        <td class="party-label">Nomor Induk Karyawan (NIK)</td>
+        <td class="party-colon">:</td>
+        <td class="party-val">#{NIK_KARYAWAN}</td>
+    </tr>
+    <tr>
+        <td class="party-label">Tempat, Tanggal Lahir</td>
+        <td class="party-colon">:</td>
+        <td class="party-val">{TEMPAT_LAHIR}, {TANGGAL_LAHIR}</td>
+    </tr>
+    <tr>
+        <td class="party-label">Jenis Kelamin</td>
+        <td class="party-colon">:</td>
+        <td class="party-val">{JENIS_KELAMIN}</td>
+    </tr>
+    <tr>
+        <td class="party-label">Alamat Domisili</td>
+        <td class="party-colon">:</td>
+        <td class="party-val">{ALAMAT_KARYAWAN}</td>
+    </tr>
+    <tr>
+        <td class="party-label">Kedudukan</td>
+        <td class="party-colon">:</td>
+        <td class="party-val">Pekerja Lepas / Freelancer (disebut sebagai <strong>"PIHAK KEDUA"</strong>)</td>
+    </tr>
+</table>
+
+<p>PARA PIHAK sepakat untuk saling mengikatkan diri dalam Perjanjian Kerja Lepas dengan ketentuan pasal-pasal berikut:</p>
+
+<div class="pasal-block">
+    <div class="pasal-header">Pasal 1: Status Hubungan Kerja & Lingkup Penugasan</div>
+    <ol>
+        <li>Hubungan kerja antara PIHAK PERTAMA dan PIHAK KEDUA adalah hubungan kemitraan kerja lepas / freelance berbasis penugasan khusus, pertandingan, atau proyek berjalan.</li>
+        <li>PIHAK KEDUA ditugaskan dengan peran/posisi sebagai <strong>{JABATAN}</strong> pada lingkup kegiatan Departemen <strong>{DEPARTEMEN}</strong>.</li>
+        <li>Penugasan dapat dilaksanakan di lokasi utama <strong>{LOKASI_KANTOR}</strong>, venue pertandingan, maupun secara remote disesuaikan dengan kebutuhan kegiatan.</li>
+        <li>Perjanjian ini tidak menimbulkan hubungan kerja tetap ataupun hubungan industrial jangka panjang.</li>
+    </ol>
+</div>
+
+<div class="pasal-block">
+    <div class="pasal-header">Pasal 2: Jangka Waktu Perjanjian</div>
+    <ol>
+        <li>Perjanjian ini berlaku efektif terhitung sejak tanggal <strong>{TANGGAL_BERGABUNG}</strong> sampai dengan tanggal <strong>{TANGGAL_BERAKHIR}</strong>.</li>
+        <li>Perpanjangan perjanjian dapat dilakukan berdasarkan kesepakatan tertulis kedua belah pihak dengan memperhatikan kebutuhan penugasan berikutnya.</li>
+    </ol>
+</div>
+
+<div class="pasal-block">
+    <div class="pasal-header">Pasal 3: Ruang Lingkup Tugas & Hasil Kerja (Deliverables)</div>
+    <p>PIHAK KEDUA berkewajiban menyelesaikan penugasan dan memberikan hasil kerja (deliverables) secara profesional yang mencakup:</p>
+    {WORKING_SCOPE}
+</div>
+
+<div class="pasal-block">
+    <div class="pasal-header">Pasal 4: Waktu Kerja & Fleksibilitas</div>
+    <ol>
+        <li>Jadwal kerja PIHAK KEDUA bersifat fleksibel disesuaikan dengan jadwal penugasan proyek atau jadwal operasional pertandingan (kurang lebih <strong>{JAM_KERJA_MINGGUAN} jam per minggu</strong> atau berdasarkan kehadiran kegiatan).</li>
+        <li>PIHAK KEDUA wajib mencatatkan kehadiran presensi mobile saat bertugas pada venue/kantor yang ditentukan.</li>
+    </ol>
+</div>
+
+<div class="pasal-block">
+    <div class="pasal-header">Pasal 5: Honorarium, Imbalan Jasa & Pajak</div>
+    <ol>
+        <li>PIHAK PERTAMA setuju membayarkan imbalan jasa / honorarium kepada PIHAK KEDUA sebesar <strong>{GAJI_POKOK}</strong> per bulan atau sesuai termin kegiatan yang disepakati.</li>
+        <li>Fasilitas / Tunjangan Tambahan (apabila ada): {TUNJANGAN_RUTIN}</li>
+        <li>Pembayaran honorarium ditransfer ke rekening resmi PIHAK KEDUA: {REKENING_BANK}.</li>
+        <li>Pemotongan Pajak Penghasilan (PPh 21 Bukan Pegawai / Tenaga Ahli Lepas) dilakukan sesuai ketentuan peraturan perpajakan yang berlaku ({STATUS_PTKP}).</li>
+    </ol>
+</div>
+
+<div class="pasal-block">
+    <div class="pasal-header">Pasal 6: Hak, Fasilitas & Batasan Manfaat</div>
+    <ol>
+        <li>PIHAK KEDUA memahami dan menyetujui bahwa status hubungan kerja lepas tidak memberikan hak atas jaminan purna kerja, Tunjangan Hari Raya (THR) karyawan tetap, maupun uang kompensasi PKWT Pasal 15 PP No. 35 Tahun 2021, kecuali diatur lain secara khusus.</li>
+        <li>PIHAK PERTAMA menyediakan ID Pass kegiatan dan akomodasi penugasan matchday sesuai SOP operasional klub.</li>
+    </ol>
+</div>
+
+<div class="pasal-block">
+    <div class="pasal-header">Pasal 7: Kerahasiaan (NDA) & Hak Cipta Hasil Kerja</div>
+    <ol>
+        <li>PIHAK KEDUA wajib menjaga kerahasiaan seluruh informasi internal, materi media sebelum rilis, data pemain, taktik, dan dokumen komersial milik PIHAK PERTAMA.</li>
+        <li>Seluruh materi, hasil desain, rekaman foto/video, naskah, kode program, maupun karya yang dihasilkan selama penugasan menjadi Hak Kekayaan Intelektual (HAKI) eksklusif milik PIHAK PERTAMA.</li>
+    </ol>
+</div>
+
+<div class="pasal-block">
+    <div class="pasal-header">Pasal 8: Pengakhiran Perjanjian</div>
+    <ol>
+        <li>Perjanjian berakhir otomatis pada saat berakhirnya masa penugasan sebagaimana tercantum dalam Pasal 2.</li>
+        <li>Salah satu pihak dapat mengakhiri perjanjian sewaktu-waktu dengan pemberitahuan tertulis sekurang-kurangnya <strong>{NOTICE_PERIOD} hari kalender</strong> sebelumnya.</li>
+        <li>PIHAK PERTAMA berhak memutus penugasan seketika apabila PIHAK KEDUA melakukan tindakan indisipliner berat atau mencemarkan nama baik klub.</li>
+    </ol>
+</div>
+
+<div class="pasal-block">
+    <div class="pasal-header">Pasal 9: Penutup & Penyelesaian Perselisihan</div>
+    <ol>
+        <li>Segala perselisihan yang timbul akan diselesaikan secara musyawarah dan kekeluargaan.</li>
+        <li>Perjanjian ini dibuat dalam rangkap 2 (dua) asli yang masing-masing mempunyai kekuatan hukum yang sama.</li>
+    </ol>
+</div>
+HTML;
+
+        // 5. TEMPLATE INTERNSHIP / MAGANG
+        $internContent = <<<'HTML'
+<p>Pada hari ini, <strong>{TANGGAL_HARI_INI}</strong>, bertempat di kantor <strong>{COMPANY_NAME}</strong>, telah dibuat dan disepakati Perjanjian Program Magang / Praktik Kerja (Internship Agreement) antara pihak-pihak sebagai berikut:</p>
+
+<table class="party-table">
+    <tr>
+        <td class="party-label">Nama Perusahaan</td>
+        <td class="party-colon">:</td>
+        <td class="party-val"><strong>{COMPANY_NAME}</strong></td>
+    </tr>
+    <tr>
+        <td class="party-label">Alamat Kantor</td>
+        <td class="party-colon">:</td>
+        <td class="party-val">{COMPANY_ADDRESS}</td>
+    </tr>
+    <tr>
+        <td class="party-label">Diwakili Oleh</td>
+        <td class="party-colon">:</td>
+        <td class="party-val">Direksi / Manajemen HRD yang berwenang bertindak untuk dan atas nama Perseroan</td>
+    </tr>
+    <tr>
+        <td class="party-label">Kedudukan</td>
+        <td class="party-colon">:</td>
+        <td class="party-val">Penyelenggara Magang (disebut sebagai <strong>"PIHAK PERTAMA"</strong>)</td>
+    </tr>
+</table>
+
+<p style="margin-top: 6px; margin-bottom: 2px;">Dan menerangkan identitas peserta magang:</p>
+
+<table class="party-table">
+    <tr>
+        <td class="party-label">Nama Lengkap</td>
+        <td class="party-colon">:</td>
+        <td class="party-val"><strong>{NAMA_KARYAWAN}</strong></td>
+    </tr>
+    <tr>
+        <td class="party-label">Nomor Induk / NIK</td>
+        <td class="party-colon">:</td>
+        <td class="party-val">#{NIK_KARYAWAN}</td>
+    </tr>
+    <tr>
+        <td class="party-label">Tempat, Tanggal Lahir</td>
+        <td class="party-colon">:</td>
+        <td class="party-val">{TEMPAT_LAHIR}, {TANGGAL_LAHIR}</td>
+    </tr>
+    <tr>
+        <td class="party-label">Jenis Kelamin</td>
+        <td class="party-colon">:</td>
+        <td class="party-val">{JENIS_KELAMIN}</td>
+    </tr>
+    <tr>
+        <td class="party-label">Alamat Domisili</td>
+        <td class="party-colon">:</td>
+        <td class="party-val">{ALAMAT_KARYAWAN}</td>
+    </tr>
+    <tr>
+        <td class="party-label">Kedudukan</td>
+        <td class="party-colon">:</td>
+        <td class="party-val">Peserta Magang / Pemagang (disebut sebagai <strong>"PIHAK KEDUA"</strong>)</td>
+    </tr>
+</table>
+
+<p>PARA PIHAK sepakat untuk mengikatkan diri dalam Program Pemagangan Kerja dengan ketentuan pasal-pasal berikut:</p>
+
+<div class="pasal-block">
+    <div class="pasal-header">Pasal 1: Maksud, Tujuan & Penempatan Magang</div>
+    <ol>
+        <li>Program Pemagangan diselenggarakan untuk memberikan wawasan, pelatihan keterampilan praktis, dan pengalaman kerja nyata dalam industri manajemen olahraga profesional.</li>
+        <li>PIHAK KEDUA ditempatkan sebagai <strong>Intern - {JABATAN}</strong> pada Departemen <strong>{DEPARTEMEN}</strong> di bawah bimbingan langsung Mentor / Atasan Unit Kerja.</li>
+        <li>Lokasi penempatan utama berada di <strong>{LOKASI_KANTOR}</strong>.</li>
+        <li>Hubungan antara PARA PIHAK adalah murni hubungan pemagangan kerja dalam rangka pembelajaran, dan bukan merupakan hubungan kerja karyawan tetap.</li>
+    </ol>
+</div>
+
+<div class="pasal-block">
+    <div class="pasal-header">Pasal 2: Jangka Waktu Program Magang</div>
+    <ol>
+        <li>Program Magang berlangsung selama masa kerja yang disepakati terhitung sejak <strong>{TANGGAL_BERGABUNG}</strong> sampai dengan <strong>{TANGGAL_BERAKHIR}</strong>.</li>
+        <li>Evaluasi berkala terhadap proses pembelajaran dan performa peserta magang dilakukan setiap <strong>{DURASI_PROBATION} bulan</strong>.</li>
+    </ol>
+</div>
+
+<div class="pasal-block">
+    <div class="pasal-header">Pasal 3: Ruang Lingkup Aktivitas Magang (Learning Scope)</div>
+    <p>PIHAK KEDUA melaksanakan tugas-tugas pendukung kerja profesional dan program pembelajaran yang meliputi:</p>
+    {WORKING_SCOPE}
+</div>
+
+<div class="pasal-block">
+    <div class="pasal-header">Pasal 4: Waktu Kehadiran & Tata Tertib Kerja</div>
+    <ol>
+        <li>Waktu pelaksanaan magang adalah <strong>{JAM_KERJA_MINGGUAN} jam per minggu</strong> mengikuti jam operasional kantor yang berlaku.</li>
+        <li>PIHAK KEDUA wajib mencatatkan kehadiran presensi secara tertib pada aplikasi ERP.</li>
+        <li>PIHAK KEDUA wajib mematuhi kode etik, tata krama, kerapian berpakaian, dan peraturan disiplin internal perusahaan.</li>
+    </ol>
+</div>
+
+<div class="pasal-block">
+    <div class="pasal-header">Pasal 5: Uang Saku (Stipend) & Bantuan Operasional</div>
+    <ol>
+        <li>Sebagai bentuk dukungan operasional, PIHAK PERTAMA memberikan Uang Saku / Bantuan Transportasi sebesar <strong>{GAJI_POKOK}</strong> per bulan.</li>
+        <li>Bantuan fasilitas tambahan (apabila ada): {TUNJANGAN_RUTIN}</li>
+        <li>Uang saku ditransfer setiap akhir bulan ke rekening resmi PIHAK KEDUA: {REKENING_BANK}.</li>
+    </ol>
+</div>
+
+<div class="pasal-block">
+    <div class="pasal-header">Pasal 6: Hak Peserta Magang & Sertifikat</div>
+    <ol>
+        <li>PIHAK KEDUA berhak mendapatkan bimbingan teknis dan arahan tugas dari mentor kerja.</li>
+        <li>Setelah menyelesaikan program magang secara penuh dan memenuhi kriteria penilaian yang baik, PIHAK PERTAMA akan menerbitkan <strong>Surat Keterangan / Sertifikat Magang Resmi (Certificate of Internship)</strong>.</li>
+    </ol>
+</div>
+
+<div class="pasal-block">
+    <div class="pasal-header">Pasal 7: Kerahasiaan Data (NDA) & Etika Profesi</div>
+    <ol>
+        <li>PIHAK KEDUA wajib menjaga kerahasiaan seluruh dokumen, data klub, strategi komunikasi, dan materi internal perusahaan.</li>
+        <li>Dilarang mengunggah materi kerja yang belum dipublikasikan ke media sosial pribadi tanpa izin tertulis dari mentor/manajemen.</li>
+    </ol>
+</div>
+
+<div class="pasal-block">
+    <div class="pasal-header">Pasal 8: Pengakhiran Program Magang & Ketentuan Penutup</div>
+    <ol>
+        <li>Program magang berakhir sesuai jangka waktu yang telah disepakati pada Pasal 2.</li>
+        <li>Apabila salah satu pihak berhalangan melanjutkan program, pemberitahuan tertulis disampaikan sekurang-kurangnya <strong>{NOTICE_PERIOD} hari kerja</strong> sebelumnya.</li>
+        <li>Perjanjian ini dibuat dalam rangkap 2 (dua) yang masing-masing memiliki kekuatan hukum setara.</li>
+    </ol>
+</div>
+HTML;
+
         ContractTemplate::updateOrCreate(
             ['contract_type' => 'PKWT'],
             [
@@ -379,6 +651,26 @@ HTML;
                 'nama_template' => 'Template Kontrak Tenaga Ahli & Ofisial Profesional',
                 'judul_surat'   => 'SURAT PERJANJIAN KERJA PROFESIONAL',
                 'konten'        => $profContent,
+                'is_active'     => true,
+            ]
+        );
+
+        ContractTemplate::updateOrCreate(
+            ['contract_type' => 'Freelance'],
+            [
+                'nama_template' => 'Template Perjanjian Kerja Lepas / Freelance',
+                'judul_surat'   => 'SURAT PERJANJIAN KERJA HARIAN LEPAS / FREELANCE',
+                'konten'        => $freelanceContent,
+                'is_active'     => true,
+            ]
+        );
+
+        ContractTemplate::updateOrCreate(
+            ['contract_type' => 'Internship'],
+            [
+                'nama_template' => 'Template Perjanjian Program Magang / Internship',
+                'judul_surat'   => 'SURAT PERJANJIAN PROGRAM MAGANG / INTERNSHIP',
+                'konten'        => $internContent,
                 'is_active'     => true,
             ]
         );
