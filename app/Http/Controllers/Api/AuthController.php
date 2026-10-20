@@ -108,10 +108,6 @@ class AuthController extends Controller
             return response()->json(['message' => 'Data karyawan tidak ditemukan.'], 404);
         }
 
-        if ($user->karyawan->biometric && $user->karyawan->biometric->getDescriptor('mobile')) {
-            return response()->json(['message' => 'Wajah sudah terdaftar sebelumnya.'], 400);
-        }
-
         $biometric = \App\Models\KaryawanBiometric::firstOrCreate(
             ['id_karyawan' => $user->karyawan->id]
         );
@@ -121,7 +117,7 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Wajah berhasil didaftarkan.',
-            'user' => new \App\Http\Resources\UserResource($user->load(['karyawan.biometric'])),
+            'user' => new \App\Http\Resources\UserResource($user->load(['karyawan.lokasiKantor', 'karyawan.biometric'])),
         ], 200);
     }
 }

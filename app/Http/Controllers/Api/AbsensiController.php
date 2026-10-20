@@ -68,7 +68,7 @@ class AbsensiController extends Controller
             'request_id' => (string) Str::uuid(),
             'nonce_hash' => hash('sha256', $nonce),
             'security_metadata' => $validated['security_metadata'] ?? null,
-            'expires_at' => now()->addMinutes(5),
+            'expires_at' => now()->addMinutes(10),
         ]);
 
         return response()->json([
@@ -102,7 +102,7 @@ class AbsensiController extends Controller
         }
         $isDinasLuar = filter_var($request->input('is_dinas_luar', false), FILTER_VALIDATE_BOOLEAN);
 
-        $challenge = $this->consumeChallenge($request, 'clock-in');
+        $challenge = $this->validateChallenge($request, 'clock-in');
         if ($challenge instanceof \Illuminate\Http\JsonResponse) {
             return $challenge;
         }
@@ -112,6 +112,9 @@ class AbsensiController extends Controller
         if (!$result['success']) {
             return response()->json(['message' => $result['message']], 422);
         }
+
+        // Only mark challenge as consumed once attendance is successfully recorded
+        $challenge->forceFill(['consumed_at' => now()])->save();
 
         return response()->json([
             'message' => $result['message'],
@@ -140,7 +143,7 @@ class AbsensiController extends Controller
             return response()->json(['message' => 'Data karyawan tidak ditemukan.'], 403);
         }
 
-        $challenge = $this->consumeChallenge($request, 'clock-out');
+        $challenge = $this->validateChallenge($request, 'clock-out');
         if ($challenge instanceof \Illuminate\Http\JsonResponse) {
             return $challenge;
         }
@@ -151,6 +154,9 @@ class AbsensiController extends Controller
             return response()->json(['message' => $result['message']], 422);
         }
 
+        // Only mark challenge as consumed once attendance is successfully recorded
+        $challenge->forceFill(['consumed_at' => now()])->save();
+
         return response()->json([
             'message' => $result['message'],
             'data' => [
@@ -160,34 +166,23 @@ class AbsensiController extends Controller
         ], 200);
     }
 
-    private function consumeChallenge(Request $request, string $action): ?\Illuminate\Http\JsonResponse
+    private function validateChallenge(Request $request, string $action): AttendanceChallenge|\Illuminate\Http\JsonResponse
     {
-        $challenge = DB::transaction(function () use ($request, $action) {
-            $challenge = AttendanceChallenge::where('user_id', $request->user()->id)
-                ->where('action', $action)
-                ->where('request_id', $request->input('request_id'))
-                ->lockForUpdate()
-                ->first();
+        $challenge = AttendanceChallenge::where('user_id', $request->user()->id)
+            ->where('action', $action)
+            ->where('request_id', $request->input('request_id'))
+            ->first();
 
-            if (!$challenge ||
-                $challenge->consumed_at ||
-                $challenge->expires_at->isPast() ||
-                !hash_equals($challenge->nonce_hash, hash('sha256', $request->input('nonce')))) {
-                return null;
-            }
-
-            // Reserve the challenge before processing the upload to prevent concurrent replay.
-            $challenge->forceFill(['consumed_at' => now()])->save();
-            return $challenge;
-        });
-
-        if (!$challenge) {
+        if (!$challenge ||
+            $challenge->consumed_at ||
+            $challenge->expires_at->isPast() ||
+            !hash_equals($challenge->nonce_hash, hash('sha256', $request->input('nonce')))) {
             return response()->json([
                 'message' => 'Challenge absensi tidak valid atau sudah kedaluwarsa. Silakan mulai ulang proses absensi.',
             ], 422);
         }
 
-        return null;
+        return $challenge;
     }
 
     /**
@@ -211,6 +206,7 @@ class AbsensiController extends Controller
             $limit = min((int) $request->query('limit', 5), 50);
             $history = \App\Models\Absensi::where('id_karyawan', $karyawan->id)
                 ->orderBy('tanggal', 'desc')
+                ->orderBy('id', 'desc')
                 ->limit($limit)
                 ->get();
 
