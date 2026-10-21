@@ -9,7 +9,6 @@ import {
     ListBulletIcon, 
     ChevronLeftIcon, 
     ChevronRightIcon, 
-    XMarkIcon,
     ShareIcon,
     ClipboardDocumentIcon,
     ClipboardDocumentCheckIcon,
@@ -885,13 +884,10 @@ const formatTime = (dateStr) => {
         <!-- Detail Modal (For View Only Items) -->
         <Modal :show="showDetailModal" @close="showDetailModal = false" maxWidth="md">
             <div class="p-6">
-                <div class="flex justify-between items-start mb-4">
+                <div class="flex justify-between items-start mb-4 pr-6">
                     <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">
                         {{ selectedDetailEvent?.title }}
                     </h2>
-                    <button @click="showDetailModal = false" class="text-gray-400 hover:text-gray-500">
-                        <XMarkIcon class="w-5 h-5" />
-                    </button>
                 </div>
                 
                 <div class="space-y-4 mb-6 text-sm text-gray-600 dark:text-gray-400">
@@ -962,7 +958,7 @@ const formatTime = (dateStr) => {
         <Modal :show="showShareModal" @close="showShareModal = false" maxWidth="2xl">
             <div class="p-6">
                 <!-- Modal Header -->
-                <div class="flex items-center justify-between pb-4 border-b border-gray-200">
+                <div class="flex items-center justify-between pb-4 border-b border-gray-200 pr-6">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
                             <ShareIcon class="w-5 h-5" />
@@ -972,9 +968,6 @@ const formatTime = (dateStr) => {
                             <p class="text-xs text-gray-500">Tautan rahasia & QR Code siap cetak untuk pintu ruang rapat</p>
                         </div>
                     </div>
-                    <button @click="showShareModal = false" class="text-gray-400 hover:text-gray-600 p-1 rounded-lg">
-                        <XMarkIcon class="w-5 h-5" />
-                    </button>
                 </div>
 
                 <!-- Tab Navigation -->

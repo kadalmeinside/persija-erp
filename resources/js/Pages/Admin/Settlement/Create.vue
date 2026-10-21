@@ -12,7 +12,7 @@ import { ref, computed, onMounted } from 'vue';
 import { 
     DocumentTextIcon, BanknotesIcon, PlusIcon, TrashIcon, 
     ArrowLeftIcon, ReceiptPercentIcon, ExclamationTriangleIcon,
-    CheckIcon, PaperClipIcon, PencilSquareIcon, XMarkIcon
+    CheckIcon, PaperClipIcon, PencilSquareIcon
 } from '@heroicons/vue/24/solid';
 import axios from 'axios'; // Jangan lupa import axios
 
@@ -427,9 +427,8 @@ const submit = () => {
         <!-- MODAL TAMBAH/EDIT ITEM (DENGAN CEK SALDO) -->
         <Modal :show="showModal" @close="showModal = false">
             <div class="p-6">
-                <div class="flex justify-between items-center mb-4 border-b pb-2">
+                <div class="flex justify-between items-center mb-4 border-b pb-2 pr-6">
                     <h3 class="text-lg font-bold text-gray-900">{{ isEditing ? 'Edit Rincian' : 'Tambah Rincian Baru' }}</h3>
-                    <button @click="showModal = false" class="text-gray-400 hover:text-gray-600"><XMarkIcon class="w-6 h-6"/></button>
                 </div>
                 
                 <div class="space-y-4">

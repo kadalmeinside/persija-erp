@@ -19,6 +19,10 @@ const props = defineProps({
         type: String,
         default: null,
     },
+    showCloseButton: {
+        type: Boolean,
+        default: true,
+    },
 });
 
 const emit = defineEmits(['close']);
@@ -126,12 +130,12 @@ const maxWidthClass = computed(() => {
                 >
                     <!-- Header (close button) -->
                     <div
-                        v-if="closeable"
+                        v-if="closeable && showCloseButton"
                         class="absolute top-3 right-3 z-20"
                     >
                         <button
                             @click="close"
-                            class="flex items-center justify-center w-8 h-8 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors duration-150 focus:outline-none"
+                            class="flex items-center justify-center w-8 h-8 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150 focus:outline-none"
                             type="button"
                         >
                             <XMarkIcon class="w-5 h-5" />

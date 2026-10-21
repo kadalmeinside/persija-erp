@@ -31,7 +31,7 @@ const openInNewTab = () => {
 </script>
 
 <template>
-    <Modal :show="show" @close="$emit('close')" maxWidth="5xl">
+    <Modal :show="show" @close="$emit('close')" maxWidth="5xl" :showCloseButton="false">
         <div class="relative bg-gray-900 h-[95vh] flex flex-col rounded-lg overflow-hidden">
             
             <!-- Toolbar Header -->
