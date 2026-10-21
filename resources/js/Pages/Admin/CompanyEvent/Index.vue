@@ -68,7 +68,7 @@ const clientError = ref('');
 
 const form = useForm({
     title: '',
-    category: 'meeting',
+    category: '',
     start_date: '',
     end_date: '',
     description: '',
@@ -86,7 +86,7 @@ const openCreateModal = () => {
     editingEvent.value = null;
     form.reset();
     form.clearErrors();
-    form.category = 'meeting';
+    form.category = '';
     clientError.value = '';
 
     const now = new Date();
@@ -106,7 +106,7 @@ const openEditModal = (event) => {
     clientError.value = '';
 
     form.title = event.title;
-    form.category = event.category || 'meeting';
+    form.category = event.category || '';
     form.start_date = event.start_date && event.start_date.length >= 16 ? event.start_date.slice(0, 16) : '';
     form.end_date = event.end_date && event.end_date.length >= 16 ? event.end_date.slice(0, 16) : '';
     form.description = event.description || '';
@@ -116,6 +116,11 @@ const openEditModal = (event) => {
 
 const submitForm = () => {
     clientError.value = '';
+
+    if (!form.category) {
+        clientError.value = 'Silakan pilih Jenis Agenda terlebih dahulu.';
+        return;
+    }
 
     if (form.end_date && form.start_date && new Date(form.end_date) <= new Date(form.start_date)) {
         clientError.value = 'Waktu selesai harus lebih lambat dari waktu mulai.';
@@ -246,7 +251,6 @@ const formatDate = (dateString) => {
                         <h2 class="text-lg font-bold text-gray-900">
                             {{ editingEvent ? 'Edit Agenda Perusahaan' : 'Tambah Agenda / Booking Ruangan' }}
                         </h2>
-                        <p class="text-xs text-gray-500">Pencegahan bentrok jadwal otomatis aktif untuk rapat ruangan</p>
                     </div>
                 </div>
                 
@@ -267,16 +271,14 @@ const formatDate = (dateString) => {
                             v-model="form.category" 
                             class="w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm font-medium"
                         >
-                            <option value="meeting">Rapat / Meeting Ruangan (Pencegahan Bentrok Ruangan)</option>
-                            <option value="general">Kegiatan Umum Perusahaan (Boleh Bersamaan)</option>
+                            <option value="" disabled>Pilih Jenis Agenda</option>
+                            <option value="meeting">Rapat / Meeting Ruangan</option>
+                            <option value="general">Kegiatan Umum Perusahaan</option>
                             <option value="training">Pelatihan / Workshop</option>
                             <option value="online">Meeting Online / Virtual</option>
                             <option value="other">Agenda Lainnya</option>
                         </select>
                         <InputError :message="form.errors.category" class="mt-1" />
-                        <p v-if="form.category === 'meeting'" class="text-[11px] text-purple-700 mt-1 flex items-center gap-1 font-medium">
-                            <span>🛡️</span> Sistem otomatis memvalidasi jadwal agar tidak terjadi bentrok ruangan dengan rapat lain.
-                        </p>
                     </div>
 
                     <!-- Judul Agenda -->
