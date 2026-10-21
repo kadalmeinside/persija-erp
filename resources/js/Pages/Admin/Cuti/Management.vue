@@ -102,7 +102,7 @@ const submitEditBalance = () => {
         </template>
 
         <div class="pb-12 pt-4">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="max-w-7xl mx-auto">
                 
                 <!-- Summary Metrics Cards -->
                 <div v-if="summary" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">

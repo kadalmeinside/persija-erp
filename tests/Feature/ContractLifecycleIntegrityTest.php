@@ -132,11 +132,73 @@ class ContractLifecycleIntegrityTest extends TestCase
         $this->assertEquals('Perpanjangan Kontrak', $latestCareer->tipe_peristiwa);
         $this->assertEquals('2027-01-01', $latestCareer->tanggal_efektif->toDateString());
 
-        // 2. Two contracts: v1 superseded, v2 active
         $this->assertEquals(2, $karyawan->contracts()->count());
         $v1 = $karyawan->contracts()->where('version_number', 1)->first();
         $v2 = $karyawan->contracts()->where('version_number', 2)->first();
         $this->assertEquals('superseded', $v1->status);
         $this->assertEquals('active', $v2->status);
+
+        // 3. Employee record has new contract end date and preserved join date
+        $karyawan->refresh();
+        $this->assertEquals('2027-12-31', $karyawan->tanggal_berakhir_kontrak->toDateString());
+        $this->assertEquals('2026-01-01', substr((string) $karyawan->tgl_bergabung, 0, 10));
+    }
+
+    public function test_promote_to_permanent_pkwtt_during_extension()
+    {
+        $karyawan = Karyawan::create([
+            'nomor_induk_karyawan' => 'TEST-003',
+            'nama_lengkap' => 'Ahmad Fauzi',
+            'id_departemen' => $this->departemen->id,
+            'jabatan' => 'Senior Developer',
+            'status_karyawan' => 'Kontrak',
+            'contract_type' => 'PKWT',
+            'tgl_bergabung' => '2025-01-01',
+            'gaji_pokok' => 9000000,
+            'jenis_kelamin' => 'L',
+        ]);
+
+        // Issue initial v1
+        $this->actingAs($this->admin)->post(route('admin.karyawan.contract-details.update', $karyawan->id), [
+            'nomor_kontrak' => '003/PKWT/HRD/2025',
+            'contract_type' => 'PKWT',
+            'tanggal_mulai' => '2025-01-01',
+            'tanggal_selesai' => '2025-12-31',
+            'durasi_probation_bulan' => 0,
+            'notice_period_hari' => 30,
+            'jam_kerja_mingguan' => 40,
+        ]);
+
+        // Promote to PKWTT (Permanent)
+        $response = $this->actingAs($this->admin)->post(route('admin.karyawan.contract-details.update', $karyawan->id), [
+            'nomor_kontrak' => '003/PKWTT/HRD/2026',
+            'contract_type' => 'PKWTT',
+            'tanggal_mulai' => '2026-01-01',
+            'tanggal_selesai' => null,
+            'durasi_probation_bulan' => 0,
+            'notice_period_hari' => 30,
+            'jam_kerja_mingguan' => 40,
+            'is_new_version' => 1,
+            'catatan_perubahan' => 'Pengangkatan Menjadi Karyawan Tetap (PKWTT v2)',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+
+        $karyawan->refresh();
+        $this->assertEquals('Tetap', $karyawan->status_karyawan);
+        $this->assertEquals('PKWTT', $karyawan->contract_type);
+        $this->assertNull($karyawan->tanggal_berakhir_kontrak);
+        $this->assertEquals('2025-01-01', substr((string) $karyawan->tgl_bergabung, 0, 10));
+
+        // Latest career event must be 'Pengangkatan Tetap'
+        $latestCareer = $karyawan->riwayatKarir()->orderBy('tanggal_efektif', 'desc')->first();
+        $this->assertEquals('Pengangkatan Tetap', $latestCareer->tipe_peristiwa);
+        $this->assertNull($latestCareer->tanggal_berakhir_kontrak);
+
+        // Contract version 2 created as PKWTT
+        $v2 = $karyawan->contracts()->where('version_number', 2)->first();
+        $this->assertNotNull($v2);
+        $this->assertEquals('PKWTT', $v2->contract_type);
+        $this->assertNull($v2->tanggal_selesai);
     }
 }

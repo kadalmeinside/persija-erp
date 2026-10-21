@@ -10,7 +10,7 @@ import {
     ShieldCheckIcon, EllipsisVerticalIcon, EnvelopeIcon, ArrowDownTrayIcon,
     ClipboardDocumentCheckIcon, ExclamationTriangleIcon, TrashIcon,
     DocumentArrowUpIcon, FolderIcon, TagIcon, ArrowTopRightOnSquareIcon,
-    PlusIcon, DocumentPlusIcon
+    PlusIcon, DocumentPlusIcon, CalendarDaysIcon
 } from '@heroicons/vue/24/outline';
 import Swal from 'sweetalert2';
 import { useToast } from '@/Composables/useToast';
@@ -74,13 +74,22 @@ const showEditProfile = ref(false);
 const showEditEmployment = ref(false);
 const showEditFinancial = ref(false);
 const showEditContract = ref(false);
+const isContractExtendMode = ref(false);
 const showUploadDokumen = ref(false);
 const showCareerHistoryModal = ref(false);
 
 const openEditProfile = () => { showActionMenu.value = false; showEditProfile.value = true; };
 const openEditEmployment = () => { showActionMenu.value = false; showEditEmployment.value = true; };
 const openEditFinancial = () => { showActionMenu.value = false; showEditFinancial.value = true; };
-const openEditContract = () => { showActionMenu.value = false; showEditContract.value = true; };
+const openEditContract = () => { 
+    showActionMenu.value = false; 
+    isContractExtendMode.value = false; 
+    showEditContract.value = true; 
+};
+const openCareerHistory = () => { 
+    showActionMenu.value = false; 
+    showCareerHistoryModal.value = true; 
+};
 const openUploadDokumen = () => { showUploadDokumen.value = true; };
 const closeCareerHistoryModal = () => { showCareerHistoryModal.value = false; };
 const refreshData = () => { router.reload(); };
@@ -124,7 +133,9 @@ const handleTerminate = () => {
 
 // Extend Contract
 const handleExtendContract = () => {
-    showCareerHistoryModal.value = true;
+    showActionMenu.value = false;
+    isContractExtendMode.value = true;
+    showEditContract.value = true;
 };
 
 // Download Contract PDF
@@ -268,7 +279,7 @@ const formatLastClockIn = (val) => {
     <Head :title="karyawan.nama_lengkap + ' - Detail Karyawan'" />
 
     <AuthenticatedLayout>
-        <div class="py-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="pb-12 pt-4">
 
             <!-- ═════════════════════════════════════════════════════════════════ -->
             <!-- 1. TOP PROFILE HEADER BAR (Reference Design)                    -->
@@ -423,7 +434,7 @@ const formatLastClockIn = (val) => {
                                     class="w-full text-left px-4 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/60 flex items-center"
                                 >
                                     <component :is="hasActiveContract ? DocumentTextIcon : DocumentPlusIcon" class="w-4 h-4 mr-2.5 text-gray-400" />
-                                    {{ hasActiveContract ? 'Edit Klausul & Working Scope' : 'Terbitkan Kontrak Pertama' }}
+                                    {{ hasActiveContract ? (contractInfo.isPermanent ? 'Edit Klausul / Adendum PKWTT' : 'Edit Klausul & Working Scope') : 'Terbitkan Kontrak Pertama' }}
                                 </button>
                                 <button 
                                     @click="openUploadDokumen"
@@ -433,12 +444,19 @@ const formatLastClockIn = (val) => {
                                     Unggah Berkas / Dokumen
                                 </button>
                                 <button 
-                                    v-if="hasActiveContract"
+                                    v-if="hasActiveContract && !contractInfo.isPermanent"
                                     @click="handleExtendContract"
                                     class="w-full text-left px-4 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/60 flex items-center"
                                 >
-                                    <DocumentTextIcon class="w-4 h-4 mr-2.5 text-gray-400" />
-                                    Perpanjang Kontrak / Riwayat
+                                    <CalendarDaysIcon class="w-4 h-4 mr-2.5 text-indigo-500" />
+                                    Perpanjang Kontrak (Extend PKWT)
+                                </button>
+                                <button 
+                                    @click="openCareerHistory"
+                                    class="w-full text-left px-4 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/60 flex items-center"
+                                >
+                                    <ClipboardDocumentCheckIcon class="w-4 h-4 mr-2.5 text-gray-400" />
+                                    {{ contractInfo.isPermanent ? 'Catat Mutasi / Promosi Karir' : 'Catat Riwayat Karir Manual' }}
                                 </button>
 
                                 <div v-if="!karyawan.user" class="border-t border-gray-100 dark:border-gray-700/60 my-1"></div>
@@ -642,10 +660,18 @@ const formatLastClockIn = (val) => {
                                     Terminate
                                 </button>
                                 <button 
+                                    v-if="!contractInfo.isPermanent"
                                     @click="handleExtendContract"
                                     class="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition-colors shadow-2xs"
                                 >
                                     Extend Contract
+                                </button>
+                                <button 
+                                    v-else
+                                    @click="openCareerHistory"
+                                    class="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold transition-colors shadow-2xs"
+                                >
+                                    Catat Mutasi / Promosi
                                 </button>
                             </div>
                         </div>
@@ -1560,6 +1586,7 @@ const formatLastClockIn = (val) => {
             :show="showEditContract"
             :employee="karyawan"
             :lokasiKantors="lokasi_kantors"
+            :isExtend="isContractExtendMode"
             @close="showEditContract = false"
             @saved="refreshData"
         />

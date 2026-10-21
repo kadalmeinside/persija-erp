@@ -153,8 +153,8 @@ const getPageTitle = () => {
             <h2 class="font-semibold text-lg md:text-xl text-gray-800 leading-tight truncate">{{ getPageTitle() }}</h2>
         </template>
 
-        <div class="pb-6 pt-2 sm:pb-12 sm:pt-4">
-            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div class="pb-12 pt-4">
+            <div class="max-w-7xl mx-auto">
                 <ApprovalTabs v-if="activeTab === 'approvals'" activeTab="pengajuan" />
 
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">

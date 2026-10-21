@@ -106,7 +106,7 @@ const openMap = (lat, lng) => {
         </template>
 
         <div class="pb-12 pt-4">
-            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <div class="max-w-7xl mx-auto">
                 
                 <div class="bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-500 p-4 mb-6 rounded-r-lg shadow-sm">
                     <div class="flex">

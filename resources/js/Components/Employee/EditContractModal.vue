@@ -19,15 +19,24 @@ const props = defineProps({
     show: Boolean,
     employee: Object,
     lokasiKantors: Array,
+    isExtend: {
+        type: Boolean,
+        default: false
+    }
 });
 
 const emit = defineEmits(['close', 'saved']);
 const toast = useToast();
 
 const activeSubTab = ref('clauses'); // 'clauses', 'scope', 'content'
+const isPromoteToPermanent = ref(false);
 
 const isFirstIssuance = computed(() => {
     return !props.employee?.contracts || props.employee.contracts.length === 0;
+});
+
+const nextVersionNumber = computed(() => {
+    return (props.employee?.contracts?.length || 0) + 1;
 });
 
 const form = useForm({
@@ -63,8 +72,23 @@ watch(() => form.contract_type, (newType) => {
         form.durasi_probation_bulan = 0;
         form.tanggal_selesai_probation = '';
     } else if (newType === 'PKWTT') {
-        form.durasi_probation_bulan = 3;
+        form.durasi_probation_bulan = 0;
         form.tanggal_selesai = '';
+        form.tanggal_selesai_probation = '';
+    }
+});
+
+watch(isPromoteToPermanent, (val) => {
+    if (val) {
+        form.contract_type = 'PKWTT';
+        form.tanggal_selesai = '';
+        form.durasi_probation_bulan = 0;
+        form.tanggal_selesai_probation = '';
+        form.catatan_perubahan = `Pengangkatan Menjadi Karyawan Tetap (PKWTT v${nextVersionNumber.value})`;
+    } else if (props.isExtend) {
+        form.contract_type = props.employee?.contract_type || 'PKWT';
+        setDuration(12);
+        form.catatan_perubahan = `Perpanjangan Masa Kontrak (Versi ${nextVersionNumber.value})`;
     }
 });
 
@@ -83,6 +107,28 @@ watch(() => props.show, (newVal) => {
         form.custom_contract_content = props.employee.custom_contract_content || '';
         form.is_new_version = false;
         form.catatan_perubahan = '';
+        isPromoteToPermanent.value = false;
+
+        // Mode Perpanjangan Kontrak (Extend)
+        if (props.isExtend) {
+            form.is_new_version = true;
+
+            // Jika ada tanggal berakhir kontrak sebelumnya, start date = H+1
+            if (props.employee.tanggal_berakhir_kontrak) {
+                const prevEnd = new Date(props.employee.tanggal_berakhir_kontrak);
+                prevEnd.setDate(prevEnd.getDate() + 1);
+                form.tanggal_mulai = prevEnd.toISOString().split('T')[0];
+
+                const newEnd = new Date(prevEnd);
+                newEnd.setFullYear(newEnd.getFullYear() + 1);
+                newEnd.setDate(newEnd.getDate() - 1);
+                form.tanggal_selesai = newEnd.toISOString().split('T')[0];
+            } else {
+                setDuration(12);
+            }
+
+            form.catatan_perubahan = `Perpanjangan Kontrak Kerja (Versi ${nextVersionNumber.value})`;
+        }
 
         if (Array.isArray(props.employee.working_scope) && props.employee.working_scope.length > 0) {
             form.working_scope = [...props.employee.working_scope];
@@ -154,15 +200,47 @@ const close = () => {
             <div class="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700 mb-5">
                 <div>
                     <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center">
-                        <component :is="isFirstIssuance ? DocumentPlusIcon : DocumentTextIcon" class="w-5 h-5 mr-2 text-indigo-500" />
-                        {{ isFirstIssuance ? 'Penerbitan Kontrak Kerja Awal (v1)' : 'Pengaturan Klausul & Generator Kontrak' }}
+                        <component :is="isExtend ? CalendarDaysIcon : (isFirstIssuance ? DocumentPlusIcon : DocumentTextIcon)" class="w-5 h-5 mr-2 text-indigo-500" />
+                        {{ isExtend ? 'Perpanjangan Masa Kontrak Kerja (Extend)' : (isFirstIssuance ? 'Penerbitan Kontrak Kerja Awal (v1)' : 'Pengaturan Klausul & Generator Kontrak') }}
                     </h2>
                     <p class="text-xs text-gray-500 mt-0.5">
                         {{ employee?.nama_lengkap }} ({{ employee?.jabatan }})
-                        <span v-if="isFirstIssuance" class="ml-2 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">
+                        <span v-if="isExtend" class="ml-2 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">
+                            Versi Baru: v{{ nextVersionNumber }}
+                        </span>
+                        <span v-else-if="isFirstIssuance" class="ml-2 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">
                             Penerbitan Perdana
                         </span>
                     </p>
+                </div>
+            </div>
+
+            <!-- Banner Mode Perpanjangan (Extend Contract) -->
+            <div v-if="isExtend" class="p-4 bg-gradient-to-r from-indigo-50/90 to-blue-50/90 dark:from-indigo-950/40 dark:to-blue-950/40 border border-indigo-200 dark:border-indigo-800 rounded-xl mb-5 shadow-xs">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div class="flex items-start space-x-3">
+                        <CalendarDaysIcon class="w-5 h-5 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
+                        <div>
+                            <h4 class="text-xs font-bold text-indigo-900 dark:text-indigo-200">
+                                Mode Perpanjangan Kontrak (Renewal v{{ nextVersionNumber }})
+                            </h4>
+                            <p class="text-[11px] text-indigo-700 dark:text-indigo-300/90 mt-0.5 leading-relaxed">
+                                Sistem otomatis menghitung tanggal mulai baru (H+1 kontrak sebelumnya) dan mengarsipkan dokumen kontrak resmi versi terbaru beserta riwayat karir karyawan.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="shrink-0 bg-white dark:bg-gray-800 px-3 py-2 rounded-lg border border-indigo-100 dark:border-indigo-900 shadow-2xs">
+                        <label class="inline-flex items-center cursor-pointer select-none">
+                            <input 
+                                type="checkbox" 
+                                v-model="isPromoteToPermanent" 
+                                class="rounded border-gray-300 text-emerald-600 shadow-xs focus:ring-emerald-500 h-4 w-4"
+                            />
+                            <span class="ml-2 text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                                Angkat Karyawan Tetap (PKWTT)
+                            </span>
+                        </label>
+                    </div>
                 </div>
             </div>
 
@@ -534,21 +612,22 @@ const close = () => {
                         <input 
                             type="checkbox" 
                             v-model="form.is_new_version" 
-                            class="rounded border-gray-300 dark:border-gray-700 text-indigo-600 shadow-xs focus:ring-indigo-500 h-4 w-4"
+                            :disabled="isExtend"
+                            class="rounded border-gray-300 dark:border-gray-700 text-indigo-600 shadow-xs focus:ring-indigo-500 h-4 w-4 disabled:opacity-75"
                         />
                         <span class="ml-2.5 text-xs font-bold text-gray-800 dark:text-gray-200">
-                            Simpan sebagai Versi Baru Dokumen Kontrak (v{{ (props.employee?.contracts?.length || 0) + 1 }})
+                            Simpan sebagai Versi Baru Dokumen Kontrak (v{{ nextVersionNumber }})
                         </span>
                     </label>
                     <span 
                         class="text-[10px] font-semibold px-2 py-0.5 rounded-full"
                         :class="form.is_new_version ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/60 dark:text-indigo-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'"
                     >
-                        {{ form.is_new_version ? 'Arsip Snapshot Baru' : 'Koreksi Versi Berjalan' }}
+                        {{ form.is_new_version ? (isExtend ? 'Perpanjangan (Versi Baru)' : 'Arsip Snapshot Baru') : 'Koreksi Versi Berjalan' }}
                     </span>
                 </div>
                 <p class="text-[11px] text-gray-500 dark:text-gray-400 mt-1 pl-6">
-                    Centang opsi ini saat perpanjangan masa kerja, kenaikan gaji, atau perubahan klausul penting agar riwayat versi sebelumnya tetap tersimpan utuh dan tidak tertimpa.
+                    {{ isExtend ? 'Perpanjangan kontrak secara otomatis akan menerbitkan versi dokumen baru dan mencatat riwayat karir.' : 'Centang opsi ini saat perpanjangan masa kerja, kenaikan gaji, atau perubahan klausul penting agar riwayat versi sebelumnya tetap tersimpan utuh dan tidak tertimpa.' }}
                 </p>
                 <div v-if="form.is_new_version" class="mt-2.5 pl-6">
                     <InputLabel value="Catatan Perubahan Versi Baru (Opsional)" class="text-[11px] mb-1 text-indigo-900 dark:text-indigo-200 font-semibold" />
@@ -565,7 +644,7 @@ const close = () => {
             <div class="mt-6 flex justify-end space-x-3 pt-4 border-t border-gray-100 dark:border-gray-700">
                 <SecondaryButton @click="close" type="button">Batal</SecondaryButton>
                 <PrimaryButton :disabled="form.processing">
-                    {{ form.processing ? (isFirstIssuance ? 'Menerbitkan...' : 'Menyimpan...') : (isFirstIssuance ? 'Terbitkan Kontrak Pertama (v1)' : 'Simpan Perubahan') }}
+                    {{ form.processing ? (isExtend ? 'Memproses...' : (isFirstIssuance ? 'Menerbitkan...' : 'Menyimpan...')) : (isExtend ? (isPromoteToPermanent ? 'Terbitkan Surat Kontrak Tetap (PKWTT)' : `Terbitkan Perpanjangan Kontrak (v${nextVersionNumber})`) : (isFirstIssuance ? 'Terbitkan Kontrak Pertama (v1)' : 'Simpan Perubahan')) }}
                 </PrimaryButton>
             </div>
         </form>

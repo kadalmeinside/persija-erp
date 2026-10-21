@@ -44,8 +44,10 @@ watch(() => props.show, (newVal) => {
             form.status_karyawan = props.karyawan.status_karyawan || 'Tetap';
             form.gaji_pokok = props.karyawan.gaji_pokok || 0;
             
+            const isPermanent = props.karyawan.status_karyawan === 'Tetap' || props.karyawan.contract_type === 'PKWTT';
+            
             // Default to 'Perpanjangan Kontrak' if they were 'Kontrak' or 'Magang'
-            if (['Kontrak', 'Magang'].includes(props.karyawan.status_karyawan)) {
+            if (!isPermanent && ['Kontrak', 'Magang'].includes(props.karyawan.status_karyawan)) {
                 form.tipe_peristiwa = 'Perpanjangan Kontrak';
             } else {
                 form.tipe_peristiwa = 'Promosi';
@@ -82,7 +84,7 @@ const close = () => {
                         <InputLabel value="Tipe Peristiwa" />
                         <select v-model="form.tipe_peristiwa" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                             <option value="Pengangkatan Awal">Pengangkatan Awal</option>
-                            <option value="Perpanjangan Kontrak">Perpanjangan Kontrak</option>
+                            <option v-if="karyawan?.status_karyawan !== 'Tetap' && karyawan?.contract_type !== 'PKWTT'" value="Perpanjangan Kontrak">Perpanjangan Kontrak</option>
                             <option value="Pengangkatan Tetap">Pengangkatan Tetap</option>
                             <option value="Promosi">Promosi</option>
                             <option value="Demosi">Demosi</option>
@@ -94,6 +96,10 @@ const close = () => {
                             <option value="Lainnya">Lainnya</option>
                         </select>
                         <InputError :message="form.errors.tipe_peristiwa" class="mt-2" />
+                        <p v-if="form.tipe_peristiwa === 'Perpanjangan Kontrak'" class="text-[11px] text-indigo-600 dark:text-indigo-400 mt-1.5 flex items-start gap-1">
+                            <span>💡</span>
+                            <span><strong>Info HR:</strong> Form ini mencatat riwayat karir. Untuk menerbitkan fisik Surat Perjanjian Kerja / PDF resmi baru dengan masa berlaku terupdate, disarankan menggunakan tombol <strong>Perpanjang Kontrak</strong> pada header profil.</span>
+                        </p>
                     </div>
 
                     <div>

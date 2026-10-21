@@ -109,7 +109,7 @@ const deleteBank = (id) => {
         </template>
 
         <div class="pb-12 pt-4">
-            <div class="max-w-7xl mx-auto space-y-6">
+            <div class="max-w-7xl mx-auto">
                 
                 <div class="flex justify-between items-center">
                     <div class="relative w-64">

@@ -305,12 +305,20 @@ class KaryawanController extends Controller
         }
 
         DB::transaction(function () use ($karyawan, $validated, $request) {
+            $oldContractType = $karyawan->contract_type;
+            $oldStatusKaryawan = $karyawan->status_karyawan;
+
             $statusKaryawan = $validated['contract_type'] === 'PKWTT' 
                 ? 'Tetap' 
                 : ($validated['contract_type'] === 'Internship' ? 'Magang' : 'Kontrak');
 
+            $effectiveTanggalSelesai = $validated['contract_type'] === 'PKWTT' 
+                ? null 
+                : ($validated['tanggal_selesai'] ?? null);
+
             $karyawan->update([
-                'tgl_bergabung' => $validated['tanggal_mulai'],
+                'tgl_bergabung' => $karyawan->tgl_bergabung ?: $validated['tanggal_mulai'],
+                'tanggal_berakhir_kontrak' => $effectiveTanggalSelesai,
                 'status_karyawan' => $statusKaryawan,
                 'nomor_kontrak' => $validated['nomor_kontrak'] ?? null,
                 'contract_type' => $validated['contract_type'],
@@ -334,7 +342,7 @@ class KaryawanController extends Controller
                     'id_karyawan'              => $karyawan->id,
                     'tipe_peristiwa'           => 'Pengangkatan Awal',
                     'tanggal_efektif'          => $validated['tanggal_mulai'],
-                    'tanggal_berakhir_kontrak' => $validated['tanggal_selesai'] ?? null,
+                    'tanggal_berakhir_kontrak' => $effectiveTanggalSelesai,
                     'id_departemen'            => $karyawan->id_departemen,
                     'jabatan'                  => $karyawan->jabatan ?? 'Karyawan',
                     'status_karyawan'          => $statusKaryawan,
@@ -342,21 +350,26 @@ class KaryawanController extends Controller
                     'catatan'                  => 'Penerbitan Kontrak Kerja Awal (' . $karyawan->contract_type . ')' . (!empty($validated['catatan_perubahan']) ? ': ' . $validated['catatan_perubahan'] : ''),
                 ]);
             } elseif ($isNewVersion) {
-                // New contract version -> record career event (Perpanjangan / Pengangkatan Tetap)
-                $peristiwa = ($validated['contract_type'] === 'PKWTT' && $karyawan->contract_type !== 'PKWTT')
-                    ? 'Pengangkatan Tetap'
-                    : 'Perpanjangan Kontrak';
+                // New contract version -> record career event (Perpanjangan / Pengangkatan Tetap / Adendum)
+                $peristiwa = 'Perpanjangan Kontrak';
+                if ($validated['contract_type'] === 'PKWTT') {
+                    if ($oldContractType !== 'PKWTT' || $oldStatusKaryawan !== 'Tetap') {
+                        $peristiwa = 'Pengangkatan Tetap';
+                    } else {
+                        $peristiwa = 'Adendum PKWTT';
+                    }
+                }
 
                 RiwayatKarir::create([
                     'id_karyawan'              => $karyawan->id,
                     'tipe_peristiwa'           => $peristiwa,
                     'tanggal_efektif'          => $validated['tanggal_mulai'],
-                    'tanggal_berakhir_kontrak' => $validated['tanggal_selesai'] ?? null,
+                    'tanggal_berakhir_kontrak' => $effectiveTanggalSelesai,
                     'id_departemen'            => $karyawan->id_departemen,
                     'jabatan'                  => $karyawan->jabatan ?? 'Karyawan',
                     'status_karyawan'          => $statusKaryawan,
                     'gaji_pokok'               => $karyawan->gaji_pokok ?? 0,
-                    'catatan'                  => $validated['catatan_perubahan'] ?? 'Perpanjangan Kontrak Kerja',
+                    'catatan'                  => $validated['catatan_perubahan'] ?? ($peristiwa === 'Pengangkatan Tetap' ? 'Pengangkatan Karyawan Tetap (PKWTT)' : 'Perpanjangan Kontrak Kerja'),
                 ]);
             } else {
                 // Minor edit -> keep latest career history dates aligned
@@ -364,7 +377,7 @@ class KaryawanController extends Controller
                 if ($latestCareer) {
                     $latestCareer->update([
                         'tanggal_efektif'          => $validated['tanggal_mulai'],
-                        'tanggal_berakhir_kontrak' => $validated['tanggal_selesai'] ?? null,
+                        'tanggal_berakhir_kontrak' => $effectiveTanggalSelesai,
                     ]);
                 }
             }
@@ -397,7 +410,7 @@ class KaryawanController extends Controller
                     'contract_type'          => $karyawan->contract_type,
                     'judul_surat'            => $pdfResult['judulSurat'],
                     'tanggal_mulai'          => $validated['tanggal_mulai'],
-                    'tanggal_selesai'        => $validated['tanggal_selesai'] ?? null,
+                    'tanggal_selesai'        => $effectiveTanggalSelesai,
                     'durasi_probation_bulan' => $karyawan->durasi_probation_bulan,
                     'notice_period_hari'     => $karyawan->notice_period_hari,
                     'jam_kerja_mingguan'     => $karyawan->jam_kerja_mingguan,
@@ -421,7 +434,7 @@ class KaryawanController extends Controller
                     'file_size'          => strlen($pdfResult['pdfContent']),
                     'file_extension'     => 'pdf',
                     'tanggal_terbit'     => $validated['tanggal_mulai'],
-                    'tanggal_kadaluarsa' => $validated['tanggal_selesai'] ?? null,
+                    'tanggal_kadaluarsa' => $effectiveTanggalSelesai,
                     'catatan'            => $catatan,
                     'uploaded_by'        => auth()->id(),
                 ]);
@@ -434,7 +447,7 @@ class KaryawanController extends Controller
                         'contract_type'          => $karyawan->contract_type,
                         'judul_surat'            => $pdfResult['judulSurat'],
                         'tanggal_mulai'          => $validated['tanggal_mulai'],
-                        'tanggal_selesai'        => $validated['tanggal_selesai'] ?? null,
+                        'tanggal_selesai'        => $effectiveTanggalSelesai,
                         'durasi_probation_bulan' => $karyawan->durasi_probation_bulan,
                         'notice_period_hari'     => $karyawan->notice_period_hari,
                         'jam_kerja_mingguan'     => $karyawan->jam_kerja_mingguan,

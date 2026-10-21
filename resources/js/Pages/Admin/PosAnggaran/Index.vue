@@ -119,7 +119,7 @@ const selectedProgramDept = computed(() => {
         </template>
 
         <div class="pb-12 pt-4">
-            <div class="max-w-7xl mx-auto space-y-6">
+            <div class="max-w-7xl mx-auto">
 
                 <!-- Toolbar -->
                 <div class="flex flex-col md:flex-row justify-between items-center gap-4">
