@@ -421,11 +421,12 @@ const allModules = [
             },
             {
                 id: 'approval-center',
-                title: 'Menggunakan Approval Center Terpadu',
+                title: 'Menggunakan Approval Center Terpadu & Keamanan PIN',
                 steps: [
                     'Buka menu <strong>Approval Center</strong> untuk melihat seluruh process approval yang ditujukan kepada Anda.',
                     'Klik baris approval untuk melihat detail dokumen dan timeline semua level. Timeline mencatat target employee dan actor aktual pada setiap aksi.',
                     `Klik tombol <strong class="inline-flex items-center px-2 py-0.5 bg-green-50 border border-green-200 text-green-700 rounded text-xs">${iconCheck} Approve</strong> atau <strong class="inline-flex items-center px-2 py-0.5 bg-red-50 border border-red-200 text-red-700 rounded text-xs">${iconX} Reject</strong>, masukkan PIN enam digit, lalu isi catatan bila diperlukan.`,
+                    '<strong>Keamanan PIN Transaksi:</strong> Setiap aksi persetujuan atau penolakan transaksi finansial dan cuti dilindungi dengan PIN 6-digit rahasia untuk mencegah penyalahgunaan akun.',
                     'Approval hanya dapat diproses ketika step berstatus Pending dan user login adalah target employee. Dokumen yang didukung adalah Pengajuan, Cuti, Pinjaman, dan Invoice.'
                 ]
             },
@@ -466,6 +467,36 @@ const allModules = [
                     'Atur batasan hak akses (Permissions) untuk masing-masing tipe user.',
                     'Pastikan setiap user memiliki role yang tepat, misalnya <em>Finance</em>, <em>HR Staff</em>, <em>Direktur</em>, atau <em>IT Support</em>. Hak transaksi tetap mengikuti middleware dan target employee pada process approval.'
                 ]
+            },
+            {
+                id: 'sys-3',
+                title: 'Pengaturan Aplikasi & Identitas Perusahaan',
+                steps: [
+                    'Buka menu <strong>System Settings > Pengaturan Aplikasi</strong>.',
+                    'Ubah <strong>Nama Aplikasi</strong>, <strong>Logo Aplikasi</strong>, dan <strong>Favicon</strong> browser untuk branding sistem.',
+                    'Tentukan <strong>Batas Toleransi Kurang Bayar Reimbursement</strong> untuk menentukan apakah selisih kasbon wajib melalui approval ulang atau tidak.',
+                    'Lengkapi <strong>Identitas Perusahaan</strong> (Nama resmi dan Alamat lengkap perusahaan) yang otomatis digunakan sebagai kop pada invoice dan slip cetak.',
+                    `Klik <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconCheck} Simpan Pengaturan</strong> untuk menyimpan perubahan.`
+                ]
+            },
+            {
+                id: 'sys-4',
+                title: 'Uji Coba Push Notifikasi ke Mobile (Simulasi Notifikasi)',
+                steps: [
+                    'Buka menu <strong>System Settings > Pengaturan Aplikasi</strong> lalu periksa kartu <strong>Uji Coba Push Notifikasi ke Mobile</strong>.',
+                    'Pilih <strong>Karyawan / Pengguna Target</strong> yang sedang login di aplikasi mobile (HP terdeteksi jika status perangkat aktif).',
+                    'Pilih <strong>Tipe Notifikasi</strong> (Approval, Cuti, Absensi, Tugas, ESS Slip Gaji, atau Pengumuman). Template pesan dan <em>deep link</em> ke layar HP otomatis terisi.',
+                    'Klik tombol <strong class="inline-flex items-center px-2 py-0.5 bg-red-600 text-white rounded text-xs">Kirim Notifikasi ke Mobile</strong> untuk menguji keterkiriman push notifikasi secara real-time.'
+                ]
+            },
+            {
+                id: 'sys-5',
+                title: 'Dokumentasi API Mobile (Untuk Pengembang Native)',
+                steps: [
+                    'Buka menu <strong>System Settings > API Documentation</strong> (khusus Super Admin).',
+                    'Halaman ini berisi referensi lengkap endpoint RESTful API V1 untuk aplikasi Native Android & iOS (Autentikasi, Absensi Geofencing & Challenge, Cuti, Unified Approval Center, Manajemen Tugas, Kalender, ESS, dan PIN Transaksi).',
+                    'Setiap endpoint dilengkapi format Header, Payload request JSON, serta contoh response sukses (JSend) dan penanganan kode error (401, 403, 422).'
+                ]
             }
         ]
     },
@@ -492,17 +523,29 @@ const allModules = [
         topics: [
             {
                 id: 'dash-1',
-                title: 'Menambah Event Kalender Perusahaan',
+                title: 'Menambah Agenda Perusahaan & Booking Ruangan Meeting',
                 steps: [
-                    'Buka menu <strong>Dashboard</strong> atau menu <strong>Kalender</strong>.',
-                    `Klik tombol <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconPlus} Tambah Event</strong> pada widget kalender.`,
-                    'Isikan judul event (misalnya "Libur Nasional", "Meeting Direksi", atau "Gajian"), lalu pilih tanggal mulai dan selesai.',
-                    `Klik <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconCheck} Simpan</strong>. Event ini akan tampil di kalender semua karyawan secara real-time.`,
-                    `Untuk menghapus atau mengubah jadwal event, klik pada event tersebut di dalam kalender lalu gunakan tombol <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconEdit} Edit</strong> atau <strong class="inline-flex items-center px-2 py-0.5 bg-red-50 border border-red-200 text-red-700 rounded text-xs">${iconTrash} Hapus</strong>.`
+                    'Buka menu <strong>Dashboard</strong> atau menu <strong>Kalender Perusahaan</strong> (atau menu <strong>HR & Payroll > Agenda Perusahaan</strong>).',
+                    `Klik tombol <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconPlus} Tambah Agenda / Booking Ruangan</strong>.`,
+                    'Pilih <strong>Jenis Agenda</strong> yang sesuai (misal: <em>Rapat / Meeting Ruangan</em>, <em>Kegiatan Umum Perusahaan</em>, <em>Pelatihan / Workshop</em>, atau <em>Meeting Online / Virtual</em>).',
+                    'Pilih ruangan dengan cepat menggunakan tombol chip yang tersedia (<em>Ruang Meeting Utama</em>, <em>Ruang Meeting 2</em>, atau <em>Ruang Basecamp</em>) atau ketik lokasi ruangan secara manual.',
+                    'Tentukan waktu mulai dan waktu selesai agenda.',
+                    '<strong>Pencegahan Bentrok Otomatis:</strong> Untuk kategori <em>Rapat / Meeting Ruangan</em>, sistem secara cerdas akan memvalidasi agar tidak terjadi tumpang tindih waktu (overlap) di ruangan yang sama dengan rapat lain.',
+                    `Klik <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconCheck} Simpan</strong>. Agenda akan langsung tampil di kalender web dan mobile seluruh karyawan.`
                 ]
             },
             {
                 id: 'dash-2',
+                title: 'Integrasi Kalender Publik & Langganan iCal Feed',
+                steps: [
+                    'Buka menu <strong>HR & Payroll > Agenda Perusahaan</strong> atau <strong>Kalender Perusahaan</strong>.',
+                    'Gunakan fitur <strong>Bagikan Kalender</strong> untuk membagikan tautan kalender publik perusahaan.',
+                    'Sistem menyediakan URL feed <strong>iCal / .ics</strong> yang dapat disinkronkan langsung ke Google Calendar, Apple Calendar, maupun Microsoft Outlook.',
+                    'Tautan feed diamankan menggunakan <em>Secret Access Token</em> dan dilengkapi proteksi pemblokiran bot/AI scraper agar jadwal internal perusahaan tetap aman.'
+                ]
+            },
+            {
+                id: 'dash-3',
                 title: 'Dashboard Direktur dan Notifikasi',
                 steps: [
                     'Pada Dashboard, Direktur dapat melihat ringkasan task jatuh tempo hari ini, task overdue yang belum selesai, karyawan yang sedang cuti, dan karyawan aktif yang belum absen.',

@@ -1,7 +1,20 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head } from '@inertiajs/vue3';
-import { BookOpenIcon, KeyIcon, MapPinIcon, CalendarDaysIcon, CodeBracketIcon, ChevronDownIcon, ChevronUpIcon } from '@heroicons/vue/24/outline';
+import {
+    BookOpenIcon,
+    KeyIcon,
+    MapPinIcon,
+    CalendarDaysIcon,
+    CodeBracketIcon,
+    ChevronDownIcon,
+    ChevronUpIcon,
+    LockClosedIcon,
+    BellIcon,
+    BriefcaseIcon,
+    DocumentTextIcon,
+    ShieldCheckIcon
+} from '@heroicons/vue/24/outline';
 import { ref } from 'vue';
 
 const openEndpoint = ref(null);
@@ -76,6 +89,14 @@ const apis = [
                 response: "{\n  \"data\": {\n    \"clock_in\": \"08:00:00\",\n    \"clock_out\": null,\n    \"status\": \"Hadir\"\n  }\n}"
             },
             {
+                id: 'absensi_absent_today',
+                method: 'GET',
+                url: '/api/v1/absensi/absent-today',
+                desc: 'Get list of employees who have not clocked in today (HR / Management view).',
+                headers: "Authorization: Bearer {token}",
+                response: "{\n  \"status\": \"success\",\n  \"data\": [\n    {\n      \"id\": 12,\n      \"nama_lengkap\": \"Budi Santoso\",\n      \"departemen\": \"Finance\"\n    }\n  ]\n}"
+            },
+            {
                 id: 'absensi_in',
                 method: 'POST',
                 url: '/api/v1/absensi/clock-in',
@@ -141,6 +162,14 @@ const apis = [
                 desc: 'Get my leave request history',
                 headers: "Authorization: Bearer {token}",
                 response: "{\n  \"data\": [\n    {\n      \"id\": 5,\n      \"jenis_cuti\": \"Cuti Tahunan\",\n      \"tgl_mulai\": \"2026-10-01\",\n      \"tgl_selesai\": \"2026-10-02\",\n      \"jumlah_hari\": 2,\n      \"alasan\": \"Urusan keluarga\",\n      \"status\": \"Pending\",\n      \"lampiran\": null,\n      \"created_at\": \"2026-09-27 08:00:00\"\n    }\n  ]\n}"
+            },
+            {
+                id: 'cuti_all',
+                method: 'GET',
+                url: '/api/v1/cuti/all',
+                desc: 'Get all company employee leave requests (HR / Management view).',
+                headers: "Authorization: Bearer {token}",
+                response: "{\n  \"data\": [\n    {\n      \"id\": 5,\n      \"nama_karyawan\": \"Jane Smith\",\n      \"jenis_cuti\": \"Cuti Tahunan\",\n      \"status\": \"Approved\"\n    }\n  ]\n}"
             },
             {
                 id: 'cuti_submit',
@@ -221,7 +250,7 @@ const apis = [
                 id: 'approval_action',
                 method: 'POST',
                 url: '/api/v1/approvals/{approval}/action',
-                desc: 'Approve or reject a Pending step only when the token employee is its target.',
+                desc: 'Approve or reject a Pending step only when the token employee is its target. Membutuhkan verifikasi PIN 6-digit.',
                 headers: "Authorization: ****** application/json",
                 body: "{\n  \"status\": \"Approved\",\n  \"pin\": \"123456\",\n  \"catatan\": \"Diproses\"\n}",
                 response: "{ \"message\": \"Approval berhasil diproses.\" }"
@@ -271,10 +300,19 @@ const apis = [
             {
                 id: 'calendar_index',
                 method: 'GET',
-                url: '/api/v1/calendar',
-                desc: 'Get company calendar events for mobile.',
+                url: '/api/v1/calendar?month=10&year=2026',
+                desc: 'Get company calendar events, holidays, leaves, and tasks for mobile.',
                 headers: "Authorization: ****** application/json",
-                response: "{ \"data\": [] }"
+                response: "{ \"status\": \"success\", \"data\": [] }"
+            },
+            {
+                id: 'calendar_store',
+                method: 'POST',
+                url: '/api/v1/calendar/events',
+                desc: 'Create a new company agenda or book a meeting room (Role HR: Super Admin, HR Manager, HR Staff). Otomatis memvalidasi pencegahan bentrok ruangan.',
+                headers: "Authorization: Bearer {token}\nContent-Type: application/json",
+                body: "{\n  \"title\": \"Rapat Koordinasi Manajemen\",\n  \"category\": \"meeting\",\n  \"start_date\": \"2026-10-25 09:00:00\",\n  \"end_date\": \"2026-10-25 11:00:00\",\n  \"location\": \"Ruang Meeting Utama\",\n  \"description\": \"Pembahasan target\"\n}\n\n// category: meeting, general, training, online, other",
+                response: "{\n  \"status\": \"success\",\n  \"message\": \"Agenda berhasil ditambahkan ke kalender.\",\n  \"data\": { \"id\": 15, \"title\": \"Rapat Koordinasi Manajemen\" }\n}\n\n// Error Bentrok: 422 Unprocessable Content\n// {\"errors\": {\"location\": [\"Ruangan 'Ruang Meeting Utama' sudah dibooking oleh agenda lain pada jam tersebut.\"]}}"
             },
             {
                 id: 'employees_index',
@@ -283,6 +321,182 @@ const apis = [
                 desc: 'Get employees available to the authenticated mobile user.',
                 headers: "Authorization: ****** application/json",
                 response: "{ \"data\": [] }"
+            }
+        ]
+    },
+    {
+        title: 'PIN Security & Keamanan Transaksi',
+        icon: LockClosedIcon,
+        color: 'text-rose-600',
+        bg: 'bg-rose-50',
+        endpoints: [
+            {
+                id: 'pin_status',
+                method: 'GET',
+                url: '/api/v1/pin/status',
+                desc: 'Check if authenticated user has set their 6-digit security PIN.',
+                headers: "Authorization: Bearer {token}",
+                response: "{\n  \"has_pin\": true\n}"
+            },
+            {
+                id: 'pin_set',
+                method: 'POST',
+                url: '/api/v1/pin/set',
+                desc: 'Set 6-digit security PIN for the first time.',
+                headers: "Authorization: Bearer {token}\nContent-Type: application/json",
+                body: "{\n  \"pin\": \"123456\",\n  \"pin_confirmation\": \"123456\"\n}",
+                response: "{\n  \"message\": \"PIN berhasil dibuat.\"\n}"
+            },
+            {
+                id: 'pin_change',
+                method: 'POST',
+                url: '/api/v1/pin/change',
+                desc: 'Change existing 6-digit security PIN with current PIN verification.',
+                headers: "Authorization: Bearer {token}\nContent-Type: application/json",
+                body: "{\n  \"current_pin\": \"123456\",\n  \"pin\": \"654321\",\n  \"pin_confirmation\": \"654321\"\n}",
+                response: "{\n  \"message\": \"PIN berhasil diubah.\"\n}"
+            },
+            {
+                id: 'pin_verify',
+                method: 'POST',
+                url: '/api/v1/pin/verify',
+                desc: 'Verify 6-digit PIN before executing critical approval actions.',
+                headers: "Authorization: Bearer {token}\nContent-Type: application/json",
+                body: "{\n  \"pin\": \"123456\"\n}",
+                response: "{\n  \"valid\": true\n}\n\n// Error 422: {\"errors\": {\"pin\": [\"PIN yang Anda masukkan salah.\"]}}"
+            }
+        ]
+    },
+    {
+        title: 'Push Notifications & Real-Time Sync',
+        icon: BellIcon,
+        color: 'text-red-600',
+        bg: 'bg-red-50',
+        endpoints: [
+            {
+                id: 'notif_index',
+                method: 'GET',
+                url: '/api/v1/notifications?limit=30&filter=unread',
+                desc: 'Get in-app notifications with unread counter.',
+                headers: "Authorization: Bearer {token}",
+                response: "{\n  \"status\": \"success\",\n  \"unread_count\": 2,\n  \"data\": [\n    {\n      \"id\": \"uuid-123\",\n      \"type\": \"approval\",\n      \"title\": \"Approval Dibutuhkan\",\n      \"message\": \"Pengajuan PJ-2026-004 menunggu persetujuan Anda.\",\n      \"link\": \"/approvals\",\n      \"is_read\": false,\n      \"created_at\": \"2026-10-21T08:00:00Z\"\n    }\n  ]\n}"
+            },
+            {
+                id: 'notif_mark_read',
+                method: 'POST',
+                url: '/api/v1/notifications/{id}/read',
+                desc: 'Mark single notification as read.',
+                headers: "Authorization: Bearer {token}",
+                response: "{\n  \"status\": \"success\",\n  \"message\": \"Notifikasi ditandai telah dibaca.\",\n  \"unread_count\": 1\n}"
+            },
+            {
+                id: 'notif_mark_all',
+                method: 'POST',
+                url: '/api/v1/notifications/read-all',
+                desc: 'Mark all unread notifications as read.',
+                headers: "Authorization: Bearer {token}",
+                response: "{\n  \"status\": \"success\",\n  \"message\": \"Semua notifikasi berhasil ditandai sudah dibaca.\",\n  \"unread_count\": 0\n}"
+            },
+            {
+                id: 'notif_get_prefs',
+                method: 'GET',
+                url: '/api/v1/notifications/preferences',
+                desc: 'Get user notification category preferences.',
+                headers: "Authorization: Bearer {token}",
+                response: "{\n  \"status\": \"success\",\n  \"data\": {\n    \"approval_notifications\": true,\n    \"leave_notifications\": true,\n    \"attendance_notifications\": true,\n    \"task_notifications\": true,\n    \"announcement_notifications\": true\n  }\n}"
+            },
+            {
+                id: 'notif_update_prefs',
+                method: 'POST',
+                url: '/api/v1/notifications/preferences',
+                desc: 'Update user notification category preferences.',
+                headers: "Authorization: Bearer {token}\nContent-Type: application/json",
+                body: "{\n  \"approval_notifications\": true,\n  \"attendance_notifications\": false\n}",
+                response: "{\n  \"status\": \"success\",\n  \"message\": \"Pengaturan notifikasi berhasil diperbarui.\"\n}"
+            },
+            {
+                id: 'notif_device_token',
+                method: 'POST',
+                url: '/api/v1/notifications/device-token',
+                desc: 'Register or refresh mobile push device token (Firebase Cloud Messaging / APNS).',
+                headers: "Authorization: Bearer {token}\nContent-Type: application/json",
+                body: "{\n  \"token\": \"fcm-device-token-string\",\n  \"platform\": \"android\",\n  \"device_name\": \"Samsung Galaxy S24\"\n}",
+                response: "{\n  \"status\": \"success\",\n  \"message\": \"Device token berhasil didaftarkan.\"\n}"
+            }
+        ]
+    },
+    {
+        title: 'Employee Self-Service (ESS) Module',
+        icon: DocumentTextIcon,
+        color: 'text-teal-600',
+        bg: 'bg-teal-50',
+        endpoints: [
+            {
+                id: 'ess_correction_get',
+                method: 'GET',
+                url: '/api/v1/ess/attendance-correction',
+                desc: 'Get paginated history of attendance corrections submitted by employee.',
+                headers: "Authorization: Bearer {token}",
+                response: "{\n  \"status\": \"success\",\n  \"data\": [],\n  \"meta\": { \"current_page\": 1, \"total\": 0 }\n}"
+            },
+            {
+                id: 'ess_correction_post',
+                method: 'POST',
+                url: '/api/v1/ess/attendance-correction',
+                desc: 'Submit attendance time correction request to supervisor.',
+                headers: "Authorization: Bearer {token}\nContent-Type: application/json",
+                body: "{\n  \"tanggal\": \"2026-10-20\",\n  \"waktu_masuk_baru\": \"08:30\",\n  \"waktu_keluar_baru\": \"17:30\",\n  \"alasan\": \"Fingerprint error di kantor pusat\"\n}",
+                response: "{\n  \"status\": \"success\",\n  \"message\": \"Pengajuan koreksi absensi berhasil dikirim.\"\n}"
+            },
+            {
+                id: 'ess_trip_get',
+                method: 'GET',
+                url: '/api/v1/ess/business-trip',
+                desc: 'Get paginated history of business trips / external duty letters.',
+                headers: "Authorization: Bearer {token}",
+                response: "{\n  \"status\": \"success\",\n  \"data\": [],\n  \"meta\": { \"current_page\": 1, \"total\": 0 }\n}"
+            },
+            {
+                id: 'ess_trip_post',
+                method: 'POST',
+                url: '/api/v1/ess/business-trip',
+                desc: 'Submit new business trip request with automated duty letter number.',
+                headers: "Authorization: Bearer {token}\nContent-Type: application/json",
+                body: "{\n  \"nama_kegiatan\": \"Liputan Pertandingan Tandang\",\n  \"lokasi_tujuan\": \"Bandung\",\n  \"tgl_mulai\": \"2026-10-22\",\n  \"tgl_selesai\": \"2026-10-23\",\n  \"keterangan\": \"Tim Media Official\"\n}",
+                response: "{\n  \"status\": \"success\",\n  \"message\": \"Pengajuan dinas luar berhasil didaftarkan.\"\n}"
+            },
+            {
+                id: 'ess_payslips',
+                method: 'GET',
+                url: '/api/v1/ess/payslips',
+                desc: 'Get list of published salary payslips for employee.',
+                headers: "Authorization: Bearer {token}",
+                response: "{\n  \"status\": \"success\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"periode\": \"September 2026\",\n      \"gaji_pokok\": 8000000,\n      \"gaji_bersih\": 9200000\n    }\n  ]\n}"
+            },
+            {
+                id: 'ess_payslip_detail',
+                method: 'GET',
+                url: '/api/v1/ess/payslips/{id}',
+                desc: 'Get full payslip breakdown (salary, allowances, deductions, net salary).',
+                headers: "Authorization: Bearer {token}",
+                response: "{\n  \"status\": \"success\",\n  \"data\": {\n    \"periode\": \"September 2026\",\n    \"ringkasan\": { \"gaji_pokok\": 8000000, \"gaji_bersih\": 9200000 },\n    \"rincian_komponen\": []\n  }\n}"
+            },
+            {
+                id: 'ess_reimbursement_get',
+                method: 'GET',
+                url: '/api/v1/ess/reimbursements',
+                desc: 'Get paginated employee reimbursement claims.',
+                headers: "Authorization: Bearer {token}",
+                response: "{\n  \"status\": \"success\",\n  \"data\": [],\n  \"meta\": { \"current_page\": 1, \"total\": 0 }\n}"
+            },
+            {
+                id: 'ess_reimbursement_post',
+                method: 'POST',
+                url: '/api/v1/ess/reimbursements',
+                desc: 'Submit employee expense reimbursement claim.',
+                headers: "Authorization: Bearer {token}\nContent-Type: application/json",
+                body: "{\n  \"judul_klaim\": \"Bensin Liputan\",\n  \"kategori\": \"Transport\",\n  \"tgl_transaksi\": \"2026-10-20\",\n  \"total_biaya\": 150000,\n  \"keterangan\": \"Operasional liputan tim\"\n}",
+                response: "{\n  \"status\": \"success\",\n  \"message\": \"Pengajuan reimbursement berhasil didaftarkan.\"\n}"
             }
         ]
     }
@@ -311,8 +525,8 @@ const getMethodColor = (method) => {
             </div>
         </template>
 
-        <div class="py-12">
-            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div class="pb-12 pt-4">
+            <div class="max-w-7xl mx-auto">
 
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
                     <div class="p-6 text-gray-900 border-b border-gray-200">
