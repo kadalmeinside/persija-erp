@@ -77,6 +77,20 @@ const handleEventClick = (event) => {
     }
 };
 
+const clientError = ref('');
+const commonRooms = [
+    'Ruang Meeting Utama',
+    'Ruang Meeting 2',
+    'Ruang Basecamp'
+];
+
+const setRoom = (room) => {
+    form.location = room;
+    if (form.errors.location) {
+        form.clearErrors('location');
+    }
+};
+
 const form = useForm({
     title: '',
     category: 'meeting',
@@ -91,6 +105,7 @@ const openCreateModal = (defaultDate = null) => {
     form.reset();
     form.clearErrors();
     form.category = 'meeting';
+    clientError.value = '';
 
     const now = new Date();
     const pad = (n) => String(n).padStart(2, '0');
@@ -112,6 +127,7 @@ const openEditModal = (event) => {
     
     editingEvent.value = event;
     form.clearErrors();
+    clientError.value = '';
     form.title = event.title;
     form.category = event.category || 'meeting';
     form.start_date = event.start.slice(0, 16); // YYYY-MM-DDTHH:mm for datetime-local
@@ -123,6 +139,12 @@ const openEditModal = (event) => {
 };
 
 const submitEvent = () => {
+    clientError.value = '';
+    if (form.end_date && form.start_date && new Date(form.end_date) <= new Date(form.start_date)) {
+        clientError.value = 'Waktu selesai harus lebih lambat dari waktu mulai.';
+        return;
+    }
+
     if (editingEvent.value) {
         form.put(route('admin.company-events.update', editingEvent.value.real_id), {
             onSuccess: () => { showEventModal.value = false; }
@@ -746,11 +768,25 @@ const formatTime = (dateStr) => {
         </div>
 
         <!-- Event Modal -->
-        <Modal :show="showEventModal" @close="showEventModal = false">
+        <Modal :show="showEventModal" @close="showEventModal = false" maxWidth="lg">
             <div class="p-6">
-                <h2 class="text-lg font-medium text-gray-900 mb-4">
-                    {{ editingEvent ? 'Edit Agenda Perusahaan' : 'Tambah Agenda / Booking Ruangan' }}
-                </h2>
+                <div class="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-900">
+                            {{ editingEvent ? 'Edit Agenda Perusahaan' : 'Tambah Agenda / Booking Ruangan' }}
+                        </h2>
+                        <p class="text-xs text-gray-500">Pencegahan bentrok jadwal otomatis aktif untuk rapat ruangan</p>
+                    </div>
+                </div>
+
+                <!-- Conflict / Error Alert Banner (Seperti di Mobile) -->
+                <div v-if="form.errors.location || clientError" class="mb-4 p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs flex items-start gap-2.5 shadow-sm">
+                    <ExclamationTriangleIcon class="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                    <div class="space-y-0.5">
+                        <p class="font-bold text-rose-900">Peringatan: Bentrok Jadwal / Kesalahan Input</p>
+                        <p class="text-rose-700 leading-relaxed">{{ form.errors.location || clientError }}</p>
+                    </div>
+                </div>
                 
                 <div class="space-y-4">
                     <!-- Jenis / Kategori Agenda -->
@@ -760,13 +796,16 @@ const formatTime = (dateStr) => {
                             v-model="form.category" 
                             class="w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm font-medium"
                         >
-                            <option value="meeting">Rapat / Meeting Ruangan</option>
-                            <option value="general">Kegiatan Umum Perusahaan</option>
+                            <option value="meeting">Rapat / Meeting Ruangan (Pencegahan Bentrok Ruangan)</option>
+                            <option value="general">Kegiatan Umum Perusahaan (Boleh Bersamaan)</option>
                             <option value="training">Pelatihan / Workshop</option>
                             <option value="online">Meeting Online / Virtual</option>
                             <option value="other">Agenda Lainnya</option>
                         </select>
                         <InputError :message="form.errors.category" class="mt-1" />
+                        <p v-if="form.category === 'meeting'" class="text-[11px] text-purple-700 mt-1 flex items-center gap-1 font-medium">
+                            <span>🛡️</span> Sistem otomatis memvalidasi jadwal agar tidak terjadi bentrok ruangan dengan rapat lain.
+                        </p>
                     </div>
 
                     <div>
@@ -782,14 +821,14 @@ const formatTime = (dateStr) => {
                             <InputError :message="form.errors.start_date" class="mt-1" />
                         </div>
                         <div>
-                            <InputLabel value="Waktu Selesai" />
+                            <InputLabel value="Waktu Selesai *" />
                             <TextInput type="datetime-local" v-model="form.end_date" class="w-full mt-1" />
                             <InputError :message="form.errors.end_date" class="mt-1" />
                         </div>
                     </div>
 
                     <div>
-                        <InputLabel value="Ruangan/Tempat" />
+                        <InputLabel value="Ruangan / Tempat" />
                         <TextInput 
                             v-model="form.location" 
                             list="common-meeting-rooms"
@@ -797,15 +836,30 @@ const formatTime = (dateStr) => {
                             placeholder="Pilih atau ketik ruangan/tempat..." 
                         />
                         <datalist id="common-meeting-rooms">
-                            <option value="Ruang Meeting Utama" />
-                            <option value="Ruang Meeting 2" />
-                            <option value="Ruang Basecamp" />
+                            <option v-for="room in commonRooms" :key="room" :value="room" />
                         </datalist>
                         <InputError :message="form.errors.location" class="mt-1 font-semibold text-rose-600" />
+
+                        <!-- Quick Room Chips -->
+                        <div class="flex flex-wrap items-center gap-1.5 mt-2">
+                            <span class="text-xs text-gray-500 mr-1">Rekomendasi Ruangan:</span>
+                            <button
+                                v-for="room in commonRooms"
+                                :key="room"
+                                type="button"
+                                @click="setRoom(room)"
+                                class="text-xs px-2.5 py-1 rounded-full border transition cursor-pointer"
+                                :class="form.location === room 
+                                    ? 'bg-purple-100 text-purple-700 border-purple-300 font-bold shadow-xs' 
+                                    : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'"
+                            >
+                                {{ room }}
+                            </button>
+                        </div>
                     </div>
 
                     <div>
-                        <InputLabel value="Deskripsi / Catatan Agenda" />
+                        <InputLabel value="Deskripsi / Catatan Agenda (Opsional)" />
                         <textarea v-model="form.description" class="w-full mt-1 border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm" rows="3" placeholder="Rincian pembahasan, peserta rapat, atau perlengkapan yang dibutuhkan..."></textarea>
                         <InputError :message="form.errors.description" class="mt-1" />
                     </div>
