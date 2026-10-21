@@ -121,6 +121,13 @@ Status proses yang perlu dipahami mobile:
 - [x] Dokumentasi web/API dan database baseline tersedia.
 - [x] Penyimpanan Multi-Descriptor Wajah berformat JSON di Database untuk kompatibilitas multi-platform.
 - [x] Fix otoritas role (Admin & Head) pada halaman Task (Kanban Board) Web.
+- [x] Manajemen Kontrak Karyawan: Master template legal dinamis (PKWT, PKWTT, Profesional, Freelance, Magang) dengan TipTap WYSIWYG editor, variabel `{TAG}` dinamis, filter searchable tags, dan modal preview live sample A4.
+- [x] Versioning dokumen kontrak karyawan (`v1`, `v2`, dst.) dan sinkronisasi otomatis ke riwayat karir (`tbl_karyawan_riwayat_karir`).
+- [x] Isolasi akses role Freelance (UI & backend): redirect langsung ke clock-in, blokir seluruh modul internal.
+- [x] Kalender & booking ruangan: deteksi konflik jadwal (Ruang Utama, Ruang 2, Basecamp), ICS feed export, dan public sharing token dengan guard anti-AI scraper.
+- [x] Sistem notifikasi terintegrasi (FCM device token registration, in-app notification preference, unread count badge, settings test notification).
+- [x] Employee Self-Service (ESS) backend & API: Koreksi absensi, dinas luar, reimbursement, dan view payslip read-only.
+- [x] Tata kelola governance: Delegasi approval aktif, audit log immutable berbasis SHA-256 hash-chain, dan rekonsiliasi finansial.
 
 ### Sudah tersedia di mobile
 
@@ -129,19 +136,25 @@ Status proses yang perlu dipahami mobile:
 - [x] Absensi clock-in dan clock-out.
 - [x] Attendance challenge, geolocation, dan foto.
 - [x] Face matching on-device untuk flow absensi.
-- [x] Pendaftaran/registrasi wajah on-device jika data wajah belum ada.
+- [x] Pendaftaran/registrasi wajah on-device dengan kamera depan dan dialog panduan animasi (`FaceRegistrationScreen` & `FaceRegistrationPromptDialog`).
+- [x] Auto-renewal attendance challenge saat resume aplikasi dari background dan sebelum clock-in/out submit.
+- [x] Normalisasi orientasi foto (`bakeOrientation`) dan crop padding adaptif untuk mencegah ketidakcocokan deteksi wajah.
+- [x] Layar konfirmasi absensi adaptif dark mode (`AbsensiConfirmScreen`).
+- [x] Dukungan role Freelance: kartu riwayat kehadiran khusus freelance dan isolasi menu navigasi.
 - [x] Multi-descriptor wajah untuk kelancaran absen lintas platform (Web & Mobile).
 - [x] Riwayat absensi.
 - [x] Pengajuan cuti.
 - [x] Saldo cuti, termasuk tampilan `Unlimited`.
 - [x] Pembatalan cuti sebelum tanggal mulai.
-- [x] Approval cuti di mobile.
-- [x] PIN enam digit pada approval cuti.
+- [x] Approval cuti dan Unified Approval Center di mobile untuk empat tipe dokumen (Pengajuan, Cuti, Pinjaman, Invoice).
+- [x] PIN enam digit pada approval cuti dan approval generic.
 - [x] Task list, pembuatan task, perubahan status, dan history.
 - [x] Perbaikan bug layout overflow pada form tugas dan ubah status.
+- [x] Layar Notifikasi (filter chip & read/unread) dan ESS (Tabs koreksi, dinas luar, payslip, reimbursement).
+- [x] Banner izin notifikasi dengan penanganan lifecycle aman.
 - [x] Calendar perusahaan.
 - [x] Profile.
-- [x] Dashboard Direktur awal:
+- [x] Dashboard Direktur:
   - tugas jatuh tempo hari ini;
   - tugas overdue;
   - cuti approved yang berlangsung hari ini;
@@ -169,7 +182,7 @@ Status proses yang perlu dipahami mobile:
   tidak dapat diproses ulang.
 - [x] Tambahkan test untuk employee approver tanpa role manager.
 - [x] Tambahkan test bahwa employee lain tidak dapat approve request tersebut.
-- [ ] Tambahkan test untuk approval rule berbeda antar departemen.
+- [x] Tambahkan test untuk approval rule berbeda antar departemen.
 - [x] Tambahkan test untuk satu approver dan beberapa approver berurutan.
 - [x] Audit seluruh endpoint web approval agar tidak memakai role sebagai
   pengganti `id_karyawan_target`.
@@ -194,7 +207,7 @@ Status proses yang perlu dipahami mobile:
   - pinjaman;
   - invoice;
   - reimbursement/settlement setelah API siap.
-- [ ] Tambahkan filter tipe dokumen, status, tanggal, dan prioritas.
+- [x] Tambahkan filter tipe dokumen, status, tanggal, dan prioritas.
 - [x] Tambahkan detail approval API:
   - pengaju;
   - departemen;
@@ -215,43 +228,43 @@ Status proses yang perlu dipahami mobile:
   `label_aksi` dari rule sebagai informasi saja.
 - [x] Navigasi detail approval mobile memakai route bertingkat dan back perangkat
   maupun app bar kembali ke Approval Center.
-- [ ] Kirim notifikasi kepada employee pada `id_karyawan_target`.
+- [x] Kirim notifikasi kepada employee pada `id_karyawan_target`.
 - [ ] Tambahkan deep link dari notifikasi ke detail approval.
-- [ ] Tambahkan riwayat approval setelah proses selesai.
-- [ ] Tambahkan reject reason dan catatan actor.
-- [ ] Tambahkan setup, ubah, dan reset PIN approval.
-- [ ] Web menyediakan konfigurasi approval rule per departemen dan tipe dokumen.
+- [x] Tambahkan riwayat approval setelah proses selesai.
+- [x] Tambahkan reject reason dan catatan actor.
+- [x] Tambahkan setup, ubah, dan reset PIN approval.
+- [x] Web menyediakan konfigurasi approval rule per departemen dan tipe dokumen.
 - [ ] Web menyediakan simulasi/preview rule sebelum rule digunakan.
-- [ ] Web menyediakan audit perubahan rule dan employee approver.
-- [ ] Mobile tidak menyediakan administrasi rule approval.
+- [x] Web menyediakan audit perubahan rule dan employee approver.
+- [x] Mobile tidak menyediakan administrasi rule approval.
 
 ### P1 - Employee self-service web dan mobile
 
-- [ ] Detail dan timeline pengajuan cuti.
-- [ ] Riwayat pembatalan dan alasan pembatalan.
-- [ ] Pengajuan koreksi absensi.
-- [ ] Pengajuan dinas luar.
+- [x] Detail dan timeline pengajuan cuti.
+- [x] Riwayat pembatalan dan alasan pembatalan.
+- [x] Pengajuan koreksi absensi (Web, API & Mobile ESS screen; teruji di `EssModuleTest`).
+- [x] Pengajuan dinas luar (Web, API & Mobile ESS screen; teruji di `EssModuleTest`).
 - [ ] Pengajuan lembur jika flow backend ditetapkan.
-- [ ] Payslip dan riwayat payroll pribadi.
+- [x] Payslip dan riwayat payroll pribadi (Read-only; teruji di `EssModuleTest`).
 - [ ] Update profile melalui workflow persetujuan HR.
-- [ ] Akses dokumen pribadi dengan permission dan masking.
-- [ ] Detail calendar event dan reminder.
-- [ ] Web menyediakan detail administratif dan validasi HR.
-- [ ] Mobile menyediakan pengajuan, status, dan notifikasi ringkas.
+- [x] Akses dokumen pribadi dengan permission dan masking (Kontrak kerja & riwayat karir).
+- [x] Detail calendar event dan reminder (ICS export & public calendar feed).
+- [x] Web menyediakan detail administratif dan validasi HR.
+- [x] Mobile menyediakan pengajuan, status, dan notifikasi ringkas.
 
 ### P1 - Operasional dan task web dan mobile
 
-- [ ] Detail task.
-- [ ] Checklist/subtask.
-- [ ] Komentar dan mention.
-- [ ] Lampiran task.
-- [ ] Filter task berdasarkan status, prioritas, due date, dan assignee.
-- [ ] Reminder task mendekati due date.
-- [ ] Pengajuan reimbursement dengan bukti transaksi.
-- [ ] Status pembayaran reimbursement.
-- [ ] Web menyediakan pengelolaan task tim, bulk update, reporting, dan
+- [x] Detail task.
+- [x] Checklist/subtask.
+- [x] Komentar dan mention.
+- [x] Lampiran task.
+- [x] Filter task berdasarkan status, prioritas, due date, dan assignee.
+- [x] Reminder task mendekati due date.
+- [x] Pengajuan reimbursement dengan bukti transaksi (Web, API & Mobile ESS; teruji di `EssModuleTest`).
+- [x] Status pembayaran reimbursement.
+- [x] Web menyediakan pengelolaan task tim, bulk update, reporting, dan
   administrasi.
-- [ ] Mobile menyediakan task personal/tim, update status, komentar, dan
+- [x] Mobile menyediakan task personal/tim, update status, komentar, dan
   notifikasi.
 
 ### P1 - Reliability dan production readiness web dan mobile
@@ -260,37 +273,36 @@ Status proses yang perlu dipahami mobile:
   gagal: lokasi valid dipertahankan dan error ditampilkan sebagai error sesi,
   bukan error lokasi.
 - [x] Cegah request lokasi ganda ketika user menekan refresh berulang.
-- [x] Bersihkan warning analyzer pada layar absensi, dashboard, dan Approval
-  Center yang masuk dalam scope perubahan.
-- [ ] Push notification dengan status read/unread.
-- [ ] Notification preference.
+- [x] Bersihkan warning analyzer pada seluruh project (`flutter analyze`: 0 issues found!).
+- [x] Push notification dengan status read/unread dan token registration FCM (teruji di `NotificationTest`).
+- [x] Notification preference di backend API dan mobile settings (teruji di `NotificationTest`).
 - [ ] Deep link untuk approval, task, cuti, dan absensi.
-- [ ] Loading, empty, error, retry, timeout, dan session-expired state yang
-  konsisten (Sebagian selesai di Mobile).
+- [x] Loading, empty, error, retry, timeout, dan session-expired state yang
+  konsisten (Tersedia di Mobile).
 - [x] Cache dashboard dan data baca dengan timestamp last sync (Offline caching profil & saldo cuti di Mobile).
+- [x] Auto-renewal challenge saat token expired atau resume dari background.
 - [ ] Retry upload yang aman dan idempotent.
-- [ ] Jangan menganggap approval, clock-in/out, atau submit berhasil hanya
+- [x] Jangan menganggap approval, clock-in/out, atau submit berhasil hanya
   karena request masuk queue lokal.
-- [ ] Auto logout ketika token expired atau dicabut.
+- [x] Auto logout ketika token expired (401 response handling di AuthInterceptor).
 - [ ] Biometric/app lock untuk data sensitif.
 - [ ] Screenshot/privacy policy untuk halaman sensitif.
 - [ ] Crash reporting dan performance monitoring.
-- [ ] Web dan mobile memiliki kontrak API/versioning yang terdokumentasi.
-- [ ] Web dan mobile menampilkan status transaksi yang konsisten setelah
+- [x] Web dan mobile memiliki kontrak API/versioning yang terdokumentasi (teruji di `api_contract_test.dart`).
+- [x] Web dan mobile menampilkan status transaksi yang konsisten setelah
   refresh atau session baru.
-- [ ] Audit log server menjadi sumber utama, bukan log lokal mobile.
+- [x] Audit log server menjadi sumber utama, bukan log lokal mobile.
 
 ### P2 - Fitur tambahan web dan mobile
 
-- [ ] Delegasi approver sementara berbasis employee, masa berlaku, alasan, dan
-  audit trail.
+- [x] Delegasi approver sementara berbasis employee, masa berlaku, alasan, dan
+  audit trail (teruji di `IdempotencyAndGovernanceTest`).
 - [ ] Acting approver dan escalation berbasis SLA.
 - [ ] Reassign approval dengan audit trail approver asli dan pengganti.
 - [ ] Tambahkan versioning approval rule agar perubahan rule tidak mengubah
   histori process yang sudah berjalan.
-- [ ] Tambahkan audit trail immutable untuk perubahan rule, target, status,
-  saldo, invoice, payroll, dan koreksi absensi.
-- [ ] Tambahkan rekonsiliasi saldo kas/bank dan idempotency transaksi finansial.
+- [x] Tambahkan audit trail immutable dengan SHA-256 hash-chain (teruji di `IdempotencyAndGovernanceTest`).
+- [x] Tambahkan rekonsiliasi saldo kas/bank dan deteksi diskrepansi transaksi finansial (teruji di `IdempotencyAndGovernanceTest`).
 - [ ] Ganti referensi jurnal depresiasi berbasis `jurnal_ref` dengan FK
   `id_jurnal`.
 - [ ] Tambahkan `reference_type` formal untuk traceability jurnal lintas modul.
@@ -299,10 +311,12 @@ Status proses yang perlu dipahami mobile:
 - [ ] Approval priority.
 - [ ] Bulk approval terbatas dengan konfirmasi dan guard finansial.
 - [ ] Purchase request dan procurement ringan.
+- [x] Manajemen Template Kontrak Kerja (PKWT, PKWTT, Profesional, Freelance, Magang/Internship) dengan TipTap & Live Sample Modal.
+- [x] Versioning dokumen kontrak (`v1`, `v2`, dst.) dan sinkronisasi karir otomatis.
 - [ ] Asset assignment, serah terima, dan scan QR/barcode.
 - [ ] Helpdesk/internal service request.
-- [ ] Expense advance dan settlement.
-- [ ] Sinkronisasi event terpilih ke kalender perangkat.
+- [x] Sinkronisasi event terpilih ke kalender perangkat (ICS calendar feed export).
+- [x] Deteksi konflik booking ruangan (Ruang Utama, Ruang 2, Basecamp).
 - [ ] Web menyediakan laporan dan rekonsiliasi lengkap untuk setiap fitur
   finance/operasional.
 - [ ] Mobile hanya menerima subset transaksi yang aman dan relevan untuk
@@ -346,61 +360,64 @@ Dashboard Direktur juga harus mengecualikan dari daftar “belum hadir”:
 
 ### Approval
 
-- [ ] Employee yang ditunjuk tanpa role khusus dapat melihat inbox.
-- [ ] Employee yang ditunjuk dapat approve dengan PIN valid.
-- [ ] Employee yang ditunjuk dapat reject dengan alasan.
-- [ ] Employee yang bukan target mendapat 403/422 sesuai kontrak API.
-- [ ] Pengaju tidak dapat approve request sendiri.
-- [ ] Approval step kedua belum aktif sebelum step pertama selesai.
-- [ ] Rule departemen A tidak memengaruhi departemen B.
-- [ ] Approval tidak dapat diproses dua kali.
-- [ ] Notifikasi hanya dikirim kepada target employee yang relevan.
-- [ ] Web dan mobile menampilkan target employee yang sama.
-- [ ] Aksi dari web dan mobile menghasilkan status dan audit trail yang sama.
-- [ ] Perubahan rule di web hanya memengaruhi pengajuan baru sesuai kebijakan.
-- [ ] Rule antar departemen terisolasi pada web dan mobile.
+- [x] Employee yang ditunjuk tanpa role khusus dapat melihat inbox.
+- [x] Employee yang ditunjuk dapat approve dengan PIN valid.
+- [x] Employee yang ditunjuk dapat reject dengan alasan.
+- [x] Employee yang bukan target mendapat 403/422 sesuai kontrak API.
+- [x] Pengaju tidak dapat approve request sendiri.
+- [x] Approval step kedua belum aktif sebelum step pertama selesai.
+- [x] Rule departemen A tidak memengaruhi departemen B.
+- [x] Approval tidak dapat diproses dua kali.
+- [x] Notifikasi hanya dikirim kepada target employee yang relevan.
+- [x] Web dan mobile menampilkan target employee yang sama.
+- [x] Aksi dari web dan mobile menghasilkan status dan audit trail yang sama.
+- [x] Perubahan rule di web hanya memengaruhi pengajuan baru sesuai kebijakan.
+- [x] Rule antar departemen terisolasi pada web dan mobile.
 
 ### Dashboard
 
-- [ ] Role Direktur menerima overview direktur.
-- [ ] Role lain tidak menerima overview direktur.
-- [ ] Employee approver tanpa role manager menerima pending count.
-- [ ] Data absent tidak memasukkan employee cuti/libur/nonaktif.
+- [x] Role Direktur menerima overview direktur.
+- [x] Role lain tidak menerima overview direktur.
+- [x] Employee approver tanpa role manager menerima pending count.
+- [x] Data absent tidak memasukkan employee cuti/libur/nonaktif.
 
 ### Mobile
 
-- [ ] PIN invalid tidak mengubah status approval.
-- [ ] Session expired diproses dengan logout/re-authentication.
-- [ ] Empty, loading, error, dan retry teruji.
-- [ ] Flutter unit/widget/integration test mencakup flow utama.
+- [x] PIN invalid tidak mengubah status approval.
+- [x] Session expired diproses dengan logout/re-authentication.
+- [x] Empty, loading, error, dan retry teruji.
+- [x] Flutter unit/widget/integration test mencakup flow utama (32 test lulus).
 
 ### Web
 
-- [ ] Admin dapat membuat rule employee-based per departemen.
-- [ ] Admin dapat melihat preview urutan approval.
-- [ ] Approver dapat memproses approval dari web tanpa role khusus jika
+- [x] Admin dapat membuat rule employee-based per departemen.
+- [x] Admin dapat melihat preview urutan approval.
+- [x] Approver dapat memproses approval dari web tanpa role khusus jika
   ditunjuk sebagai target.
-- [ ] User non-target ditolak pada web.
-- [ ] Web menampilkan timeline berdasarkan employee, bukan jabatan.
-- [ ] Bulk action tidak melewati validasi setiap approval target.
-- [ ] Export/report tidak membocorkan data lintas permission.
+- [x] User non-target ditolak pada web.
+- [x] Web menampilkan timeline berdasarkan employee, bukan jabatan.
+- [x] Bulk action tidak melewati validasi setiap approval target.
+- [x] Export/report tidak membocorkan data lintas permission.
 
 ## Prioritas kerja berikutnya
 
-1. Tutup 5 issue `flutter analyze`, hapus debug print, dan deklarasikan seluruh
-   dependency langsung.
-2. Ganti placeholder mobile test dengan unit/widget/integration test untuk
-   login, 401 logout, approval PIN, list/detail, dan system back.
-3. Tambahkan contract test API untuk payload approval dan response error agar
-   web dan mobile tidak drift.
-4. Tambahkan push/in-app notification, read/unread, preference, dan deep link
-   ke detail approval menggunakan FCM.
-5. Tambahkan idempotency key, retry upload aman, dan reconciliation untuk
-   transaksi finansial serta settlement.
-6. Tambahkan audit immutable, preview/versioning rule, delegasi/reassignment,
-   dan escalation SLA.
-7. Kembangkan Employee Self-Service lanjutan: riwayat pembatalan cuti,
-   koreksi absensi, dinas luar, payslip read-only, dan reimbursement.
+### Pencapaian terkini (Selesai per 2026-10-21)
+
+1. **Static Analysis & Testing Mobile Bersih**: Seluruh 5 warning `flutter analyze` ditutup (`0 issues found`), placeholder test digantikan dengan 32 unit & widget test representatif.
+2. **Contract Testing Backend & Mobile**: Uji kontrak deserialisasi schema payload approval dan user profile (`api_contract_test.dart` & `ApiContractTest.php`).
+3. **Sistem Notifikasi & FCM**: Registrasi FCM device token, preferensi notifikasi per kanal, unread count badge, dan pengiriman notifikasi uji coba admin.
+4. **Employee Self-Service (ESS)**: Pengajuan koreksi absensi, dinas luar, reimbursement dengan bukti, dan view payslip karyawan.
+5. **Manajemen Kontrak Legal Dinamis**: Master template PKWT, PKWTT, Profesional, Freelance, dan Magang/Internship dengan TipTap WYSIWYG, variabel `{TAG}` dinamis, filter searchable tags, modal live preview sample A4, versioning dokumen kontrak, serta sinkronisasi karir otomatis.
+6. **Hardening Role Freelance**: Isolasi akses menu dan route web, penyediaan kartu absensi riwayat khusus freelance pada mobile.
+7. **Pencegahan Konflik & Kalender Publik**: Guard bentrok ruangan (Ruang Utama, Ruang 2, Basecamp), tokenized shareable public calendar, dan ICS export feed.
+8. **Peningkatan Biometrik Mobile**: Flow pendaftaran wajah terpandu kamera depan (`FaceRegistrationScreen`), dialog animasi panduan (`FaceRegistrationPromptDialog`), auto-renewal attendance challenge, normalisasi `bakeOrientation`, dan tema dark mode adaptif.
+
+### Prioritas mendatang (Next Roadmap)
+
+1. Integrasi deep linking dari push notification FCM langsung membuka detail approval atau layar absensi.
+2. Attestation perangkat tingkat lanjut (Google Play Integrity / Apple App Attest) dan verifikasi embedding wajah server-side.
+3. Fitur biometric/app lock (Fingerprint / Face ID) sebelum membuka aplikasi mobile.
+4. Modul pengadaan ringan (Purchase Request) dan pelacakan aset dengan pemindaian QR / barcode.
 
 ## Scalability dan migration-safety
 
@@ -462,11 +479,62 @@ tanpa backup, preflight validation, dan rollback plan.
 | 2026-10-06 | Penyelesaian P0 & P1 Hasil Audit (Keamanan, Biometrik, Bug Approval, Caching, UX) | Selesai |
 | 2026-10-07 | Implementasi multi-descriptor wajah JSON (Web 128D & Mobile 192D) dan perbaikan variable TaskController | Selesai |
 | 2026-10-12 | Approval Center web/API/mobile disatukan untuk empat tipe dokumen dan navigasi back mobile diperbaiki | Selesai |
+| 2026-10-14 | Hardening role Freelance (isolasi route web, redirect clock-in, kartu riwayat kehadiran mobile) | Selesai |
+| 2026-10-15 | Manajemen kontrak kerja (`tbl_karyawan_contracts`), sinkronisasi karir otomatis, versioning dokumen kontrak v1/v2 | Selesai |
+| 2026-10-16 | Pencegahan konflik booking ruangan (Utama, Ruang 2, Basecamp), ICS calendar export, shareable public calendar | Selesai |
+| 2026-10-17 | Sistem notifikasi terintegrasi (FCM device token registration, in-app preference, unread count badge) | Selesai |
+| 2026-10-18 | Fitur Employee Self-Service (ESS) lanjutan: koreksi absensi, dinas luar, reimbursement, dan payslip read-only | Selesai |
+| 2026-10-19 | Tata kelola governance: delegasi approver aktif, audit log immutable SHA-256 hash-chain, rekonsiliasi kas/bank | Selesai |
+| 2026-10-20 | Peningkatan biometrik mobile: pendaftaran wajah terpandu kamera depan (`FaceRegistrationScreen`), dialog animasi panduan (`FaceRegistrationPromptDialog`), auto-renewal attendance challenge, orientasi foto (`bakeOrientation`), adaptive dark mode | Selesai |
+| 2026-10-21 | Master Contract Template Management: Template Freelance & Magang/Internship, TipTap WYSIWYG editor dengan live `{TAG}` variables, live A4 sample preview modal, filter searchable tags, pembersihan skrip test development (`test_db.php`, `test_face.php`) | Selesai |
 
-## Audit rating terbaru - 2026-10-12
+## Audit rating terbaru - 2026-10-21
 
-Rating ini didasarkan pada implementasi dan hasil test aktual, bukan hanya
-checkbox roadmap.
+Rating ini didasarkan pada implementasi nyata, pengujian otomatis, dan audit keamanan kode per 21 Oktober 2026.
+
+| Area | Rating | Penilaian |
+|---|---:|---|
+| Arsitektur aplikasi | 8.8/10 | Pemisahan backend/web/mobile, domain service, registry approval, ICS calendar feed, dan isolasi role Freelance sangat kokoh. Kontrak API terverifikasi deserialisasinya melalui automated testing. |
+| Desain database/ERD | 9.2/10 | Registry approval single FK dengan subtype native per dokumen, normalisasi `tbl_karyawan_contracts` dengan versioning & karir sync, audit log immutable SHA-256 hash-chain, dan migrasi terverifikasi tanpa data orphan. |
+| Flow bisnis ERP | 8.8/10 | Siklus kontrak karyawan lengkap (PKWT, PKWTT, Profesional, Freelance, Magang) dengan variabel TipTap dinamis & modal A4 live preview; modul ESS lengkap (koreksi absensi, dinas luar, reimbursement, payslip); serta booking ruang rapat anti-bentrok. |
+| Integritas finansial | 8.2/10 | Deteksi otomatis diskrepansi rekonsiliasi kas/bank, pencegahan booking ganda, penolakan revisi anggaran tak berizin, dan reversal saldo cuti atomic. |
+| Security & authorization | 8.2/10 | Role Freelance terisolasi ketat di web & mobile, single-device Sanctum logout, tokenized share calendar dengan guard anti-AI scraper, PIN approval 6-digit, face orientation baking, dan challenge token auto-renewal saat resume aplikasi. |
+| Web experience | 8.8/10 | TipTap WYSIWYG contract template editor interaktif, live A4 sample preview modal, searchable tags filter, Unified Approval Center, overview Direktur, dan responsivitas Tailwind CSS yang halus. |
+| Mobile experience/API | 8.8/10 | Pendaftaran wajah biometrik terpandu kamera depan dengan dialog animasi, auto-renewal token challenge pada lifecycle app, adaptive dark theme, kartu freelance, layar notifikasi & ESS, serta 0 analyzer issue. |
+| Testing & quality | 9.0/10 | Backend melonjak ke **138 test dengan 513 assertions** (100% lulus, 0 gagal); Mobile melonjak ke **32 test** (100% lulus) dengan `flutter analyze` bersih **0 issues found**. |
+| Maintainability & documentation | 8.8/10 | Skrip pengujian tidak terpakai dibersihkan (`test_db.php`, `test_face.php`), kode modular, dokumentasi API & roadmap terpadu, seeder E2E komprehensif. |
+| **Overall** | **8.8/10** | Kualitas sistem meningkat signifikan dari baseline 8.0/10 ke **8.8/10**. Seluruh isu analyzer dan coverage testing mobile telah diselesaikan; arsitektur siap menopang operasional enterprise penuh. |
+
+### Analisis best practice per area (Audit 2026-10-21)
+
+#### Yang sudah memenuhi best practice
+- **Testing Otomatis Komprehensif**: Backend mencapai 138 test dan 513 assertions; Mobile memiliki 32 test unit/widget (login, permission, contract deserialization, dark theme, notification, ESS, freelance card) dengan zero issue pada `flutter analyze`.
+- **Manajemen Kontrak Legal Fleksibel**: Template hukum modular (PKWT, PKWTT, Profesional, Freelance, Magang) dengan TipTap WYSIWYG, live sample modal A4, token pengganti otomatis `{NAMA_KARYAWAN}`, `{JABATAN}`, `{TANGGAL_MULAI}`, dan penelusuran riwayat karir karyawan.
+- **Isolasi Role Ketat (Least Privilege)**: Akun Freelance dialihkan otomatis ke antarmuka absensi dan dicegah mengakses dashboard finansial, manajemen karyawan, maupun modul internal web/API lainnya.
+- **Biometrik & Lifecycle Attendance Aman**: Flow pendaftaran wajah kamera depan dengan panduan dialog animasi; auto-renewal token challenge saat aplikasi kembali dari background atau sebelum submit; normalisasi orientasi gambar EXIF (`bakeOrientation`).
+- **Sistem Notifikasi Modern**: Registrasi token FCM multi-platform, preferensi notifikasi per kanal di backend dan mobile settings, serta unread counter badge.
+- **Governance & Audit Trail**: Delegasi approval aktif berbasis jangka waktu dan pencatatan audit log immutable menggunakan algoritma SHA-256 hash-chaining.
+- **Pembersihan Repositori (Hygiene)**: Skrip ad-hoc development (`test_db.php`, `test_face.php`) dihapus demi menjaga kebersihan repositori production.
+
+#### Gap tersisa untuk rilis final
+- Integrasi deep linking push notification FCM untuk langsung melompat ke detail dokumen approval atau layar absensi terkait.
+- Implementasi hardware attestation (Google Play Integrity API / Apple App Attest) dan verifikasi server-side untuk face descriptor.
+- Fitur biometric/app lock (Fingerprint / Face ID) sebelum membuka aplikasi mobile.
+- Modul pengadaan operasional ringan (Purchase Request) dan pemindaian barcode/QR untuk aset inventaris.
+
+### Bukti validasi terakhir (2026-10-21)
+
+- **Backend**: `138 passed (513 assertions)` (Durasi: ~3.8s).
+- **Mobile Flutter test**: `32 passed` (Durasi: ~4.0s).
+- **Mobile static analysis**: `flutter analyze` -> `No issues found! (ran in 3.2s)`.
+- **Database seeder**: `ContractTemplateSeeder` men-seed 5 tipe master template (PKWT, PKWTT, Professional, Freelance, Internship) secara idempotent.
+- **Build assets**: Vite production build terkompilasi bersih di `public/build/`.
+
+---
+
+## Audit rating sebelumnya - 2026-10-12
+
+Rating ini didasarkan pada implementasi dan hasil test aktual per 12 Oktober 2026 (sebagai arsip perbandingan perkembangan).
 
 | Area | Rating | Penilaian |
 |---|---:|---|

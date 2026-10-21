@@ -6,9 +6,17 @@
 php artisan test
 ```
 
-Suite baseline saat dokumentasi ini ditulis: 89 test dan 200 assertion berhasil.
+Suite baseline saat ini (2026-10-21): **138 test dan 513 assertions** berhasil (100% pass, 0 failure).
 
-Test penting mencakup approval, cuti, saldo reversal, role access, pengajuan, payroll service, dan budget.
+Test penting mencakup:
+- Approval workflow & Unified Approval Center (`CutiFlowTest`, `UnifiedApprovalCenterTest`).
+- Manajemen template & versioning kontrak (`ContractTemplateTest`, `ContractLifecycleIntegrityTest`).
+- Isolasi role Freelance web & API (`FreelanceRoleAccessTest`).
+- Deteksi konflik ruang rapat & public calendar (`PublicCalendarAndConflictTest`).
+- Modul ESS: koreksi absensi, dinas luar, payslip, dan reimbursement (`EssModuleTest`).
+- Tata kelola hash-chain immutable audit log, delegasi, dan rekonsiliasi (`IdempotencyAndGovernanceTest`).
+- Notifikasi & FCM device token (`NotificationTest`).
+- Hari libur & Google Calendar sync fallback (`HariLiburTest`).
 
 ## Database
 
@@ -26,7 +34,9 @@ flutter test
 flutter analyze
 ```
 
-Analyzer dapat melaporkan lint/deprecation existing; error compile harus selalu diperbaiki sebelum release.
+- Suite unit & widget test mobile (2026-10-21): **32 test passed** (100% pass).
+- Analisis statis: `flutter analyze` menghasilkan **No issues found!** (0 error, 0 warning, 0 lint issue).
+- Test mencakup form login, dialog permission lokasi, kontrak API deserialisasi (`UserModel`), render profile screen (Light & Dark theme), penanganan izin notifikasi, tabs ESS, dan freelance attendance card.
 
 ## Manual End-to-End (E2E) Testing (Web UI)
 

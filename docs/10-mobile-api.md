@@ -74,6 +74,40 @@ yang tersedia adalah `Pengajuan`, `Cuti`, `Pinjaman`, dan `Invoice`.
 
 Login mobile memakai kebijakan single-device: login baru mencabut seluruh token Sanctum lama untuk user yang sama.
 
-## Face matching
+## Face matching & Registrasi Wajah
 
-Mobile melakukan ekstraksi dan matching descriptor secara on-device menggunakan model TFLite. Descriptor database berasal dari profile user. Backend belum melakukan verifikasi descriptor server-side.
+Mobile melakukan ekstraksi dan matching descriptor secara on-device menggunakan model TFLite (MobileFaceNet). Descriptor database disimpan dalam profil karyawan dalam format multi-descriptor JSON (kompatibel lintas web 128D & mobile 192D).
+
+### Pendaftaran Wajah Pertama Kali (Enrollment)
+
+`POST /api/v1/auth/register-face`
+
+Menerima JSON:
+```json
+{
+  "face_descriptor": [0.0123, -0.0456, "... (192 float)"]
+}
+```
+
+Endpoint ini memvalidasi array embedding float berukuran 192, menyimpan embedding ke `tbl_karyawan.face_embedding`, dan mengembalikan status sukses beserta data user terbaru. Jika karyawan belum memiliki embedding terdaftar, mobile akan menampilkan prompt dialog panduan animasi (`FaceRegistrationPromptDialog`) dan mengarahkan ke `FaceRegistrationScreen`.
+
+## Akses Role Freelance
+
+Pengguna dengan role `Freelance` diperlakukan dengan kebijakan *least privilege*:
+- Di web: Mengakses root dashboard otomatis diarahkan (*redirect*) ke antarmuka absensi. Akses ke modul finance, payroll, approval, atau master data ditolak dengan response 403.
+- Di API/Mobile: Hanya dapat mengakses endpoint absensi (`/absensi/*`) dan profil. Mobile menampilkan kartu riwayat kehadiran khusus freelance dan menyembunyikan modul cuti/approval internal.
+
+## Sistem Notifikasi
+
+- `GET /api/v1/notifications`: Mengambil daftar notifikasi terikat `target_employee` beserta total `unread_count`.
+- `POST /api/v1/notifications/{id}/read`: Menandai notifikasi telah dibaca.
+- `GET /api/v1/notifications/preferences`: Mengambil konfigurasi kanal preferensi notifikasi karyawan.
+- `POST /api/v1/notifications/preferences`: Memperbarui preferensi kanal (in-app, email, push).
+- `POST /api/v1/notifications/device-token`: Mendaftarkan FCM device token perangkat untuk push notification real-time.
+
+## Employee Self-Service (ESS)
+
+- `POST /api/v1/ess/koreksi-absensi`: Mengajukan koreksi jam kehadiran dengan alasan dan bukti.
+- `POST /api/v1/ess/dinas-luar`: Mengajukan penugasan dinas luar kota/lapangan.
+- `GET /api/v1/ess/payslips`: Menampilkan histori dan rincian slip gaji pribadi (read-only).
+- `POST /api/v1/ess/reimbursement`: Mengajukan klaim reimbursement operasional dengan bukti transaksi.
