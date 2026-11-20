@@ -52,6 +52,12 @@ class ApprovalProcess extends Model
 
     public function scopeForDocument($query, string $type, int $documentId)
     {
+        if ($type === 'DinasLuar') {
+            return $query->whereHas('approvalDocument', fn ($q) => $q
+                ->where('document_type', 'DinasLuar')
+                ->where('document_id', $documentId));
+        }
+
         $relation = match ($type) {
             'Pengajuan' => 'pengajuan',
             'Cuti' => 'cuti',

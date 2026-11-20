@@ -7,6 +7,7 @@ import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
+import { InformationCircleIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     show: Boolean,
@@ -96,8 +97,8 @@ const close = () => {
                             <option value="Lainnya">Lainnya</option>
                         </select>
                         <InputError :message="form.errors.tipe_peristiwa" class="mt-2" />
-                        <p v-if="form.tipe_peristiwa === 'Perpanjangan Kontrak'" class="text-[11px] text-indigo-600 dark:text-indigo-400 mt-1.5 flex items-start gap-1">
-                            <span>💡</span>
+                        <p v-if="form.tipe_peristiwa === 'Perpanjangan Kontrak'" class="text-[11px] text-indigo-600 dark:text-indigo-400 mt-1.5 flex items-start gap-1.5">
+                            <InformationCircleIcon class="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
                             <span><strong>Info HR:</strong> Form ini mencatat riwayat karir. Untuk menerbitkan fisik Surat Perjanjian Kerja / PDF resmi baru dengan masa berlaku terupdate, disarankan menggunakan tombol <strong>Perpanjang Kontrak</strong> pada header profil.</span>
                         </p>
                     </div>

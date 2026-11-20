@@ -71,7 +71,7 @@ class PayrollController extends Controller
     {
         $payroll->load(['details.karyawan.departemen', 'programKerja', 'approver', 'activities.causer']);
 
-        // ✅ Pre-load semua ProgramKerja sekaligus — hindari N+1 di dalam map()
+        // Pre-load semua ProgramKerja sekaligus — hindari N+1 di dalam map()
         $allProgramsByDept = \App\Models\ProgramKerja::orderBy('nama_program')
             ->get(['id', 'nama_program', 'id_departemen'])
             ->groupBy('id_departemen');
@@ -81,7 +81,7 @@ class PayrollController extends Controller
             $deptName  = $details->first()->karyawan->departemen->nama_departemen ?? 'Unknown';
             $totalBersih = $details->sum('gaji_bersih');
 
-            // ✅ Ambil dari collection yang sudah di-load — tidak ada query tambahan
+            // Ambil dari collection yang sudah di-load — tidak ada query tambahan
             $programs = $allProgramsByDept->get($deptId, collect());
 
             return [
@@ -120,6 +120,8 @@ class PayrollController extends Controller
         if ($payroll->status !== PayrollStatus::DRAFT) {
             return back()->with('error', 'Payroll sudah disetujui sebelumnya.');
         }
+
+        app(\App\Services\PinVerificationService::class)->assertVerified($request, auth()->user());
 
         try {
             $this->payrollService->approvePayroll($payroll, $request->input('allocations', []));
@@ -179,8 +181,9 @@ class PayrollController extends Controller
                 $detail = $payroll->details()->where('id_karyawan', $request->id_karyawan)->first();
 
                 $newItem = [
-                    'type' => 'Honorarium',
-                    'amount' => $request->honorarium,
+                    'nama' => 'Honorarium',
+                    'tipe' => 'pendapatan',
+                    'nilai' => (float) $request->honorarium,
                     'id_program' => $request->id_program,
                     'id_komponen_gaji' => $request->id_komponen_gaji,
                     'keterangan' => 'Honorarium Tambahan'
@@ -260,16 +263,39 @@ class PayrollController extends Controller
 
         try {
             DB::transaction(function () use ($payroll, $detail, $request) {
-                // 1. Update Detail
-                $gajiBersih = $request->gaji_pokok + $request->total_tunjangan + $request->honorarium + $request->lembur - $request->total_potongan;
+                // 1. Update Detail & sync rincian_komponen
+                $gajiPokok = (float) $request->gaji_pokok;
+                $totalTunjangan = (float) $request->total_tunjangan;
+                $honorarium = (float) $request->honorarium;
+                $lembur = (float) $request->lembur;
+                $totalPotongan = (float) $request->total_potongan;
+                $gajiBersih = $gajiPokok + $totalTunjangan + $honorarium + $lembur - $totalPotongan;
+
+                $syncedRincian = [];
+                if ($gajiPokok > 0) {
+                    $syncedRincian[] = ['nama' => 'Gaji Pokok', 'tipe' => 'pendapatan', 'nilai' => $gajiPokok];
+                }
+                if ($totalTunjangan > 0) {
+                    $syncedRincian[] = ['nama' => 'Tunjangan', 'tipe' => 'pendapatan', 'nilai' => $totalTunjangan];
+                }
+                if ($honorarium > 0) {
+                    $syncedRincian[] = ['nama' => 'Honorarium', 'tipe' => 'pendapatan', 'nilai' => $honorarium, 'id_program' => $detail->id_program, 'id_komponen_gaji' => $detail->id_komponen_gaji];
+                }
+                if ($lembur > 0) {
+                    $syncedRincian[] = ['nama' => 'Lembur', 'tipe' => 'pendapatan', 'nilai' => $lembur];
+                }
+                if ($totalPotongan > 0) {
+                    $syncedRincian[] = ['nama' => 'Potongan', 'tipe' => 'potongan', 'nilai' => $totalPotongan];
+                }
                 
                 $detail->update([
-                    'gaji_pokok' => $request->gaji_pokok,
-                    'total_tunjangan' => $request->total_tunjangan,
-                    'honorarium' => $request->honorarium,
-                    'lembur' => $request->lembur,
-                    'total_potongan' => $request->total_potongan,
-                    'gaji_bersih' => $gajiBersih
+                    'gaji_pokok' => $gajiPokok,
+                    'total_tunjangan' => $totalTunjangan,
+                    'honorarium' => $honorarium,
+                    'lembur' => $lembur,
+                    'total_potongan' => $totalPotongan,
+                    'gaji_bersih' => $gajiBersih,
+                    'rincian_komponen' => $syncedRincian,
                 ]);
 
                 // 2. Recalculate Header (Using Service for consistency)

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Models\KoreksiAbsensi;
 use App\Models\Absensi;
 use App\Models\LokasiKantor;
 use App\Models\Karyawan;
@@ -108,8 +109,6 @@ class AttendanceController extends Controller
         ]);
     }
 
-
-
     /**
      * Halaman Rekap Absensi untuk HR
      */
@@ -119,7 +118,7 @@ class AttendanceController extends Controller
         $status = $request->input('status');
         $timeIn = $request->input('time_in');
         $timeOut = $request->input('time_out');
-        $query = Absensi::with(['karyawan', 'lokasiKantor'])->where('tanggal', $date);
+        $query = Absensi::with(['karyawan.departemen', 'lokasiKantor'])->where('tanggal', $date);
 
         if ($status) {
             $query->where('status_kehadiran', $status);
@@ -137,23 +136,106 @@ class AttendanceController extends Controller
     }
 
     /**
-     * Halaman Rekap Absensi untuk HR
+     * Halaman Rekap Absensi & Koreksi Absensi untuk HR
      */
     public function index(Request $request)
     {
         $query = $this->buildFilteredQuery($request);
-        
         $absensis = $query->orderBy('waktu_masuk', 'asc')->paginate(20)->withQueryString();
+
+        $koreksiStatus = $request->input('koreksi_status');
+        $koreksis = KoreksiAbsensi::with(['karyawan.departemen', 'approver', 'absensi'])
+            ->when($koreksiStatus, fn($q) => $q->where('status', $koreksiStatus))
+            ->latest()
+            ->paginate(15, ['*'], 'koreksi_page')
+            ->withQueryString();
+
+        $koreksiPendingCount = KoreksiAbsensi::where('status', 'Pending')->count();
 
         return Inertia::render('Admin/Absensi/Index', [
             'absensis' => $absensis,
+            'koreksis' => $koreksis,
+            'koreksiPendingCount' => $koreksiPendingCount,
+            'activeTab' => $request->input('tab', 'rekap'),
             'filters' => [
                 'date' => $request->input('date', Carbon::today()->toDateString()),
                 'status' => $request->input('status'),
                 'time_in' => $request->input('time_in'),
                 'time_out' => $request->input('time_out'),
+                'koreksi_status' => $koreksiStatus,
             ]
         ]);
+    }
+
+    /**
+     * Action approval/rejection untuk pengajuan koreksi absensi
+     */
+    public function koreksiAction(Request $request, KoreksiAbsensi $koreksi)
+    {
+        $user = Auth::user();
+        if ($user?->karyawan && $koreksi->id_karyawan === $user->karyawan->id) {
+            abort(403, 'Anda tidak dapat memproses koreksi absensi milik sendiri.');
+        }
+
+        if ($koreksi->status !== 'Pending') {
+            return back()->with('error', 'Koreksi absensi sudah diproses sebelumnya.');
+        }
+
+        $validated = $request->validate([
+            'action' => 'required|in:approve,reject',
+            'catatan' => 'nullable|string|max:500',
+        ]);
+
+        $isApprove = $validated['action'] === 'approve';
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($koreksi, $validated, $isApprove) {
+            $locked = KoreksiAbsensi::whereKey($koreksi->id)->lockForUpdate()->firstOrFail();
+            if ($locked->status !== 'Pending') {
+                throw new \RuntimeException('Koreksi absensi sudah diproses sebelumnya.');
+            }
+
+            if ($isApprove) {
+                $absensi = Absensi::firstOrNew([
+                    'id_karyawan' => $locked->id_karyawan,
+                    'tanggal' => $locked->tanggal,
+                ]);
+
+                if ($locked->waktu_masuk_baru) {
+                    $absensi->waktu_masuk = $locked->waktu_masuk_baru;
+                }
+                if ($locked->waktu_keluar_baru) {
+                    $absensi->waktu_keluar = $locked->waktu_keluar_baru;
+                }
+                $absensi->status_kehadiran = 'Hadir';
+                $absensi->catatan = ($absensi->catatan ? $absensi->catatan . ' | ' : '') . 'Koreksi: ' . $locked->alasan;
+                $absensi->save();
+
+                $locked->id_absensi = $absensi->id;
+                $locked->status = 'Approved';
+            } else {
+                $locked->status = 'Rejected';
+            }
+
+            $locked->approved_by = Auth::id();
+            $locked->approved_at = now();
+            $locked->catatan_approver = $validated['catatan'] ?? null;
+            $locked->save();
+        });
+
+        $koreksi->refresh();
+
+        $targetUser = $koreksi->karyawan?->user;
+        if ($targetUser) {
+            $statusText = $isApprove ? 'Disetujui' : 'Ditolak';
+            $targetUser->notify(new \App\Notifications\EssSubmissionNotification(
+                'attendance',
+                "Pengajuan Koreksi Absensi {$statusText}",
+                "Pengajuan koreksi absensi tanggal " . \Carbon\Carbon::parse($koreksi->tanggal)->format('d/m/Y') . " telah {$statusText}." . (!empty($validated['catatan']) ? " Catatan: {$validated['catatan']}" : ''),
+                '/ess?tab=koreksi'
+            ));
+        }
+
+        return back()->with('success', "Pengajuan koreksi absensi berhasil " . ($isApprove ? 'disetujui.' : 'ditolak.'));
     }
 
     /**

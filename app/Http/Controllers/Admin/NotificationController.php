@@ -15,11 +15,12 @@ class NotificationController extends Controller
         $notification = auth()->user()->notifications()->findOrFail($id);
         
         $notification->markAsRead();
-        
-        if (isset($notification->data['link'])) {
+
+        $clickAction = $notification->data['click_action'] ?? 'open_page';
+        if ($clickAction !== 'info_only' && !empty($notification->data['link'])) {
             return redirect($notification->data['link']);
         }
-        
+
         return back();
     }
     

@@ -384,14 +384,7 @@ class PengajuanService
      */
     public function getPettyCashBalance(KasBank $kasBank): float
     {
-        $saldoAwal = (float) $kasBank->saldo_awal;
-
-        $movements = \App\Models\JurnalDetail::where('id_akun', $kasBank->id_akun_gl)
-            ->selectRaw('COALESCE(SUM(debit), 0) as total_debit, COALESCE(SUM(kredit), 0) as total_kredit')
-            ->first();
-
-        // Kas/Aset: saldo = saldo_awal + debit - kredit
-        return $saldoAwal + (float) $movements->total_debit - (float) $movements->total_kredit;
+        return app(KasBankService::class)->getSaldoGl($kasBank);
     }
 
     /**

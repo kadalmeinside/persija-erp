@@ -100,7 +100,7 @@ class DashboardController extends Controller
                                         $q->where('nama_cuti', 'like', '%Tahunan%');
                                     })
                                     ->value('saldo_akhir') ?? 0,
-                'my_pending_requests' => PengajuanHeader::where('id_pengaju', $user->id)
+                'my_pending_requests' => PengajuanHeader::where('id_pengaju', $karyawan->id)
                                             ->where('status_global', 'Pending Approval')
                                             ->count() 
                                             + 
@@ -144,19 +144,21 @@ class DashboardController extends Controller
 
         // 6. MY ACTIVE TASKS
         if ($karyawan) {
+            $activeTaskStatuses = ['To Do', 'In Progress', 'Review'];
+
             $data['my_active_tasks'] = \App\Models\Task::with(['departemen'])
                 ->where('id_karyawan_assignee', $karyawan->id)
-                ->whereIn('status', ['Todo', 'In Progress', 'In Review'])
+                ->whereIn('status', $activeTaskStatuses)
                 ->orderBy('due_date', 'asc')
                 ->take(5)
                 ->get();
                 
             $data['action_counts']['active_tasks_count'] = \App\Models\Task::where('id_karyawan_assignee', $karyawan->id)
-                ->whereIn('status', ['Todo', 'In Progress', 'In Review'])
+                ->whereIn('status', $activeTaskStatuses)
                 ->count();
                 
             $data['action_counts']['overdue_tasks_count'] = \App\Models\Task::where('id_karyawan_assignee', $karyawan->id)
-                ->whereIn('status', ['Todo', 'In Progress', 'In Review'])
+                ->whereIn('status', $activeTaskStatuses)
                 ->where('due_date', '<', \Carbon\Carbon::today())
                 ->count();
         }
@@ -183,12 +185,24 @@ class DashboardController extends Controller
                 ->whereDate('tgl_selesai', '>=', $today)
                 ->get(['id', 'id_karyawan', 'tgl_mulai', 'tgl_selesai', 'id_jenis_cuti']);
                 
-            $presentIds = \App\Models\Absensi::whereDate('tanggal', $today)->pluck('id_karyawan');
-            
-            $absent = \App\Models\Karyawan::whereNotIn('id', $presentIds)
-                ->whereNotIn('status_karyawan', ['Resign', 'Nonaktif', 'Terminated'])
-                ->orderBy('nama_lengkap')
-                ->get(['id', 'nama_lengkap', 'jabatan', 'id_departemen']);
+            $isHoliday = $today->isWeekend() || \App\Models\HariLibur::whereDate('tanggal', $today)->exists();
+            if ($isHoliday) {
+                $absent = collect();
+            } else {
+                $presentIds = \App\Models\Absensi::whereDate('tanggal', $today)->pluck('id_karyawan');
+                $onLeaveIds = $onLeave->pluck('id_karyawan');
+                $dinasLuarIds = \App\Models\DinasLuar::where('status', 'Approved')
+                    ->whereDate('tgl_mulai', '<=', $today)
+                    ->whereDate('tgl_selesai', '>=', $today)
+                    ->pluck('id_karyawan');
+
+                $excusedIds = $presentIds->merge($onLeaveIds)->merge($dinasLuarIds)->unique();
+
+                $absent = \App\Models\Karyawan::whereNotIn('id', $excusedIds)
+                    ->whereNotIn('status_karyawan', ['Resign', 'Nonaktif', 'Terminated'])
+                    ->orderBy('nama_lengkap')
+                    ->get(['id', 'nama_lengkap', 'jabatan', 'id_departemen']);
+            }
 
             $data['director_overview'] = [
                 'today_tasks' => $todayTasks,

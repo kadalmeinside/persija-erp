@@ -239,7 +239,7 @@ class E2ETestingSeeder extends Seeder
             DB::commit();
 
             $this->command->info('----------------------------------------------------');
-            $this->command->info('🚀 E2E Testing Seeder Berhasil Dijalankan!');
+            $this->command->info('E2E Testing Seeder Berhasil Dijalankan.');
             $this->command->info('Gunakan Akun Berikut untuk Pengujian UI:');
             $this->command->info('----------------------------------------------------');
             $this->command->info('1. Direktur : test.direktur@persija.id / password');

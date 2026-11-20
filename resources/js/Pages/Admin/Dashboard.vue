@@ -28,45 +28,10 @@ const props = defineProps({
 const { role, stats, hr_stats, finance_stats, my_stats, action_counts, my_active_tasks, director_overview } = props.dashboardData;
 const user = usePage().props.auth.user;
 const showQuickActions = ref(false);
-const locationName = ref('');
-const isLoadingLocation = ref(true);
+const locationName = ref('Kantor Pusat Persija');
+const isLoadingLocation = ref(false);
 
 onMounted(() => {
-    if ("geolocation" in navigator) {
-        navigator.geolocation.getCurrentPosition(async (position) => {
-            try {
-                const { latitude, longitude } = position.coords;
-                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
-                const data = await response.json();
-                
-                if (data && data.address) {
-                    const kelurahan = data.address.village || data.address.suburb || data.address.neighbourhood || data.address.city_district || data.address.town || data.address.city;
-                    const provinsi = data.address.state || data.address.region || data.address.county;
-                    locationName.value = kelurahan && provinsi ? `${kelurahan}, ${provinsi}` : (kelurahan || provinsi || 'Lokasi Ditemukan');
-                }
-            } catch (error) {
-                locationName.value = 'Lokasi Tidak Diketahui';
-            } finally {
-                isLoadingLocation.value = false;
-            }
-        }, () => {
-            fetch('https://ipapi.co/json/')
-                .then(res => res.json())
-                .then(data => {
-                    if (data.city && data.region) {
-                        locationName.value = `${data.city}, ${data.region}`;
-                    } else {
-                        locationName.value = 'Jakarta, Indonesia';
-                    }
-                })
-                .catch(() => locationName.value = 'Jakarta, Indonesia')
-                .finally(() => isLoadingLocation.value = false);
-        }, { maximumAge: 60000, timeout: 5000, enableHighAccuracy: false });
-    } else {
-        locationName.value = 'Jakarta, Indonesia';
-        isLoadingLocation.value = false;
-    }
-
     const updateTime = () => {
         const date = new Date();
         currentTime.value = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });

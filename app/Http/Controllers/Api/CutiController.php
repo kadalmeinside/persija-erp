@@ -196,7 +196,7 @@ class CutiController extends Controller
                 }
 
                 if ($request->hasFile('attachment')) {
-                    $lampiranPath = $request->file('attachment')->store('cuti/' . now()->format('Y/m'), 'public');
+                    $lampiranPath = $request->file('attachment')->store('cuti/' . now()->format('Y/m'), 'local');
                 }
 
                 $pengajuan = PengajuanCuti::create([
@@ -221,13 +221,13 @@ class CutiController extends Controller
             });
         } catch (\DomainException $e) {
             if ($lampiranPath) {
-                Storage::disk('public')->delete($lampiranPath);
+                Storage::disk('local')->delete($lampiranPath);
             }
 
             return response()->json(['message' => $e->getMessage()], 422);
         } catch (\Throwable $e) {
             if ($lampiranPath) {
-                Storage::disk('public')->delete($lampiranPath);
+                Storage::disk('local')->delete($lampiranPath);
             }
 
             Log::error('Gagal membuat pengajuan cuti dari API.', [
@@ -390,6 +390,14 @@ class CutiController extends Controller
                     'cancelled_by' => $request->user()->id,
                     'cancellation_reason' => $validated['reason'],
                 ]);
+
+                \App\Models\ApprovalProcess::forDocument('Cuti', $cuti->id)
+                    ->whereIn('status', ['Pending', 'Waiting'])
+                    ->update([
+                        'status' => 'Cancelled',
+                        'catatan' => 'Dibatalkan oleh pemohon: ' . $validated['reason'],
+                        'tgl_aksi' => now(),
+                    ]);
             });
         } catch (\DomainException $e) {
             return response()->json(['message' => $e->getMessage()], 422);

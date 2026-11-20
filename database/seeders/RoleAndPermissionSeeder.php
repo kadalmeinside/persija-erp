@@ -46,7 +46,7 @@ class RoleAndPermissionSeeder extends Seeder
         foreach ($permissions as $permission) {
             Permission::firstOrCreate(['name' => $permission]);
         }
-        $this->command->info('✅ Permissions created/verified.');
+        $this->command->info('[OK] Permissions created/verified.');
 
         // -------------------------------------------------------
         // ROLES — harus sesuai PERSIS dengan yang ada di routes/web.php
@@ -74,7 +74,7 @@ class RoleAndPermissionSeeder extends Seeder
         // Freelance (Khusus Absensi)
         $freelanceRole      = Role::firstOrCreate(['name' => 'Freelance']);
 
-        $this->command->info('✅ Roles created/verified (13 roles).');
+        $this->command->info('[OK] Roles created/verified (13 roles).');
 
         // -------------------------------------------------------
         // PERMISSION ASSIGNMENTS
@@ -143,7 +143,7 @@ class RoleAndPermissionSeeder extends Seeder
         // Super Admin — dapat semua
         $superAdminRole->givePermissionTo(Permission::all());
 
-        $this->command->info('✅ Permissions assigned to all roles.');
+        $this->command->info('[OK] Permissions assigned to all roles.');
 
         // -------------------------------------------------------
         // ASSIGN ROLES TO SEED USERS
@@ -151,15 +151,15 @@ class RoleAndPermissionSeeder extends Seeder
         $adminUser = User::where('email', 'admin@persija.id')->first();
         if ($adminUser && !$adminUser->hasRole('Super Admin')) {
             $adminUser->assignRole($superAdminRole);
-            $this->command->info('✅ Super Admin → admin@persija.id');
+            $this->command->info('[OK] Super Admin -> admin@persija.id');
         }
 
         $stafUser = User::where('email', 'staf.edp@persija.id')->first();
         if ($stafUser && !$stafUser->hasRole('Staf')) {
             $stafUser->assignRole($stafRole);
-            $this->command->info('✅ Staf → staf.edp@persija.id');
+            $this->command->info('[OK] Staf -> staf.edp@persija.id');
         }
 
-        $this->command->info('✅ RoleAndPermissionSeeder selesai.');
+        $this->command->info('[OK] RoleAndPermissionSeeder selesai.');
     }
 }

@@ -406,8 +406,9 @@ const getEventBadgeClass = (event) => {
                                     class="text-[11px] leading-tight px-1.5 py-1 rounded-md border font-medium cursor-pointer truncate transition-all shadow-2xs hover:scale-[1.01]"
                                     :title="event.title"
                                 >
-                                    <span v-if="event.type === 'event' && event.location" class="font-bold text-[10px] block opacity-85">
-                                        📍 {{ event.location }}
+                                    <span v-if="event.type === 'event' && event.location" class="font-bold text-[10px] inline-flex items-center gap-0.5 opacity-85">
+                                        <MapPinIcon class="w-3 h-3 shrink-0" aria-hidden="true" />
+                                        {{ event.location }}
                                     </span>
                                     <span>{{ event.title }}</span>
                                 </div>

@@ -112,7 +112,7 @@ const statusConfig = {
                             <!-- Date Range -->
                             <div class="flex items-center gap-2">
                                 <input v-model="startDate" type="date" class="border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm text-sm" />
-                                <span class="text-gray-400">—</span>
+                                <span class="text-gray-400">s/d</span>
                                 <input v-model="endDate" type="date" class="border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm text-sm" />
                             </div>
                         </div>

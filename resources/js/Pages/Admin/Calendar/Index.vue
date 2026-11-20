@@ -1116,10 +1116,10 @@ const formatTime = (dateStr) => {
                         <div class="w-full max-w-md bg-white border border-slate-200 rounded-lg py-1.5 px-3 text-[11px] font-mono text-slate-600 truncate mb-2">
                             {{ shareSettings?.shareUrl }}
                         </div>
-                        <div class="flex items-center gap-3 text-[10px] text-slate-400">
-                            <span>🔒 Terproteksi Tautan Rahasia</span>
+                        <div class="flex items-center gap-3 text-[10px] text-slate-500">
+                            <span>Terproteksi Tautan Rahasia</span>
                             <span>•</span>
-                            <span>⚡ Pembaruan Real-Time</span>
+                            <span>Pembaruan Real-Time</span>
                         </div>
                     </div>
 
@@ -1144,7 +1144,6 @@ const formatTime = (dateStr) => {
 
                     <!-- Usage Recommendation -->
                     <div class="p-3 bg-blue-50 border border-blue-200 rounded-xl text-[11px] text-blue-700 leading-relaxed flex items-start gap-2">
-                        <span class="font-bold text-sm shrink-0">💡</span>
                         <span>
                             <strong>Tips Pemasangan:</strong> Klik <em>"Cetak Lembar Siap Tempel"</em> untuk mencetak kartu standing A4/A5 resmi. Anda dapat menempelkannya di pintu ruang meeting atau meja resepsionis agar peserta rapat dan staf dapat memindai jadwal ketersediaan ruangan dengan cepat.
                         </span>

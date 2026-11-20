@@ -7,6 +7,19 @@
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
+        <script>
+            (function() {
+                try {
+                    var stored = localStorage.getItem('theme-mode') || localStorage.getItem('theme');
+                    var isDark = stored ? stored === 'dark' : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                    if (isDark) {
+                        document.documentElement.classList.add('dark');
+                    } else {
+                        document.documentElement.classList.remove('dark');
+                    }
+                } catch (e) {}
+            })();
+        </script>
         @php
             $settings = \Illuminate\Support\Facades\Cache::rememberForever('app_settings', function () {
                 return \App\Models\Setting::all()->pluck('value', 'key')->toArray();

@@ -73,10 +73,10 @@ class PayrollServiceTest extends TestCase
         // generatePayroll mengembalikan instance lama; refresh dari DB untuk dapat total yang sudah diupdate
         $payroll->refresh();
 
-        // Total Gaji Kotor = 5jt + 4.5jt = 9.5jt
+        // Total Gaji Kotor = 5jt + 4.5jt = 9.5jt; BPJS Kes 1% + TK 3% = 380rb
         $this->assertEquals(9500000, (float) $payroll->total_gaji_kotor);
-        $this->assertEquals(0, (float) $payroll->total_potongan);
-        $this->assertEquals(9500000, (float) $payroll->total_gaji_bersih);
+        $this->assertEquals(380000, (float) $payroll->total_potongan);
+        $this->assertEquals(9120000, (float) $payroll->total_gaji_bersih);
     }
 
     public function test_generate_payroll_automatically_deducts_loan_installments()
@@ -109,12 +109,12 @@ class PayrollServiceTest extends TestCase
         $payroll->refresh();
 
         $this->assertEquals(9500000, (float) $payroll->total_gaji_kotor);
-        $this->assertEquals(500000, (float) $payroll->total_potongan);
-        $this->assertEquals(9000000, (float) $payroll->total_gaji_bersih);
+        $this->assertEquals(880000, (float) $payroll->total_potongan);
+        $this->assertEquals(8620000, (float) $payroll->total_gaji_bersih);
 
         $detailType1 = $payroll->details->where('id_karyawan', $karyawan->id)->first();
-        $this->assertEquals(4500000, $detailType1->gaji_bersih); // 5jt - 500k
-        $this->assertCount(2, $detailType1->rincian_komponen); // Pokok + Pinjaman
+        $this->assertEquals(4300000, (float) $detailType1->gaji_bersih); // 5jt - 500k pinjaman - 200k BPJS
+        $this->assertCount(4, $detailType1->rincian_komponen); // Pokok + Pinjaman + BPJS Kes + BPJS TK
     }
 
     public function test_approve_payroll_fails_if_status_not_draft()

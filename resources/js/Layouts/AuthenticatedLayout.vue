@@ -689,20 +689,6 @@ const sidebarMenu = computed(() => {
     menu.push({ type: 'heading', label: 'Utilitas' });
     menu.push({ 
         type: 'link', 
-        name: 'Alat PDF', 
-        route: 'admin.pdf-tools.index', 
-        icon: DocumentTextIcon, 
-        current: 'admin.pdf-tools.*' 
-    });
-    menu.push({ 
-        type: 'link', 
-        name: 'Alat Gambar', 
-        route: 'admin.image-tools.index', 
-        icon: PhotoIcon, 
-        current: 'admin.image-tools.*' 
-    });
-    menu.push({ 
-        type: 'link', 
         name: 'Dokumentasi', 
         icon: BookOpenIcon, 
         route: 'admin.documentation', 
@@ -759,14 +745,6 @@ watch(sidebarMenu, (menu) => {
                 </button>
 
                 <div class="relative flex-shrink-0 h-full flex flex-col">
-                    <!-- Grid pattern overlay -->
-                    <div class="absolute inset-0 pointer-events-none"
-                         style="background-image:
-                                linear-gradient(to right, rgba(255, 255, 255, 0.07) 1px, transparent 1px),
-                                linear-gradient(to bottom, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
-                                background-size: 24px 24px;">
-                    </div>
-                    
                     <div class="relative z-10 flex flex-col h-full">
                         <!-- Sidebar Header -->
                         <div class="h-16 flex items-center justify-between px-4 bg-black/20 flex-shrink-0">

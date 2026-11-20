@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
+            \App\Http\Middleware\EnsureCredentialsRotated::class,
         ]);
 
         $middleware->api(append: [
@@ -37,14 +38,17 @@ return Application::configure(basePath: dirname(__DIR__))
             'iclock/*',
         ]);
 
-        $middleware->trustProxies(at: '*');
-
-        $middleware->trustProxies(headers: Request::HEADER_X_FORWARDED_FOR |
-            Request::HEADER_X_FORWARDED_HOST |
-            Request::HEADER_X_FORWARDED_PORT |
-            Request::HEADER_X_FORWARDED_PROTO |
-            Request::HEADER_X_FORWARDED_AWS_ELB
-        );
+        $trustedProxies = env('TRUSTED_PROXIES');
+        if ($trustedProxies) {
+            $middleware->trustProxies(
+                at: $trustedProxies === '*' ? '*' : array_map('trim', explode(',', $trustedProxies)),
+                headers: Request::HEADER_X_FORWARDED_FOR |
+                    Request::HEADER_X_FORWARDED_HOST |
+                    Request::HEADER_X_FORWARDED_PORT |
+                    Request::HEADER_X_FORWARDED_PROTO |
+                    Request::HEADER_X_FORWARDED_AWS_ELB
+            );
+        }
 
         $middleware->redirectGuestsTo(function ($request) {
             // Jika request adalah untuk area admin (URL diawali dengan 'admin/')

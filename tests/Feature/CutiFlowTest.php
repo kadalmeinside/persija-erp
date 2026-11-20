@@ -169,6 +169,7 @@ class CutiFlowTest extends TestCase
 
         $this->withoutExceptionHandling();
         $response = $this->actingAs($this->approverUser)
+            ->withSession(['approval_pin_verified_at' => now()->toIso8601String()])
             ->post(route('admin.cuti.approve', $cuti->id), [
                 'status'  => 'Approved',
                 'catatan' => 'Silahkan liburan',
@@ -191,6 +192,7 @@ class CutiFlowTest extends TestCase
         $cuti = \App\Models\PengajuanCuti::first();
 
         $response = $this->actingAs($this->approverUser)
+            ->withSession(['approval_pin_verified_at' => now()->toIso8601String()])
             ->post(route('admin.cuti.approve', $cuti->id), [
                 'status'  => 'Rejected',
                 'catatan' => 'Banyak kerjaan',

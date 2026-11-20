@@ -11,8 +11,66 @@ dayjs.locale('id');
 
 const props = defineProps({
     absensis: Object,
+    koreksis: Object,
+    koreksiPendingCount: {
+        type: Number,
+        default: 0
+    },
+    activeTab: {
+        type: String,
+        default: 'rekap'
+    },
     filters: Object
 });
+
+const currentTab = ref(props.activeTab || 'rekap');
+
+const koreksiFilterStatus = ref(props.filters?.koreksi_status || '');
+const filterKoreksi = (status) => {
+    koreksiFilterStatus.value = status;
+    router.get(route('admin.absensi.rekap'), {
+        ...props.filters,
+        tab: 'koreksi',
+        koreksi_status: status,
+    }, { preserveState: true, replace: true, preserveScroll: true });
+};
+
+// Modal Approval / Rejection
+const isActionModalOpen = ref(false);
+const actionType = ref('approve');
+const selectedKoreksi = ref(null);
+const actionCatatan = ref('');
+const isSubmittingAction = ref(false);
+
+const openActionModal = (koreksi, type) => {
+    selectedKoreksi.value = koreksi;
+    actionType.value = type;
+    actionCatatan.value = '';
+    isActionModalOpen.value = true;
+};
+
+const closeActionModal = () => {
+    isActionModalOpen.value = false;
+    selectedKoreksi.value = null;
+    actionCatatan.value = '';
+};
+
+const submitKoreksiAction = () => {
+    if (!selectedKoreksi.value) return;
+    isSubmittingAction.value = true;
+    router.post(route('admin.absensi.koreksi.action', selectedKoreksi.value.id), {
+        action: actionType.value,
+        catatan: actionCatatan.value,
+    }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            closeActionModal();
+        },
+        onFinish: () => {
+            isSubmittingAction.value = false;
+        }
+    });
+};
 
 const filterForm = ref({
     date: props.filters?.date || dayjs().format('YYYY-MM-DD'),
@@ -130,12 +188,39 @@ const formatPaginationLabel = (label) => {
         <Head title="Rekap Absensi Karyawan" />
 
         <template #header>
-            <h2 class="font-semibold text-lg md:text-xl text-gray-800 leading-tight truncate">Rekap Absensi (HR)</h2>
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h2 class="font-semibold text-lg md:text-xl text-gray-800 leading-tight truncate">Manajemen Absensi (HR)</h2>
+                    <p class="text-xs text-gray-500 mt-0.5">Kelola rekap kehadiran harian dan persetujuan koreksi absensi karyawan</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button 
+                        @click="currentTab = 'rekap'" 
+                        type="button"
+                        :class="currentTab === 'rekap' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'"
+                        class="px-4 py-2 rounded-lg text-xs md:text-sm font-semibold transition"
+                    >
+                        Rekap Harian
+                    </button>
+                    <button 
+                        @click="currentTab = 'koreksi'" 
+                        type="button"
+                        :class="currentTab === 'koreksi' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'"
+                        class="px-4 py-2 rounded-lg text-xs md:text-sm font-semibold transition flex items-center gap-2"
+                    >
+                        <span>Pengajuan Koreksi</span>
+                        <span v-if="koreksiPendingCount > 0" class="px-2 py-0.5 text-xs bg-amber-500 text-white font-bold rounded-full">
+                            {{ koreksiPendingCount }}
+                        </span>
+                    </button>
+                </div>
+            </div>
         </template>
 
         <div class="pb-12 pt-4">
             <div class="max-w-7xl mx-auto">
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <!-- TAB 1: REKAP HARIAN -->
+                <div v-if="currentTab === 'rekap'" class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
 
                     <!-- Daily Date Scroller -->
                     <div class="border-b border-gray-100 bg-gray-50/50 pt-4 pb-2 relative">
@@ -302,10 +387,209 @@ const formatPaginationLabel = (label) => {
                         </template>
                     </div>
                 </div>
+            </div>
+
+            <!-- TAB 2: PENGAJUAN KOREKSI ABSENSI -->
+            <div v-else-if="currentTab === 'koreksi'" class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                    <!-- Filter Status Koreksi -->
+                    <div class="p-4 bg-gray-50/50 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-semibold text-gray-500 uppercase">Filter Status:</span>
+                            <button 
+                                @click="filterKoreksi('')" 
+                                type="button"
+                                :class="!koreksiFilterStatus ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'"
+                                class="px-3 py-1 rounded-full text-xs font-semibold transition"
+                            >
+                                Semua
+                            </button>
+                            <button 
+                                @click="filterKoreksi('Pending')" 
+                                type="button"
+                                :class="koreksiFilterStatus === 'Pending' ? 'bg-amber-500 text-white' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'"
+                                class="px-3 py-1 rounded-full text-xs font-semibold transition flex items-center gap-1.5"
+                            >
+                                <span>Pending</span>
+                                <span v-if="koreksiPendingCount > 0" class="w-2 h-2 rounded-full bg-amber-200"></span>
+                            </button>
+                            <button 
+                                @click="filterKoreksi('Approved')" 
+                                type="button"
+                                :class="koreksiFilterStatus === 'Approved' ? 'bg-emerald-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'"
+                                class="px-3 py-1 rounded-full text-xs font-semibold transition"
+                            >
+                                Disetujui
+                            </button>
+                            <button 
+                                @click="filterKoreksi('Rejected')" 
+                                type="button"
+                                :class="koreksiFilterStatus === 'Rejected' ? 'bg-rose-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'"
+                                class="px-3 py-1 rounded-full text-xs font-semibold transition"
+                            >
+                                Ditolak
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Koreksi Table -->
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 text-sm">
+                            <thead class="bg-gray-50 text-gray-500 text-left font-medium">
+                                <tr>
+                                    <th class="py-3 px-4">Tgl Absensi</th>
+                                    <th class="py-3 px-4">Karyawan</th>
+                                    <th class="py-3 px-4">Jam Diajukan</th>
+                                    <th class="py-3 px-4">Alasan Karyawan</th>
+                                    <th class="py-3 px-4">Status</th>
+                                    <th class="py-3 px-4">Approver & Catatan</th>
+                                    <th class="py-3 px-4 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 text-gray-700">
+                                <tr v-for="item in (koreksis?.data || [])" :key="item.id" class="hover:bg-gray-50">
+                                    <td class="py-3 px-4 font-medium whitespace-nowrap">
+                                        <div class="text-gray-900">{{ dayjs(item.tanggal).format('DD MMM YYYY') }}</div>
+                                        <div class="text-[11px] text-gray-400">Diajukan: {{ dayjs(item.created_at).format('DD/MM/YY HH:mm') }}</div>
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        <div class="font-medium text-gray-900">{{ item.karyawan?.nama_lengkap ?? '-' }}</div>
+                                        <div class="text-xs text-gray-500">{{ item.karyawan?.departemen?.nama_departemen ?? '-' }}</div>
+                                    </td>
+                                    <td class="py-3 px-4 font-mono text-xs">
+                                        <div class="space-y-1">
+                                            <div v-if="item.waktu_masuk_baru" class="text-emerald-700 font-semibold flex items-center gap-1">
+                                                <span class="text-gray-400 font-sans">Masuk:</span> {{ item.waktu_masuk_baru?.substring(0, 5) }}
+                                            </div>
+                                            <div v-if="item.waktu_keluar_baru" class="text-blue-700 font-semibold flex items-center gap-1">
+                                                <span class="text-gray-400 font-sans">Pulang:</span> {{ item.waktu_keluar_baru?.substring(0, 5) }}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-3 px-4 text-xs text-gray-600 max-w-xs">
+                                        <p class="line-clamp-2" :title="item.alasan">{{ item.alasan }}</p>
+                                    </td>
+                                    <td class="py-3 px-4 whitespace-nowrap">
+                                        <span 
+                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                                            :class="{
+                                                'bg-amber-100 text-amber-800': item.status === 'Pending',
+                                                'bg-emerald-100 text-emerald-800': item.status === 'Approved',
+                                                'bg-rose-100 text-rose-800': item.status === 'Rejected',
+                                            }"
+                                        >
+                                            {{ item.status }}
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-4 text-xs text-gray-500 max-w-xs">
+                                        <div v-if="item.approver || item.catatan_approver">
+                                            <div v-if="item.approver" class="font-medium text-gray-800">{{ item.approver.name }}</div>
+                                            <div v-if="item.catatan_approver" class="italic text-gray-600 mt-0.5">{{ item.catatan_approver }}</div>
+                                        </div>
+                                        <span v-else class="text-gray-400">-</span>
+                                    </td>
+                                    <td class="py-3 px-4 text-center whitespace-nowrap">
+                                        <div v-if="item.status === 'Pending'" class="flex items-center justify-center gap-2">
+                                            <button 
+                                                @click="openActionModal(item, 'approve')" 
+                                                type="button" 
+                                                class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded shadow-sm transition"
+                                            >
+                                                Setujui
+                                            </button>
+                                            <button 
+                                                @click="openActionModal(item, 'reject')" 
+                                                type="button" 
+                                                class="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded shadow-sm transition"
+                                            >
+                                                Tolak
+                                            </button>
+                                        </div>
+                                        <span v-else class="text-xs text-gray-400">Selesai</span>
+                                    </td>
+                                </tr>
+                                <tr v-if="!koreksis?.data || koreksis.data.length === 0">
+                                    <td colspan="7" class="p-8 text-center text-gray-500">
+                                        Belum ada data pengajuan koreksi absensi.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination Koreksi -->
+                    <div v-if="koreksis?.links" class="p-4 border-t border-gray-100 flex items-center justify-between text-sm">
+                        <div class="text-gray-500">
+                            <span v-if="koreksis.total > 0">Menampilkan {{ koreksis.from }} - {{ koreksis.to }} dari {{ koreksis.total }}</span>
+                            <span v-else>Tidak ada data</span>
+                        </div>
+                        <div class="flex flex-wrap gap-1 mt-2 sm:mt-0">
+                            <template v-for="(link, idx) in koreksis.links" :key="idx">
+                                <div v-if="link.url === null" 
+                                     class="px-3 py-1.5 border rounded-lg bg-gray-50 text-gray-400 cursor-not-allowed text-sm"
+                                     v-html="formatPaginationLabel(link.label)">
+                                </div>
+                                <Link v-else :href="link.url" 
+                                      class="px-3 py-1.5 border rounded-lg transition-colors text-sm font-medium"
+                                      :class="link.active ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'"
+                                      v-html="formatPaginationLabel(link.label)"
+                                      preserve-scroll />
+                            </template>
+                        </div>
+                    </div>
+                </div>
 
             </div>
         </div>
-        </div>
+
+        <!-- Modal Konfirmasi Action Koreksi -->
+        <Modal :show="isActionModalOpen" @close="closeActionModal" maxWidth="md">
+            <div class="p-6">
+                <h3 class="text-lg font-bold" :class="actionType === 'approve' ? 'text-emerald-700' : 'text-rose-700'">
+                    {{ actionType === 'approve' ? 'Setujui Koreksi Absensi' : 'Tolak Koreksi Absensi' }}
+                </h3>
+                <p class="text-xs text-gray-500 mt-1">
+                    {{ actionType === 'approve' ? 'Data absensi karyawan pada tanggal tersebut akan otomatis disesuaikan dengan jam yang diajukan.' : 'Pengajuan koreksi absensi ini akan ditolak.' }}
+                </p>
+
+                <div v-if="selectedKoreksi" class="my-4 p-3 bg-gray-50 rounded-lg border border-gray-200 text-xs space-y-1">
+                    <div><span class="text-gray-500">Karyawan:</span> <span class="font-semibold text-gray-900">{{ selectedKoreksi.karyawan?.nama_lengkap }}</span></div>
+                    <div><span class="text-gray-500">Tanggal:</span> <span class="font-semibold text-gray-900">{{ dayjs(selectedKoreksi.tanggal).format('DD MMMM YYYY') }}</span></div>
+                    <div v-if="selectedKoreksi.waktu_masuk_baru"><span class="text-gray-500">Jam Masuk Baru:</span> <span class="font-semibold text-emerald-700">{{ selectedKoreksi.waktu_masuk_baru?.substring(0, 5) }}</span></div>
+                    <div v-if="selectedKoreksi.waktu_keluar_baru"><span class="text-gray-500">Jam Pulang Baru:</span> <span class="font-semibold text-blue-700">{{ selectedKoreksi.waktu_keluar_baru?.substring(0, 5) }}</span></div>
+                    <div><span class="text-gray-500">Alasan:</span> <span class="italic text-gray-700">"{{ selectedKoreksi.alasan }}"</span></div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Catatan Tambahan (Opsional):</label>
+                    <textarea 
+                        v-model="actionCatatan" 
+                        rows="3" 
+                        class="w-full text-xs rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" 
+                        placeholder="Tuliskan catatan persetujuan atau alasan penolakan..."
+                    ></textarea>
+                </div>
+
+                <div class="flex justify-end gap-2">
+                    <button 
+                        @click="closeActionModal" 
+                        type="button" 
+                        class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-md transition"
+                        :disabled="isSubmittingAction"
+                    >
+                        Batal
+                    </button>
+                    <button 
+                        @click="submitKoreksiAction" 
+                        type="button" 
+                        :class="actionType === 'approve' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-rose-600 hover:bg-rose-700'"
+                        class="px-4 py-2 text-white text-xs font-semibold rounded-md shadow-sm transition"
+                        :disabled="isSubmittingAction"
+                    >
+                        {{ isSubmittingAction ? 'Memproses...' : (actionType === 'approve' ? 'Ya, Setujui' : 'Ya, Tolak') }}
+                    </button>
+                </div>
+            </div>
+        </Modal>
 
         <!-- Reusable Modal for Photo & Map -->
         <Modal :show="isModalOpen" @close="closeModal" maxWidth="md">

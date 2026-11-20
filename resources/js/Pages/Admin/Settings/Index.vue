@@ -6,10 +6,20 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
+import {
+    BellAlertIcon,
+    EnvelopeIcon,
+    PaperAirplaneIcon,
+    ShieldCheckIcon,
+} from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     settings: Object,
     users: Array,
+    roles: {
+        type: Array,
+        default: () => [],
+    },
     currentUserId: [Number, String],
     pageTitle: String,
     can: Object,
@@ -20,32 +30,32 @@ const page = usePage();
 const presetTemplates = {
     approval: {
         title: 'Approval Dibutuhkan: Pengajuan Dana Baru',
-        message: 'Pengajuan nomor PJ-2026-004 membutuhkan persetujuan Anda segera.',
+        message: 'Ada pengajuan baru yang membutuhkan persetujuan Anda segera.',
         link: '/approvals',
     },
     cuti: {
-        title: 'Pengajuan Cuti Disetujui',
-        message: 'Pengajuan cuti tahunan Anda telah disetujui oleh HRD dan Direktur.',
+        title: 'Pembaruan Status & Informasi Cuti',
+        message: 'Silakan periksa daftar cuti dan persetujuan pada menu Cuti.',
         link: '/cuti-filter',
     },
     attendance: {
         title: 'Pengingat Absensi Kerja',
-        message: 'Waktu presensi masuk kerja hampir berakhir. Silakan lakukan check-in sekarang.',
+        message: 'Waktu presensi kerja telah dibuka. Pastikan Anda melakukan absensi tepat waktu.',
         link: '/absensi-history',
     },
     task: {
-        title: 'Tugas Baru Ditugaskan',
-        message: 'Anda mendapatkan tugas baru: "Laporan Evaluasi Operasional Mingguan".',
+        title: 'Pembaruan Tugas Operasional',
+        message: 'Terdapat pembaruan pada daftar tugas tim Anda. Silakan tinjau detail tugas.',
         link: '/tasks',
     },
     ess: {
-        title: 'Slip Gaji Diterbitkan',
-        message: 'Slip gaji periode September 2026 telah diterbitkan. Silakan periksa rincian pada menu ESS.',
+        title: 'Slip Gaji Telah Diterbitkan',
+        message: 'Slip gaji periode berjalan telah tersedia dan dapat diunduh pada menu ESS.',
         link: '/ess?tab=payslip',
     },
     announcement: {
         title: 'Pengumuman Manajemen Perusahaan',
-        message: 'Jadwal penyesuaian jam kerja dan briefing bulanan Persija Jakarta.',
+        message: 'Mohon perhatian seluruh karyawan terkait informasi jadwal kerja dan koordinasi internal.',
         link: '/dashboard',
     },
     custom: {
@@ -55,13 +65,87 @@ const presetTemplates = {
     },
 };
 
+const routeCatalog = [
+    { value: '/dashboard', label: 'Dashboard Utama (/dashboard)' },
+    { value: '/approvals', label: 'Approval Center (/approvals)' },
+    { value: '/absensi-history', label: 'Riwayat Absensi (/absensi-history)' },
+    { value: '/cuti', label: 'Cuti & Saldo Cuti (/cuti)' },
+    { value: '/cuti-filter', label: 'Filter & Laporan Cuti (/cuti-filter)' },
+    { value: '/tasks', label: 'Manajemen Tugas (/tasks)' },
+    { value: '/calendar', label: 'Kalender Perusahaan (/calendar)' },
+    { value: '/ess?tab=payslip', label: 'ESS: Slip Gaji (/ess?tab=payslip)' },
+    { value: '/ess?tab=koreksi', label: 'ESS: Koreksi Absensi (/ess?tab=koreksi)' },
+    { value: '/ess?tab=dinas', label: 'ESS: Dinas Luar (/ess?tab=dinas)' },
+    { value: '/ess?tab=reimbursement', label: 'ESS: Status Pengajuan Dana (/ess?tab=reimbursement)' },
+    { value: '/ess?tab=kontrak', label: 'ESS: Informasi Kontrak (/ess?tab=kontrak)' },
+    { value: '/ess?tab=dokumen', label: 'ESS: Dokumen Karyawan (/ess?tab=dokumen)' },
+    { value: '/profile', label: 'Profil & Keamanan Akun (/profile)' },
+    { value: 'custom', label: 'Rute Custom Manual...' },
+];
+
+const userSearchQuery = ref('');
+const selectedRoutePreset = ref('/approvals');
+
 const notifForm = useForm({
+    target_mode: 'single_user',
     target_user_id: props.currentUserId || (props.users && props.users[0]?.id) || '',
+    target_user_ids: [],
+    target_role: (props.roles && props.roles[0]) || '',
     type: 'approval',
+    click_action: 'open_page',
     title: presetTemplates.approval.title,
     message: presetTemplates.approval.message,
     link: presetTemplates.approval.link,
 });
+
+const filteredUsers = computed(() => {
+    const q = userSearchQuery.value.trim().toLowerCase();
+    const list = props.users || [];
+    if (!q) return list;
+    return list.filter((u) =>
+        u.name.toLowerCase().includes(q)
+        || u.email.toLowerCase().includes(q)
+        || (u.role || '').toLowerCase().includes(q)
+        || (u.jabatan || '').toLowerCase().includes(q)
+    );
+});
+
+const connectedDeviceUsersCount = computed(() =>
+    (props.users || []).filter((u) => u.has_device_token).length
+);
+
+const targetSummaryBadge = computed(() => {
+    if (notifForm.target_mode === 'blast_all') {
+        return `Blast Semua (${(props.users || []).length} User)`;
+    }
+    if (notifForm.target_mode === 'by_role') {
+        const count = (props.users || []).filter((u) => u.role === notifForm.target_role).length;
+        return `Role ${notifForm.target_role || '-'} (${count} User)`;
+    }
+    if (notifForm.target_mode === 'multi_user') {
+        return `Multi-User (${notifForm.target_user_ids.length} Dipilih)`;
+    }
+    const found = (props.users || []).find((u) => u.id === notifForm.target_user_id);
+    return found ? `1 User: ${found.name}` : '1 User Target';
+});
+
+function selectAllMultiUsers() {
+    notifForm.target_user_ids = filteredUsers.value.map((u) => u.id);
+}
+
+function selectMobileConnectedUsers() {
+    notifForm.target_user_ids = filteredUsers.value.filter((u) => u.has_device_token).map((u) => u.id);
+}
+
+function clearMultiUsers() {
+    notifForm.target_user_ids = [];
+}
+
+function onRoutePresetChange() {
+    if (selectedRoutePreset.value !== 'custom') {
+        notifForm.link = selectedRoutePreset.value;
+    }
+}
 
 function onNotifTypeChange() {
     const preset = presetTemplates[notifForm.type];
@@ -69,6 +153,8 @@ function onNotifTypeChange() {
         notifForm.title = preset.title;
         notifForm.message = preset.message;
         notifForm.link = preset.link;
+        const known = routeCatalog.some((r) => r.value === preset.link);
+        selectedRoutePreset.value = known ? preset.link : 'custom';
     }
 }
 
@@ -86,7 +172,29 @@ const form = useForm({
     company_address: props.settings.company_address || '',
     company_logo: null,
     reimburse_tolerance_limit: props.settings.reimburse_tolerance_limit || 1000000,
+    mail_enabled: props.settings.mail_enabled === '1' || props.settings.mail_enabled === true,
+    mail_mailer: props.settings.mail_mailer || 'smtp',
+    mail_host: props.settings.mail_host || '',
+    mail_port: props.settings.mail_port || 587,
+    mail_username: props.settings.mail_username || '',
+    mail_password: '',
+    mail_encryption: props.settings.mail_encryption || 'tls',
+    mail_from_address: props.settings.mail_from_address || '',
+    mail_from_name: props.settings.mail_from_name || 'Persija ERP',
+    fcm_enabled: props.settings.fcm_enabled === '1' || props.settings.fcm_enabled === true,
+    fcm_project_id: props.settings.fcm_project_id || '',
+    fcm_service_account_json: '',
 });
+
+const testMailForm = useForm({
+    test_email: '',
+});
+
+function sendTestMail() {
+    testMailForm.post(route('admin.settings.test-email'), {
+        preserveScroll: true,
+    });
+}
 
 const logoPreview = ref(props.settings.app_logo ? `/storage/${props.settings.app_logo}` : null);
 const faviconPreview = ref(props.settings.app_favicon ? `/storage/${props.settings.app_favicon}` : null);
@@ -126,6 +234,8 @@ function submit() {
             form.app_logo = null;
             form.app_favicon = null;
             form.company_logo = null;
+            form.mail_password = '';
+            form.fcm_service_account_json = '';
         }
     });
 }
@@ -205,7 +315,7 @@ function submit() {
                         </div>
 
                         <!-- Company Settings -->
-                        <div>
+                        <div class="border-b border-gray-200 dark:border-gray-700 pb-6 mb-6">
                             <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Identitas Perusahaan (Untuk Cetak)</h3>
                             <div class="grid grid-cols-1 gap-6">
                                 <div>
@@ -223,7 +333,7 @@ function submit() {
                                     <InputLabel for="company_address" value="Alamat Perusahaan" />
                                     <textarea
                                         id="company_address"
-                                        class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm focus:border-red-500 focus:ring-red-500"
                                         rows="3"
                                         v-model="form.company_address"
                                     ></textarea>
@@ -237,9 +347,152 @@ function submit() {
                                         <div v-else class="h-16 w-16 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-md text-gray-400">
                                             No Logo
                                         </div>
-                                        <input id="company_logo_input" type="file" @input="onCompanyLogoChange" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100"/>
+                                        <input id="company_logo_input" type="file" @input="onCompanyLogoChange" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 dark:file:bg-red-950 dark:file:text-red-300"/>
                                     </div>
                                     <InputError class="mt-2" :message="form.errors.company_logo" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Mail (SMTP) Settings -->
+                        <div class="border-b border-gray-200 dark:border-gray-700 pb-6 mb-6">
+                            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                                <div class="flex items-center gap-2.5">
+                                    <EnvelopeIcon class="w-5 h-5 text-red-600 dark:text-red-400" aria-hidden="true" />
+                                    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Konfigurasi Email Server (SMTP)</h3>
+                                </div>
+                                <span
+                                    :class="settings.has_mail_password
+                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800'
+                                        : 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800'"
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs font-semibold"
+                                >
+                                    <ShieldCheckIcon class="w-4 h-4" aria-hidden="true" />
+                                    {{ settings.has_mail_password ? 'Password SMTP Terenkripsi Tersimpan' : 'Password SMTP Belum Diatur' }}
+                                </span>
+                            </div>
+
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                                Pengaturan SMTP disimpan di database dan digunakan otomatis untuk fitur Lupa Password Mobile serta notifikasi email sistem (fallback ke .env bila nonaktif).
+                            </p>
+
+                            <div class="mb-4 flex items-center gap-3">
+                                <input
+                                    id="mail_enabled"
+                                    type="checkbox"
+                                    v-model="form.mail_enabled"
+                                    class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-red-600 focus:ring-red-500"
+                                />
+                                <label for="mail_enabled" class="text-sm font-medium text-gray-800 dark:text-gray-200 cursor-pointer">
+                                    Aktifkan Konfigurasi Email Database (Override .env)
+                                </label>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <InputLabel for="mail_host" value="SMTP Host" />
+                                    <TextInput id="mail_host" type="text" class="mt-1 block w-full" v-model="form.mail_host" placeholder="smtp.gmail.com" />
+                                    <InputError class="mt-1" :message="form.errors.mail_host" />
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <InputLabel for="mail_port" value="Port" />
+                                        <TextInput id="mail_port" type="number" class="mt-1 block w-full tabular-nums" v-model="form.mail_port" placeholder="587" />
+                                        <InputError class="mt-1" :message="form.errors.mail_port" />
+                                    </div>
+                                    <div>
+                                        <InputLabel for="mail_encryption" value="Enkripsi" />
+                                        <select
+                                            id="mail_encryption"
+                                            v-model="form.mail_encryption"
+                                            class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
+                                        >
+                                            <option value="tls">TLS (STARTTLS - 587)</option>
+                                            <option value="ssl">SSL (SMTPS - 465)</option>
+                                            <option value="none">Tanpa Enkripsi</option>
+                                        </select>
+                                        <InputError class="mt-1" :message="form.errors.mail_encryption" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <InputLabel for="mail_username" value="SMTP Username / Email Login" />
+                                    <TextInput id="mail_username" type="text" class="mt-1 block w-full" v-model="form.mail_username" placeholder="noreply@persija.id" />
+                                    <InputError class="mt-1" :message="form.errors.mail_username" />
+                                </div>
+                                <div>
+                                    <InputLabel for="mail_password" value="SMTP Password / App Password (Kosongkan jika tidak diubah)" />
+                                    <TextInput
+                                        id="mail_password"
+                                        type="password"
+                                        class="mt-1 block w-full"
+                                        v-model="form.mail_password"
+                                        :placeholder="settings.has_mail_password ? 'Tersimpan terenkripsi (isi untuk mengganti)' : 'Masukkan App Password SMTP'"
+                                    />
+                                    <InputError class="mt-1" :message="form.errors.mail_password" />
+                                </div>
+                                <div>
+                                    <InputLabel for="mail_from_address" value="Alamat Pengirim (From Address)" />
+                                    <TextInput id="mail_from_address" type="email" class="mt-1 block w-full" v-model="form.mail_from_address" placeholder="erp@persija.id" />
+                                    <InputError class="mt-1" :message="form.errors.mail_from_address" />
+                                </div>
+                                <div>
+                                    <InputLabel for="mail_from_name" value="Nama Pengirim (From Name)" />
+                                    <TextInput id="mail_from_name" type="text" class="mt-1 block w-full" v-model="form.mail_from_name" placeholder="Persija ERP" />
+                                    <InputError class="mt-1" :message="form.errors.mail_from_name" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Firebase FCM HTTP v1 Settings -->
+                        <div>
+                            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                                <div class="flex items-center gap-2.5">
+                                    <BellAlertIcon class="w-5 h-5 text-red-600 dark:text-red-400" aria-hidden="true" />
+                                    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Push Notification Firebase (FCM HTTP v1)</h3>
+                                </div>
+                                <span
+                                    :class="settings.has_fcm_service_account
+                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800'
+                                        : 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800'"
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs font-semibold"
+                                >
+                                    <ShieldCheckIcon class="w-4 h-4" aria-hidden="true" />
+                                    {{ settings.has_fcm_service_account ? 'Service Account JSON Terenkripsi Tersimpan' : 'Service Account JSON Belum Diatur' }}
+                                </span>
+                            </div>
+
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                                Gunakan kredensial Service Account JSON resmi dari Firebase Console (Project Settings -> Service Accounts) agar backend dapat mengirim notifikasi push real-time ke aplikasi mobile.
+                            </p>
+
+                            <div class="mb-4 flex items-center gap-3">
+                                <input
+                                    id="fcm_enabled"
+                                    type="checkbox"
+                                    v-model="form.fcm_enabled"
+                                    class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-red-600 focus:ring-red-500"
+                                />
+                                <label for="fcm_enabled" class="text-sm font-medium text-gray-800 dark:text-gray-200 cursor-pointer">
+                                    Aktifkan Pengiriman Push Notification FCM HTTP v1
+                                </label>
+                            </div>
+
+                            <div class="grid grid-cols-1 gap-4">
+                                <div>
+                                    <InputLabel for="fcm_project_id" value="Firebase Project ID" />
+                                    <TextInput id="fcm_project_id" type="text" class="mt-1 block w-full" v-model="form.fcm_project_id" placeholder="Otomatis terisi dari JSON jika dikosongkan" />
+                                    <InputError class="mt-1" :message="form.errors.fcm_project_id" />
+                                </div>
+                                <div>
+                                    <InputLabel for="fcm_service_account_json" value="Firebase Service Account JSON (Kosongkan jika tidak diubah)" />
+                                    <textarea
+                                        id="fcm_service_account_json"
+                                        rows="4"
+                                        v-model="form.fcm_service_account_json"
+                                        :placeholder="settings.has_fcm_service_account ? 'Service account JSON tersimpan terenkripsi. Tempel JSON baru jika ingin mengganti.' : '{ &quot;type&quot;: &quot;service_account&quot;, &quot;project_id&quot;: &quot;...&quot;, &quot;private_key&quot;: &quot;...&quot;, &quot;client_email&quot;: &quot;...&quot; }'"
+                                        class="mt-1 block w-full font-mono text-xs border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm focus:border-red-500 focus:ring-red-500"
+                                    ></textarea>
+                                    <InputError class="mt-1" :message="form.errors.fcm_service_account_json" />
                                 </div>
                             </div>
                         </div>
@@ -258,111 +511,283 @@ function submit() {
                     </form>
                 </div>
 
-                <!-- Push Notification Simulation Card -->
-                <div class="mt-8 bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg border border-red-100 dark:border-red-900/30">
+                <!-- Uji Coba Kirim Email SMTP -->
+                <div class="mt-8 bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg border border-gray-200 dark:border-gray-700">
                     <div class="p-6">
-                        <div class="flex items-center justify-between pb-4 border-b border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center gap-3 pb-4 border-b border-gray-200 dark:border-gray-700">
+                            <div class="p-2.5 bg-red-50 dark:bg-red-950/50 rounded-xl text-red-600 dark:text-red-400">
+                                <PaperAirplaneIcon class="w-5 h-5" aria-hidden="true" />
+                            </div>
+                            <div>
+                                <h3 class="text-base font-bold text-gray-900 dark:text-gray-100">Uji Coba Pengiriman Email SMTP</h3>
+                                <p class="text-sm text-gray-600 dark:text-gray-400">Pastikan pengaturan SMTP di atas sudah disimpan terlebih dahulu sebelum melakukan tes kirim.</p>
+                            </div>
+                        </div>
+                        <form @submit.prevent="sendTestMail" class="mt-4 flex flex-col sm:flex-row sm:items-end gap-4">
+                            <div class="flex-1">
+                                <InputLabel for="test_email" value="Alamat Email Penerima Uji Coba" />
+                                <TextInput
+                                    id="test_email"
+                                    type="email"
+                                    class="mt-1 block w-full"
+                                    v-model="testMailForm.test_email"
+                                    placeholder="nama@persija.id"
+                                    required
+                                />
+                                <InputError class="mt-1" :message="testMailForm.errors.test_email" />
+                            </div>
+                            <button
+                                type="submit"
+                                :disabled="testMailForm.processing"
+                                class="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold text-sm rounded-lg shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 disabled:opacity-50 cursor-pointer"
+                            >
+                                <PaperAirplaneIcon class="w-4 h-4" aria-hidden="true" />
+                                <span>Kirim Email Uji Coba</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Push Notification & Broadcast Center Card -->
+                <div class="mt-8 bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg border border-gray-200 dark:border-gray-700">
+                    <div class="p-6">
+                        <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-gray-200 dark:border-gray-700">
                             <div class="flex items-center space-x-3">
-                                <div class="p-2.5 bg-red-100 dark:bg-red-950/50 rounded-xl text-red-600 dark:text-red-400">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                                    </svg>
+                                <div class="p-2.5 bg-red-50 dark:bg-red-950/50 rounded-xl text-red-600 dark:text-red-400">
+                                    <BellAlertIcon class="h-6 w-6" aria-hidden="true" />
                                 </div>
                                 <div>
-                                    <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Uji Coba Push Notifikasi ke Mobile</h3>
-                                    <p class="text-sm text-gray-500 dark:text-gray-400">Pilih jenis notifikasi dan kirim langsung ke aplikasi mobile pengguna untuk menguji notifikasi real-time & deep link.</p>
+                                    <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Pusat Pengiriman Push Notifikasi & Broadcast</h3>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">Kirim pengumuman atau notifikasi terarah ke 1 user, multi-user, role tertentu, atau blast seluruh pengguna beserta kontrol aksi klik.</p>
                                 </div>
                             </div>
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                                Realtime Sync Active
+                            <span class="inline-flex items-center px-3 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800 tabular-nums">
+                                {{ connectedDeviceUsersCount }} Perangkat Mobile Terdaftar
                             </span>
                         </div>
 
                         <form @submit.prevent="sendNotification" class="mt-6 space-y-6">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <!-- Target User -->
-                                <div>
-                                    <InputLabel for="target_user_id" value="Karyawan / Pengguna Target" />
-                                    <select
-                                        id="target_user_id"
-                                        v-model="notifForm.target_user_id"
-                                        class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
+                            <!-- Mode Target Penerima -->
+                            <fieldset>
+                                <legend class="block font-medium text-sm text-gray-700 dark:text-gray-300">Mode Target Penerima</legend>
+                                <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                    <label
+                                        v-for="mode in [
+                                            { id: 'single_user', title: 'Per User', desc: 'Kirim ke 1 karyawan spesifik' },
+                                            { id: 'multi_user', title: 'Multi-User', desc: 'Pilih beberapa user manual' },
+                                            { id: 'by_role', title: 'Per Role / Divisi', desc: 'Semua user dengan role tertentu' },
+                                            { id: 'blast_all', title: 'Blast Semua', desc: 'Seluruh pengguna aktif ERP' },
+                                        ]"
+                                        :key="mode.id"
+                                        :for="'target_mode_' + mode.id"
+                                        :class="notifForm.target_mode === mode.id
+                                            ? 'border-red-600 bg-red-50/70 dark:bg-red-950/30 dark:border-red-500'
+                                            : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900/40'"
+                                        class="flex items-start gap-2.5 p-3 rounded-lg border cursor-pointer transition-colors"
                                     >
-                                        <option v-for="u in users" :key="u.id" :value="u.id">
-                                            {{ u.name }} ({{ u.role }} - {{ u.email }}) {{ u.has_device_token ? '📱 HP: ' + (u.device_name || 'Tersambung') : '' }}
-                                        </option>
-                                    </select>
-                                    <p class="mt-1 text-xs text-gray-500">Pilih akun yang sedang login di aplikasi mobile Anda.</p>
-                                    <InputError class="mt-2" :message="notifForm.errors.target_user_id" />
+                                        <input
+                                            :id="'target_mode_' + mode.id"
+                                            type="radio"
+                                            name="target_mode"
+                                            :value="mode.id"
+                                            v-model="notifForm.target_mode"
+                                            class="mt-0.5 text-red-600 focus:ring-red-500"
+                                        />
+                                        <div>
+                                            <span class="block text-sm font-semibold text-gray-900 dark:text-gray-100">{{ mode.title }}</span>
+                                            <span class="block text-xs text-gray-600 dark:text-gray-400">{{ mode.desc }}</span>
+                                        </div>
+                                    </label>
                                 </div>
+                                <InputError class="mt-2" :message="notifForm.errors.target_mode" />
+                            </fieldset>
 
-                                <!-- Notification Type -->
+                            <!-- Input Target Dinamis sesuai Mode -->
+                            <div v-if="notifForm.target_mode === 'single_user'">
+                                <InputLabel for="target_user_id" value="Pilih Karyawan / Pengguna Target" />
+                                <select
+                                    id="target_user_id"
+                                    v-model="notifForm.target_user_id"
+                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
+                                >
+                                    <option v-for="u in users" :key="u.id" :value="u.id">
+                                        {{ u.name }} ({{ u.role }} - {{ u.email }}) {{ u.has_device_token ? '[Mobile: ' + (u.device_name || 'Tersambung') + ']' : '' }}
+                                    </option>
+                                </select>
+                                <InputError class="mt-2" :message="notifForm.errors.target_user_id" />
+                            </div>
+
+                            <div v-else-if="notifForm.target_mode === 'multi_user'" class="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-900/40 space-y-3">
+                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                    <InputLabel for="user_search_query" :value="'Pilih Beberapa Pengguna (' + notifForm.target_user_ids.length + ' dipilih)'" />
+                                    <div class="flex flex-wrap gap-2">
+                                        <button type="button" @click="selectAllMultiUsers" class="px-2.5 py-1 text-xs font-semibold rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
+                                            Pilih Semua ({{ filteredUsers.length }})
+                                        </button>
+                                        <button type="button" @click="selectMobileConnectedUsers" class="px-2.5 py-1 text-xs font-semibold rounded-md border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 cursor-pointer">
+                                            Hanya Mobile Tersambung
+                                        </button>
+                                        <button type="button" @click="clearMultiUsers" class="px-2.5 py-1 text-xs font-semibold rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 cursor-pointer">
+                                            Reset
+                                        </button>
+                                    </div>
+                                </div>
+                                <TextInput
+                                    id="user_search_query"
+                                    type="text"
+                                    v-model="userSearchQuery"
+                                    placeholder="Cari nama, email, jabatan, atau role..."
+                                    class="block w-full text-sm"
+                                />
+                                <div class="max-h-56 overflow-y-auto divide-y divide-gray-200 dark:divide-gray-700 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                                    <label
+                                        v-for="u in filteredUsers"
+                                        :key="u.id"
+                                        :for="'multi_user_' + u.id"
+                                        class="flex items-center justify-between gap-3 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700/40 cursor-pointer"
+                                    >
+                                        <div class="flex items-center gap-3 min-w-0">
+                                            <input
+                                                :id="'multi_user_' + u.id"
+                                                type="checkbox"
+                                                :value="u.id"
+                                                v-model="notifForm.target_user_ids"
+                                                class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-red-600 focus:ring-red-500"
+                                            />
+                                            <div class="min-w-0">
+                                                <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ u.name }}</p>
+                                                <p class="text-xs text-gray-600 dark:text-gray-400 truncate">{{ u.role }} | {{ u.email }}</p>
+                                            </div>
+                                        </div>
+                                        <span
+                                            v-if="u.has_device_token"
+                                            class="shrink-0 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300"
+                                        >
+                                            Mobile Aktif
+                                        </span>
+                                    </label>
+                                </div>
+                                <InputError class="mt-1" :message="notifForm.errors.target_user_ids" />
+                            </div>
+
+                            <div v-else-if="notifForm.target_mode === 'by_role'">
+                                <InputLabel for="target_role" value="Pilih Role Pengguna Target" />
+                                <select
+                                    id="target_role"
+                                    v-model="notifForm.target_role"
+                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
+                                >
+                                    <option v-for="r in roles" :key="r" :value="r">{{ r }}</option>
+                                </select>
+                                <InputError class="mt-2" :message="notifForm.errors.target_role" />
+                            </div>
+
+                            <div v-else class="p-4 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 text-sm text-amber-900 dark:text-amber-200">
+                                <p class="font-semibold">Mode Blast Semua Pengguna Aktif</p>
+                                <p class="text-xs mt-1">Pesan ini akan dikirimkan ke seluruh <strong>{{ (users || []).length }} akun pengguna</strong> (notifikasi in-app dan push FCM ke {{ connectedDeviceUsersCount }} perangkat aktif yang menyetujui preferensi kategori terkait).</p>
+                            </div>
+
+                            <!-- Tujuan / Kategori & Aksi Ketika Di-klik -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <InputLabel for="notif_type" value="Macam / Tipe Notifikasi" />
+                                    <InputLabel for="notif_type" value="Tujuan / Kategori Pesan" />
                                     <select
                                         id="notif_type"
                                         v-model="notifForm.type"
                                         @change="onNotifTypeChange"
                                         class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
                                     >
-                                        <option value="approval">📋 Approval Pengajuan Dana (/approvals)</option>
-                                        <option value="cuti">🏖️ Pengajuan Cuti Disetujui (/cuti-filter)</option>
-                                        <option value="attendance">⏰ Pengingat Absensi Masuk/Pulang (/absensi-history)</option>
-                                        <option value="task">📌 Tugas Baru Ditugaskan (/tasks)</option>
-                                        <option value="ess">💰 Slip Gaji Diterbitkan (/ess?tab=payslip)</option>
-                                        <option value="announcement">📢 Pengumuman Manajemen (/dashboard)</option>
-                                        <option value="custom">✏️ Custom / Teks Bebas</option>
+                                        <option value="announcement">Pengumuman Perusahaan</option>
+                                        <option value="approval">Approval Pengajuan / Dokumen</option>
+                                        <option value="attendance">Pengingat & Informasi Absensi</option>
+                                        <option value="cuti">Informasi & Jadwal Cuti</option>
+                                        <option value="task">Penugasan & Operasional</option>
+                                        <option value="ess">Layanan Mandiri ESS / Slip Gaji</option>
+                                        <option value="custom">Pesan Khusus / Custom</option>
                                     </select>
-                                    <p class="mt-1 text-xs text-gray-500">Template judul, pesan, dan tautan deep link otomatis disesuaikan.</p>
+                                    <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">Menentukan ikon kategori dan menghormati preferensi notifikasi masing-masing karyawan.</p>
                                     <InputError class="mt-2" :message="notifForm.errors.type" />
+                                </div>
+
+                                <div>
+                                    <InputLabel for="click_action" value="Aksi Saat Notifikasi Di-Klik" />
+                                    <select
+                                        id="click_action"
+                                        v-model="notifForm.click_action"
+                                        class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
+                                    >
+                                        <option value="open_page">Buka Halaman Aplikasi Spesifik (Deep Link)</option>
+                                        <option value="info_only">Hanya Notifikasi (Tampilkan Popup Pesan Tanpa Pindah Halaman)</option>
+                                    </select>
+                                    <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                                        {{ notifForm.click_action === 'info_only'
+                                            ? 'Cocok untuk pengumuman teks: saat di-tap hanya membuka detail isi pesan di kotak notifikasi.'
+                                            : 'Saat di-tap langsung mengarahkan pengguna ke halaman modul ERP yang dipilih.' }}
+                                    </p>
+                                    <InputError class="mt-2" :message="notifForm.errors.click_action" />
                                 </div>
                             </div>
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <!-- Title -->
                                 <div>
-                                    <InputLabel for="notif_title" value="Judul Notifikasi" />
+                                    <InputLabel for="notif_title" value="Judul Pesan / Notifikasi" />
                                     <TextInput
                                         id="notif_title"
                                         type="text"
                                         class="mt-1 block w-full"
                                         v-model="notifForm.title"
-                                        placeholder="Judul notifikasi..."
+                                        placeholder="Judul notifikasi atau pengumuman..."
                                     />
                                     <InputError class="mt-2" :message="notifForm.errors.title" />
                                 </div>
 
-                                <!-- Link -->
-                                <div>
-                                    <InputLabel for="notif_link" value="Target Deep Link di HP" />
-                                    <TextInput
-                                        id="notif_link"
-                                        type="text"
-                                        class="mt-1 block w-full"
-                                        v-model="notifForm.link"
-                                        placeholder="/approvals, /cuti-filter, dll."
-                                    />
-                                    <p class="mt-1 text-xs text-gray-500">Rute di aplikasi mobile yang akan dibuka saat notifikasi di-tap.</p>
+                                <!-- Target Deep Link (hanya muncul bila open_page) -->
+                                <div v-if="notifForm.click_action === 'open_page'">
+                                    <InputLabel for="route_preset" value="Halaman Tujuan Saat Di-Klik" />
+                                    <select
+                                        id="route_preset"
+                                        v-model="selectedRoutePreset"
+                                        @change="onRoutePresetChange"
+                                        class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
+                                    >
+                                        <option v-for="r in routeCatalog" :key="r.value" :value="r.value">{{ r.label }}</option>
+                                    </select>
+                                    <div v-if="selectedRoutePreset === 'custom'" class="mt-2">
+                                        <InputLabel for="notif_link" value="Rute Custom (/contoh)" class="sr-only" />
+                                        <TextInput
+                                            id="notif_link"
+                                            type="text"
+                                            class="block w-full text-sm"
+                                            v-model="notifForm.link"
+                                            placeholder="/approvals/detail?id=12&type=Pengajuan"
+                                        />
+                                    </div>
                                     <InputError class="mt-2" :message="notifForm.errors.link" />
                                 </div>
                             </div>
 
                             <!-- Message -->
                             <div>
-                                <InputLabel for="notif_message" value="Isi Pesan Notifikasi" />
+                                <InputLabel for="notif_message" value="Isi Pesan Lengkap" />
                                 <textarea
                                     id="notif_message"
                                     rows="3"
                                     class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
                                     v-model="notifForm.message"
-                                    placeholder="Tuliskan isi pesan notifikasi..."
+                                    placeholder="Tuliskan isi pesan atau pengumuman untuk penerima..."
                                 ></textarea>
                                 <InputError class="mt-2" :message="notifForm.errors.message" />
                             </div>
 
                             <!-- Live Mobile Mockup Preview -->
                             <div class="p-4 rounded-xl bg-gray-50 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-700">
-                                <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">Simulasi Tampilan di Handphone (Notification Bar):</span>
+                                <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                                    <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pratinjau Notifikasi di Handphone:</span>
+                                    <span class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-red-50 text-red-700 dark:bg-red-950/60 dark:text-red-300">
+                                        {{ targetSummaryBadge }}
+                                    </span>
+                                </div>
                                 <div class="bg-white dark:bg-gray-800 p-3.5 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 flex items-start space-x-3 max-w-lg">
                                     <div class="w-8 h-8 rounded-lg bg-red-600 flex items-center justify-center text-white shrink-0 font-bold text-xs">
                                         PSJ
@@ -370,10 +795,12 @@ function submit() {
                                     <div class="flex-1 min-w-0">
                                         <div class="flex items-center justify-between">
                                             <span class="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">{{ notifForm.title || 'Judul Notifikasi' }}</span>
-                                            <span class="text-[10px] text-gray-400">Sekarang</span>
+                                            <span class="text-[10px] text-gray-500 dark:text-gray-400">Sekarang</span>
                                         </div>
                                         <p class="text-xs text-gray-600 dark:text-gray-300 mt-0.5 line-clamp-2">{{ notifForm.message || 'Isi pesan notifikasi...' }}</p>
-                                        <span class="inline-block mt-1 text-[10px] font-medium text-red-600 dark:text-red-400">Tujuan: {{ notifForm.link || '/dashboard' }}</span>
+                                        <span class="inline-block mt-1 text-[10px] font-medium text-red-600 dark:text-red-400">
+                                            {{ notifForm.click_action === 'info_only' ? 'Aksi klik: Hanya tampilkan detail pesan' : 'Aksi klik: Buka ' + (notifForm.link || '/dashboard') }}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -382,22 +809,13 @@ function submit() {
                                 <button
                                     type="submit"
                                     :disabled="notifForm.processing"
-                                    class="inline-flex items-center px-5 py-2.5 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-semibold text-sm rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all disabled:opacity-50"
+                                    class="inline-flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-semibold text-sm rounded-lg shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 transition-colors disabled:opacity-50 cursor-pointer"
                                 >
-                                    <svg v-if="notifForm.processing" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                                    </svg>
-                                    <svg v-else xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                                    </svg>
-                                    Kirim Notifikasi ke Mobile
+                                    <PaperAirplaneIcon class="h-4 w-4" aria-hidden="true" />
+                                    <span>{{ notifForm.target_mode === 'blast_all' ? 'Kirim Blast ke Semua Pengguna' : 'Kirim Push Message Sekarang' }}</span>
                                 </button>
-                                <p v-if="notifForm.recentlySuccessful" class="text-sm font-medium text-emerald-600 dark:text-emerald-400 flex items-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                                    </svg>
-                                    Berhasil dikirim ke perangkat!
+                                <p v-if="notifForm.recentlySuccessful" class="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                                    Push message berhasil diproses.
                                 </p>
                             </div>
                         </form>

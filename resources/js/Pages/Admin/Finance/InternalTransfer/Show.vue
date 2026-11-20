@@ -33,7 +33,7 @@ const formatDateTime = (d) =>
 // ---- STATUS ----
 const statusConfig = computed(() => {
     const map = {
-        Draft:      { label: 'Draft — Menunggu Persetujuan', class: 'bg-blue-50 text-blue-800 border-blue-200',   icon: ClockIcon },
+        Draft:      { label: 'Draft (Menunggu Persetujuan)', class: 'bg-blue-50 text-blue-800 border-blue-200',   icon: ClockIcon },
         Approved:   { label: 'Disetujui',                    class: 'bg-green-50 text-green-800 border-green-200', icon: CheckCircleIcon },
         Cancelled:  { label: 'Dibatalkan',                   class: 'bg-gray-50 text-gray-600 border-gray-200',   icon: XCircleIcon },
     };
@@ -206,7 +206,7 @@ const confirmCancel = () => {
                     </div>
                     <div>
                         <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">Setujui Internal Transfer</h2>
-                        <p class="text-sm text-gray-500">{{ transfer.nomor_transfer }} — {{ formatCurrency(transfer.nominal) }}</p>
+                        <p class="text-sm text-gray-500">{{ transfer.nomor_transfer }}: {{ formatCurrency(transfer.nominal) }}</p>
                     </div>
                 </div>
 
@@ -225,7 +225,7 @@ const confirmCancel = () => {
 
                 <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
                     <p class="text-sm text-amber-800">
-                        ⚠️ Persetujuan ini akan memposting jurnal GL secara otomatis.
+                        <strong>Peringatan:</strong> Persetujuan ini akan memposting jurnal GL secara otomatis.
                         Rekening <strong>{{ transfer.to_kas_bank?.nama_bank }}</strong> akan didebit dan
                         <strong>{{ transfer.from_kas_bank?.nama_bank }}</strong> akan dikredit sebesar
                         <strong>{{ formatCurrency(transfer.nominal) }}</strong>.

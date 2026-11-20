@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Route;
 
 $essRoles = 'Super Admin|Manajer Departemen|Finance|Staf|Direktur|Karyawan|Staf Finance|Finance Manager|Finance Staff|HR Staff|IT Support';
 
-Route::middleware(["role:{$essRoles}"])->group(function () {
+Route::middleware(["role:{$essRoles}", 'not_freelance'])->group(function () {
 
     // ----------------------------------------------------------------
     // Approval Center (Unified Inbox Redirector)
@@ -29,10 +29,13 @@ Route::middleware(["role:{$essRoles}"])->group(function () {
     // Kalender & Hari Libur
     // ----------------------------------------------------------------
     Route::get('calendar', [CalendarController::class, 'index'])->name('calendar.index');
-    Route::post('calendar/share-settings', [CalendarController::class, 'updateShareSettings'])->name('calendar.share-settings');
-    Route::post('calendar/regenerate-share-token', [CalendarController::class, 'regenerateShareToken'])->name('calendar.regenerate-share-token');
-    Route::resource('hari-libur', HariLiburController::class);
-    Route::post('hari-libur/fetch', [HariLiburController::class, 'fetch'])->name('hari-libur.fetch');
+    Route::get('hari-libur', [HariLiburController::class, 'index'])->name('hari-libur.index');
+    Route::middleware(['role:Super Admin|HR Manager|HR Staff'])->group(function () {
+        Route::post('calendar/share-settings', [CalendarController::class, 'updateShareSettings'])->name('calendar.share-settings');
+        Route::post('calendar/regenerate-share-token', [CalendarController::class, 'regenerateShareToken'])->name('calendar.regenerate-share-token');
+        Route::resource('hari-libur', HariLiburController::class)->except(['index', 'show']);
+        Route::post('hari-libur/fetch', [HariLiburController::class, 'fetch'])->name('hari-libur.fetch');
+    });
 
     // ----------------------------------------------------------------
     // Cuti (Leave)
@@ -42,10 +45,13 @@ Route::middleware(["role:{$essRoles}"])->group(function () {
         Route::get('approvals', 'approvals')
             ->withoutMiddleware(\Spatie\Permission\Middleware\RoleMiddleware::class)
             ->name('approvals');
-        Route::get('management', 'management')->name('management');
-        Route::post('generate', 'generate')->name('generate');
-        Route::put('balances/{id}', 'updateBalance')->name('update-balance');
+        Route::middleware(['role:Super Admin|HR Manager|HR Staff'])->group(function () {
+            Route::get('management', 'management')->name('management');
+            Route::post('generate', 'generate')->name('generate');
+            Route::put('balances/{id}', 'updateBalance')->name('update-balance');
+        });
         Route::post('{cuti}/approve', 'approve')->name('approve');
+        Route::patch('{cuti}/cancel', 'cancel')->name('cancel');
         Route::get('{cuti}/print', 'print')->name('print');
         Route::get('{cuti}/export-pdf', 'exportPdf')->name('export-pdf');
     });
@@ -69,10 +75,14 @@ Route::middleware(["role:{$essRoles}"])->group(function () {
             ->withoutMiddleware(\Spatie\Permission\Middleware\RoleMiddleware::class)
             ->name('action');
 
-        // Pembayaran
-        Route::get('payment-schedule', [PengajuanPaymentController::class, 'schedule'])->name('payment-schedule');
-        Route::post('print-schedule', [PengajuanPaymentController::class, 'printSchedule'])->name('print-schedule');
-        Route::post('{pengajuan}/pay', [PengajuanPaymentController::class, 'store'])->name('pay');
+        // Pembayaran (Khusus Finance & Super Admin)
+        Route::middleware(['role:Super Admin|Finance|Staf Finance|Finance Manager|Finance Staff'])->group(function () {
+            Route::get('payment-schedule', [PengajuanPaymentController::class, 'schedule'])->name('payment-schedule');
+            Route::post('print-schedule', [PengajuanPaymentController::class, 'printSchedule'])->name('print-schedule');
+            Route::post('{pengajuan}/pay', [PengajuanPaymentController::class, 'store'])
+                ->middleware('check.period:tgl_bayar')
+                ->name('pay');
+        });
 
         // Helper Endpoints (AJAX)
         Route::controller(PengajuanController::class)->group(function () {
@@ -140,6 +150,7 @@ Route::middleware(["role:{$absensiRoles}"])->prefix('absensi')->name('absensi.')
     // Rekap & Export (Khusus HR & Admin)
     Route::middleware(['role:Super Admin|HR Manager|HR Staff|Direktur'])->group(function () {
         Route::get('rekap', 'index')->name('rekap');
+        Route::post('koreksi/{koreksi}/action', 'koreksiAction')->name('koreksi.action');
         Route::get('print', 'print')->name('print');
         Route::get('export-pdf', 'exportPdf')->name('export-pdf');
     });

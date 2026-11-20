@@ -14,13 +14,16 @@ class ApprovalCenterController extends Controller
 {
     public function index(Request $request)
     {
-        $karyawan = $request->user()->karyawan;
+        $user = $request->user();
+        $karyawan = $user->karyawan;
 
         if (!$karyawan) {
             return response()->json(['message' => 'Data karyawan tidak ditemukan.'], 403);
         }
 
-        $baseQuery = ApprovalProcess::where('id_karyawan_target', $karyawan->id);
+        $targetIds = $this->targetKaryawanIdsForUser($user, $karyawan);
+
+        $baseQuery = ApprovalProcess::whereIn('id_karyawan_target', $targetIds);
         $counts = [
             'pending' => (clone $baseQuery)->where('status', 'Pending')->count(),
             'approved' => (clone $baseQuery)->where('status', 'Approved')->count(),
@@ -38,7 +41,7 @@ class ApprovalCenterController extends Controller
             'approvalDocument.pinjaman.document.karyawan.departemen',
             'approvalDocument.invoice.document.pelanggan',
             'approvalDocument.invoice.document.departemen',
-        ])->where('id_karyawan_target', $karyawan->id);
+        ])->whereIn('id_karyawan_target', $targetIds);
 
         $status = $request->string('status')->toString() ?: 'Pending';
         if ($status !== 'all') {
@@ -70,14 +73,16 @@ class ApprovalCenterController extends Controller
 
     public function show(Request $request, ApprovalProcess $approval)
     {
-        $karyawan = $request->user()->karyawan;
+        $user = $request->user();
+        $karyawan = $user->karyawan;
 
         if (!$karyawan) {
             return response()->json(['message' => 'Data karyawan tidak ditemukan.'], 403);
         }
 
-        $isTarget = $approval->id_karyawan_target === $karyawan->id;
-        $isActor = $approval->id_karyawan_action === $karyawan->id;
+        $targetIds = $this->targetKaryawanIdsForUser($user, $karyawan);
+        $isTarget = in_array((int) $approval->id_karyawan_target, $targetIds, true);
+        $isActor = (int) $approval->id_karyawan_action === (int) $karyawan->id;
 
         if (!$isTarget && !$isActor) {
             return response()->json(['message' => 'Approval tidak dapat diakses.'], 403);
@@ -107,20 +112,39 @@ class ApprovalCenterController extends Controller
             'pin' => 'required|string|size:6',
             'catatan' => 'nullable|string|max:500',
         ]);
-        $karyawan = $request->user()->karyawan;
+        $user = $request->user();
+        $karyawan = $user->karyawan;
 
-        if (!$karyawan || $approval->id_karyawan_target !== $karyawan->id) {
+        if (!$karyawan) {
+            return response()->json(['message' => 'Approval tidak dapat diproses oleh user ini.'], 403);
+        }
+
+        $targetIds = $this->targetKaryawanIdsForUser($user, $karyawan);
+        if (!in_array((int) $approval->id_karyawan_target, $targetIds, true)) {
             return response()->json(['message' => 'Approval tidak dapat diproses oleh user ini.'], 403);
         }
         if ($approval->status !== 'Pending') {
             return response()->json(['message' => 'Approval sudah tidak berstatus pending.'], 422);
         }
-        if (!$request->user()->pin) {
+
+        $throttleKey = 'pin-verify:' . $user->id;
+        if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($throttleKey, \App\Services\PinVerificationService::MAX_ATTEMPTS)) {
+            $seconds = \Illuminate\Support\Facades\RateLimiter::availableIn($throttleKey);
+            $minutes = (int) ceil($seconds / 60);
+            return response()->json([
+                'message' => "Terlalu banyak percobaan PIN gagal. Akun PIN terkunci selama {$minutes} menit.",
+                'retry_after' => $seconds,
+            ], 429);
+        }
+
+        if (!$user->pin) {
             return response()->json(['message' => 'Anda belum memiliki PIN.', 'has_pin' => false], 422);
         }
-        if (!Hash::check($validated['pin'], $request->user()->pin)) {
+        if (!Hash::check($validated['pin'], $user->pin)) {
+            \Illuminate\Support\Facades\RateLimiter::hit($throttleKey, \App\Services\PinVerificationService::LOCKOUT_SECONDS);
             return response()->json(['message' => 'PIN salah.', 'has_pin' => true], 422);
         }
+        \Illuminate\Support\Facades\RateLimiter::clear($throttleKey);
 
         $model = $this->documentFor($approval);
         if (!$model) {
@@ -388,5 +412,160 @@ class ApprovalCenterController extends Controller
         }
 
         return $doc;
+    }
+
+    /**
+     * List active/past delegations and eligible delegate candidates for mobile user.
+     */
+    public function delegations(Request $request)
+    {
+        $user = $request->user();
+
+        $delegations = \App\Models\ApprovalDelegation::with([
+            'delegator:id,name',
+            'delegate:id,name',
+        ])
+            ->where(function ($q) use ($user) {
+                $q->where('delegator_user_id', $user->id)
+                    ->orWhere('delegate_user_id', $user->id);
+            })
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(fn ($d) => [
+                'id' => $d->id,
+                'delegator_user_id' => $d->delegator_user_id,
+                'delegate_user_id' => $d->delegate_user_id,
+                'delegator_name' => $d->delegator?->name ?? '-',
+                'delegate_name' => $d->delegate?->name ?? '-',
+                'start_date' => $d->start_date?->format('Y-m-d'),
+                'end_date' => $d->end_date?->format('Y-m-d'),
+                'reason' => $d->reason,
+                'is_active' => (bool) $d->is_active,
+                'is_currently_active' => $d->isCurrentlyActive(),
+                'is_outgoing' => (int) $d->delegator_user_id === (int) $user->id,
+            ]);
+
+        $candidates = \App\Models\User::with('karyawan:id,user_id,jabatan')
+            ->whereHas('karyawan')
+            ->where('id', '!=', $user->id)
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn ($u) => [
+                'id' => $u->id,
+                'name' => $u->name,
+                'jabatan' => $u->karyawan?->jabatan ?? 'Staf',
+            ]);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $delegations,
+            'candidates' => $candidates,
+        ]);
+    }
+
+    /**
+     * Create a temporary approval delegation from mobile approver.
+     */
+    public function storeDelegation(Request $request)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'delegate_user_id' => 'required|exists:users,id',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'reason' => 'nullable|string|max:500',
+        ]);
+
+        if ((int) $validated['delegate_user_id'] === (int) $user->id) {
+            return response()->json([
+                'message' => 'Anda tidak dapat mendelegasikan persetujuan kepada diri sendiri.',
+            ], 422);
+        }
+
+        $delegation = \App\Models\ApprovalDelegation::create([
+            'delegator_user_id' => $user->id,
+            'delegate_user_id' => $validated['delegate_user_id'],
+            'start_date' => $validated['start_date'],
+            'end_date' => $validated['end_date'],
+            'reason' => $validated['reason'] ?? null,
+            'is_active' => true,
+        ]);
+
+        \App\Services\ImmutableAuditService::log(
+            action: 'APPROVAL_DELEGATION_CREATED',
+            entityType: 'ApprovalDelegation',
+            entityId: (string) $delegation->id,
+            payload: [
+                'delegator_user_id' => $user->id,
+                'delegate_user_id' => (int) $validated['delegate_user_id'],
+                'start_date' => $validated['start_date'],
+                'end_date' => $validated['end_date'],
+            ],
+            actorId: $user->id,
+            actorName: $user->name,
+        );
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Delegasi approval sementara berhasil disimpan.',
+            'data' => $delegation,
+        ], 201);
+    }
+
+    /**
+     * Revoke an active delegation created by the authenticated user.
+     */
+    public function revokeDelegation(Request $request, $id)
+    {
+        $user = $request->user();
+        $delegation = \App\Models\ApprovalDelegation::findOrFail($id);
+
+        if ((int) $delegation->delegator_user_id !== (int) $user->id) {
+            return response()->json(['message' => 'Anda tidak berwenang menonaktifkan delegasi ini.'], 403);
+        }
+
+        $delegation->update(['is_active' => false]);
+
+        \App\Services\ImmutableAuditService::log(
+            action: 'APPROVAL_DELEGATION_REVOKED',
+            entityType: 'ApprovalDelegation',
+            entityId: (string) $delegation->id,
+            payload: ['delegator_user_id' => $user->id],
+            actorId: $user->id,
+            actorName: $user->name,
+        );
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Delegasi approval berhasil dinonaktifkan.',
+        ]);
+    }
+
+    /**
+     * Resolve employee IDs whose approvals this user may inspect/process (self + active delegators).
+     *
+     * @return array<int, int>
+     */
+    private function targetKaryawanIdsForUser(\App\Models\User $user, \App\Models\Karyawan $karyawan): array
+    {
+        $ids = [(int) $karyawan->id];
+        $today = Carbon::today()->toDateString();
+
+        $delegations = \App\Models\ApprovalDelegation::where('delegate_user_id', $user->id)
+            ->where('is_active', true)
+            ->whereDate('start_date', '<=', $today)
+            ->whereDate('end_date', '>=', $today)
+            ->with('delegator.karyawan:id,user_id')
+            ->get();
+
+        foreach ($delegations as $delegation) {
+            $delegatorKaryawanId = $delegation->delegator?->karyawan?->id;
+            if ($delegatorKaryawanId) {
+                $ids[] = (int) $delegatorKaryawanId;
+            }
+        }
+
+        return array_values(array_unique($ids));
     }
 }

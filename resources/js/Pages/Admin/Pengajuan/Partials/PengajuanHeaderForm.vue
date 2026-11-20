@@ -117,7 +117,7 @@ const needsAttachment = () => ['Langsung', 'TaxPayment'].includes(props.form.tip
                             v-model="form.id_kas_kecil"
                             class="block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                         >
-                            <option :value="null" disabled>— Pilih Kas Kecil —</option>
+                            <option :value="null" disabled>Pilih Kas Kecil</option>
                             <option v-for="kb in masterKasKecil" :key="kb.id" :value="kb.id">
                                 {{ kb.nama_bank }} (Saldo: {{ new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(kb.saldo_gl ?? 0) }})
                             </option>
@@ -178,7 +178,7 @@ const needsAttachment = () => ['Langsung', 'TaxPayment'].includes(props.form.tip
 
                 <!-- PettyCash info banner -->
                 <div v-if="form.tipe_pengajuan === 'PettyCash'" class="p-3 bg-amber-50 border border-amber-200 rounded-md text-sm">
-                    <p class="font-semibold text-amber-800 mb-1">📋 Alur Petty Cash:</p>
+                    <p class="font-semibold text-amber-800 mb-1">Alur Petty Cash:</p>
                     <ol class="list-decimal ml-4 text-amber-700 space-y-1 text-xs">
                         <li>Ajukan pengajuan → tunggu persetujuan Finance Manager</li>
                         <li>Saat disetujui, GL otomatis: Dr. Beban / Cr. Kas Kecil</li>

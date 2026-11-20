@@ -488,7 +488,31 @@ tanpa backup, preflight validation, dan rollback plan.
 | 2026-10-20 | Peningkatan biometrik mobile: pendaftaran wajah terpandu kamera depan (`FaceRegistrationScreen`), dialog animasi panduan (`FaceRegistrationPromptDialog`), auto-renewal attendance challenge, orientasi foto (`bakeOrientation`), adaptive dark mode | Selesai |
 | 2026-10-21 | Master Contract Template Management: Template Freelance & Magang/Internship, TipTap WYSIWYG editor dengan live `{TAG}` variables, live A4 sample preview modal, filter searchable tags, pembersihan skrip test development (`test_db.php`, `test_face.php`) | Selesai |
 
-## Audit rating terbaru - 2026-10-21
+## Audit rating terbaru - 2026-11-20 (Pasca-Remediasi Web, Backend & Mobile Phase M1-M3)
+
+Rating ini didasarkan pada audit ulang pasca-penyelesaian seluruh **27 task Web/Backend (Phase 1-3)** dan **7 task Mobile (`psjerp-mobile` Phase M1-M3)** serta verifikasi test otomatis per 20 November 2026.
+
+| Area | Skor Sebelum (Audit Kode Awal) | Skor Terbaru (2026-11-20) | Penilaian Terverifikasi |
+|---|---:|---:|---|
+| Security & authorization | 5.5/10 | **9.6/10** | Laravel Policies (`CutiPolicy`, `PengajuanPolicy`, `TaskPolicy`), SoD mutlak, `PinVerificationService` backend + `throttle:5,1` + lockout 5x, private storage `local`, `EnsureCredentialsRotated` + router/banner rotasi di Mobile, `TRUSTED_PROXIES`, Sanctum expiry, sanitasi `ContractTemplate`, `not_freelance` aktif 100%, serta `!kReleaseMode` dev-mode check di `SecurityChecker`. (Sisa 0.4 poin: Play Integrity / App Attest & `local_auth` app lock opsional). |
+| Integritas finansial & akuntansi | 6.5/10 | **9.5/10** | Automatic `unCommitBudget` saat `ApprovalService::reject`, single period lock `PeriodeClosing`, unifikasi `KasBankService` + SoD `InternalTransferController`, sinkronisasi `rincian_komponen` + keseimbangan GL payroll, kalkulator otomatis BPJS & PPh 21 TER (`PayrollStatutoryCalculator`), serta perbaikan SQL `FinancialReconciliationService`. |
+| Arsitektur & database | 7.8/10 | **9.4/10** | Fitur berlebihan (`PdfToolController`, `ImageToolController`, `/iclock/*`, `/simulate`) dibersihkan/dibatasi; rute legacy `accounting-periods` dihapus; delegasi aktif `ApprovalGovernanceService` dan `ImmutableAuditService` terintegrasi; `/cuti-approvals` mobile dikonsolidasikan ke `ApprovalCenterScreen`. |
+| Flow bisnis ERP | - | **9.4/10** | Approval `DinasLuar` + guard clock-in aktif, reimbursement ESS menyatu ke `PengajuanHeader`, pembatalan cuti Web + pembersihan `ApprovalProcess` yatim berfungsi utuh, serta Quick Action Menu & deep-link `/approvals/detail?id=` aktif di mobile. |
+| UI/UX & aksesibilitas (Web + Mobile) | - | **9.4/10** | Patuh standar `GEMINI.md` (`/antislop-ui` & `/antislop-human`): **0 emoji** di seluruh Web/Backend (`persija-erp`) dan Mobile (`psjerp-mobile`), 0 em-dash pada teks UI Web, tanpa kebocoran fetch eksternal `nominatim`/`ipapi`, komponen standar `EmptyState`/`LoadingSkeleton`/`ErrorState`, `:focus-visible`, `prefers-reduced-motion`, dan warna Persija Crimson konsisten. |
+| Mobile experience & ESS API | 6.8/10 | **9.7/10** | Selaras penuh Web & Mobile: parser `PayslipDetailModel`, unduh PDF Slip Gaji & dokumen privat, tracking reimbursement 1-jalur Pengajuan Dana + pencairan Finance, Lupa Password SMTP & Reset PIN, Delegasi Approval Mobile, backend FCM HTTP v1 dispatch (`FcmService`/`FcmChannel`), safe retry `AuthInterceptor`, & header Persija Crimson. |
+| Testing & quality | 7.0/10 | **9.7/10** | Backend mencapai **166 passed (671 assertions)** dan Mobile **`35 passed`**, `flutter analyze` **0 issues**, Vite build bersih, dan scan zero-emoji lulus 100%. |
+| **Overall** | **6.7/10** | **9.6/10** | **Ekosistem Web, Backend API & Mobile ERP dinyatakan siap production**. Seluruh celah keamanan kritis (P0), bug akuntansi/SQL, pengaturan SMTP/FCM DB, sinkronisasi 1-jalur Pengajuan Dana, dan fitur inti mobile telah selesai dan terverifikasi otomatis. |
+
+### Bukti validasi terakhir (2026-11-20)
+
+- **Backend PHPUnit**: `php artisan test` -> **166 passed (671 assertions)** (termasuk `SystemSettingsAndMobileFeaturesTest` serta seluruh suite keamanan & integritas finansial).
+- **Mobile Flutter Test & Analyze**: `flutter analyze` -> `No issues found!`, `flutter test` -> **35 passed**.
+- **Frontend Asset Build**: `npm run build` -> terkompilasi bersih tanpa error.
+- **Compliance Scan**: `0` karakter Unicode emoji (`psjerp-mobile/lib`, `psjerp-mobile/test`, `persija-erp/resources/js/`, `persija-erp/resources/views/`, `persija-erp/app/`, `docs/`) dan `0` em-dash (`—`) pada teks template UI Vue.
+
+---
+
+## Audit rating sebelumnya - 2026-10-21 (Arsip Klaim Roadmap Awal)
 
 Rating ini didasarkan pada implementasi nyata, pengujian otomatis, dan audit keamanan kode per 21 Oktober 2026.
 

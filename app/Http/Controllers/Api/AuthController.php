@@ -84,13 +84,67 @@ class AuthController extends Controller
             ], 422);
         }
 
-        // Update password baru
+        // Update password baru & bersihkan flag rotasi kredensial awal
         $user->update([
-            'password' => \Illuminate\Support\Facades\Hash::make($request->new_password)
+            'password' => \Illuminate\Support\Facades\Hash::make($request->new_password),
+            'must_change_password' => false,
         ]);
 
         return response()->json([
             'message' => 'Password berhasil diperbarui.'
+        ], 200);
+    }
+
+    /**
+     * Send one-time temporary password via dynamic DB SMTP configuration.
+     */
+    public function forgotPassword(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email|max:255',
+        ]);
+
+        $configService = app(\App\Services\SystemConfigService::class);
+        if (!$configService->isMailConfigured()) {
+            return response()->json([
+                'message' => 'Layanan email SMTP belum diaktifkan. Silakan hubungi HR atau IT Support untuk reset password.',
+            ], 503);
+        }
+
+        $user = \App\Models\User::where('email', $request->email)->first();
+
+        if ($user) {
+            $tempPassword = \Illuminate\Support\Str::random(10);
+
+            \Illuminate\Support\Facades\DB::beginTransaction();
+            try {
+                $user->update([
+                    'password' => \Illuminate\Support\Facades\Hash::make($tempPassword),
+                    'must_change_password' => true,
+                ]);
+
+                $configService->applyMailConfig();
+
+                \Illuminate\Support\Facades\Mail::raw(
+                    "Halo {$user->name},\n\nAnda atau admin meminta reset password akun Persija ERP.\nPassword sementara Anda: {$tempPassword}\n\nDemi keamanan, Anda diwajibkan segera mengganti password setelah berhasil login.\nJika Anda tidak merasa meminta reset ini, segera hubungi HR atau IT Support.",
+                    function ($message) use ($user) {
+                        $message->to($user->email)
+                            ->subject('[Persija ERP] Reset Password Sementara Akun Anda');
+                    }
+                );
+
+                \Illuminate\Support\Facades\DB::commit();
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\DB::rollBack();
+
+                return response()->json([
+                    'message' => 'Gagal mengirim email reset password. Periksa konfigurasi SMTP atau hubungi IT Support.',
+                ], 503);
+            }
+        }
+
+        return response()->json([
+            'message' => 'Jika email terdaftar, password sementara telah dikirim ke inbox email Anda.',
         ], 200);
     }
 

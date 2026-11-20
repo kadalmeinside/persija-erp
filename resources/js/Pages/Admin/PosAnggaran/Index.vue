@@ -99,7 +99,7 @@ const restorePos = (pos) => {
 };
 
 const deletePos = (id) => {
-    if (confirm('Yakin ingin menghapus Pos Anggaran ini? Jika sudah digunakan, hapus tidak akan diizinkan — gunakan Arsipkan sebagai gantinya.')) {
+    if (confirm('Yakin ingin menghapus Pos Anggaran ini? Jika sudah digunakan, hapus tidak akan diizinkan (gunakan Arsipkan sebagai gantinya).')) {
         router.delete(route('admin.pos-anggaran.destroy', id));
     }
 };

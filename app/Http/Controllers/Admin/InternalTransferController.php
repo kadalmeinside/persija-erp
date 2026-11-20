@@ -62,22 +62,12 @@ class InternalTransferController extends Controller
 
     public function create()
     {
+        $kasBankService = app(\App\Services\KasBankService::class);
         $kasBanks = KasBank::where('is_active', true)
             ->orderBy('nama_bank')
-            ->get(['id', 'nama_bank', 'nomor_rekening', 'id_akun_gl'])
-            ->map(function ($kb) {
-                // Saldo GL real-time (Debit - Kredit) untuk ditampilkan di form
-                $saldoGl = 0;
-                if ($kb->id_akun_gl) {
-                    $debit  = JurnalDetail::where('id_akun', $kb->id_akun_gl)
-                        ->whereHas('header', fn($q) => $q->where('status', 'Posted'))
-                        ->sum('debit');
-                    $kredit = JurnalDetail::where('id_akun', $kb->id_akun_gl)
-                        ->whereHas('header', fn($q) => $q->where('status', 'Posted'))
-                        ->sum('kredit');
-                    $saldoGl = (float) ($debit - $kredit);
-                }
-                return array_merge($kb->toArray(), ['saldo_gl' => $saldoGl]);
+            ->get(['id', 'nama_bank', 'nomor_rekening', 'id_akun_gl', 'saldo_awal'])
+            ->map(function ($kb) use ($kasBankService) {
+                return array_merge($kb->toArray(), ['saldo_gl' => $kasBankService->getSaldoGl($kb)]);
             });
 
         return Inertia::render('Admin/Finance/InternalTransfer/Create', [
@@ -149,16 +139,36 @@ class InternalTransferController extends Controller
      */
     public function approve(Request $request, InternalTransfer $internalTransfer)
     {
-        if (!$internalTransfer->isDraft()) {
-            return back()->with('error', 'Hanya transfer berstatus Draft yang dapat disetujui.');
-        }
+        abort_unless(
+            Auth::user()->hasAnyRole([
+                \App\Enums\Role::SUPER_ADMIN->value,
+                \App\Enums\Role::FINANCE_MANAGER->value,
+                \App\Enums\Role::DIREKTUR->value,
+            ]),
+            403,
+            'Hanya Finance Manager, Direktur, atau Super Admin yang dapat menyetujui Internal Transfer.'
+        );
+
+        app(\App\Services\PinVerificationService::class)->assertVerified($request, Auth::user());
 
         try {
             DB::transaction(function () use ($internalTransfer) {
-                $internalTransfer->load(['fromKasBank.akunGl', 'toKasBank.akunGl']);
+                $lockedTransfer = InternalTransfer::where('id', $internalTransfer->id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
 
-                $from = $internalTransfer->fromKasBank;
-                $to   = $internalTransfer->toKasBank;
+                if (!$lockedTransfer->isDraft()) {
+                    throw new \Exception('Hanya transfer berstatus Draft yang dapat disetujui.');
+                }
+
+                if ($lockedTransfer->created_by && (int) $lockedTransfer->created_by === (int) Auth::id()) {
+                    throw new \DomainException('Pembuat transfer tidak dapat menyetujui transfer yang sama (Segregation of Duties).');
+                }
+
+                $lockedTransfer->load(['fromKasBank.akunGl', 'toKasBank.akunGl']);
+
+                $from = $lockedTransfer->fromKasBank;
+                $to   = $lockedTransfer->toKasBank;
 
                 if (!$from->id_akun_gl) {
                     throw new \Exception("Rekening asal '{$from->nama_bank}' belum terhubung ke Akun GL.");
@@ -168,50 +178,59 @@ class InternalTransferController extends Controller
                 }
 
                 // ─── HARD BLOCK: Cek saldo GL rekening asal ──────────────────
-                $saldoFrom = (float) JurnalDetail::where('id_akun', $from->id_akun_gl)
-                    ->whereHas('header', fn($q) => $q->where('status', 'Posted'))
-                    ->sum('debit')
-                    - (float) JurnalDetail::where('id_akun', $from->id_akun_gl)
-                    ->whereHas('header', fn($q) => $q->where('status', 'Posted'))
-                    ->sum('kredit');
+                $saldoFrom = app(\App\Services\KasBankService::class)->getSaldoGl($from);
 
-                if ($saldoFrom < $internalTransfer->nominal) {
+                if ($saldoFrom < $lockedTransfer->nominal) {
                     throw new \Exception(
                         "Saldo rekening '{$from->nama_bank}' tidak mencukupi. "
                         . "Saldo tersedia: Rp " . number_format($saldoFrom, 0, ',', '.') . ", "
-                        . "nominal transfer: Rp " . number_format($internalTransfer->nominal, 0, ',', '.') . "."
+                        . "nominal transfer: Rp " . number_format($lockedTransfer->nominal, 0, ',', '.') . "."
                     );
                 }
 
                 // Posting GL
                 $jurnal = GLService::createJournal(
-                    $internalTransfer->tgl_transfer,
-                    'Internal Transfer: ' . $internalTransfer->nomor_transfer,
+                    $lockedTransfer->tgl_transfer,
+                    'Internal Transfer: ' . $lockedTransfer->nomor_transfer,
                     [
                         [
                             'id_akun'    => $to->id_akun_gl,
-                            'debit'      => $internalTransfer->nominal,
+                            'debit'      => $lockedTransfer->nominal,
                             'kredit'     => 0,
                             'keterangan' => "Transfer masuk dari {$from->nama_bank}",
                         ],
                         [
                             'id_akun'    => $from->id_akun_gl,
                             'debit'      => 0,
-                            'kredit'     => $internalTransfer->nominal,
+                            'kredit'     => $lockedTransfer->nominal,
                             'keterangan' => "Transfer keluar ke {$to->nama_bank}",
                         ],
                     ],
                     'IT',
-                    $internalTransfer->id,
+                    $lockedTransfer->id,
                     'InternalTransfer'
                 );
 
-                $internalTransfer->update([
+                $lockedTransfer->update([
                     'status'      => 'Approved',
                     'approved_by' => Auth::id(),
                     'approved_at' => now(),
                     'id_jurnal'   => $jurnal->id ?? null,
                 ]);
+
+                \App\Services\ImmutableAuditService::log(
+                    action: 'INTERNAL_TRANSFER_APPROVED',
+                    entityType: 'InternalTransfer',
+                    entityId: (string) $lockedTransfer->id,
+                    payload: [
+                        'nomor_transfer' => $lockedTransfer->nomor_transfer,
+                        'nominal' => (float) $lockedTransfer->nominal,
+                        'from_kas_bank_id' => $lockedTransfer->from_kas_bank_id,
+                        'to_kas_bank_id' => $lockedTransfer->to_kas_bank_id,
+                    ],
+                    actorId: Auth::id(),
+                    actorName: Auth::user()?->name
+                );
             });
 
             return back()->with('success', 'Internal Transfer berhasil disetujui dan GL telah diposting.');

@@ -77,6 +77,14 @@ class TaskController extends Controller
             'id_program_kerja' => 'nullable|exists:tbl_program_kerja,id',
         ]);
 
+        $canAssignToOthers = $user->hasAnyRole(array_merge(
+            \App\Enums\Role::adminRoles(),
+            [\App\Enums\Role::HR_MANAGER, \App\Enums\Role::MANAJER_DEPARTEMEN]
+        ));
+        if (!$canAssignToOthers && (int) $validated['id_karyawan_assignee'] !== (int) $karyawan->id) {
+            abort(403, 'Anda hanya dapat membuat tugas untuk diri sendiri.');
+        }
+
         $validated['id_karyawan_creator'] = $karyawan->id;
         $validated['status'] = 'To Do';
 
@@ -97,6 +105,8 @@ class TaskController extends Controller
      */
     public function update(Request $request, Task $task)
     {
+        \Illuminate\Support\Facades\Gate::authorize('modify', $task);
+
         $validated = $request->validate([
             'id_karyawan_assignee' => 'required|exists:tbl_karyawan,id',
             'title' => 'required|string|max:255',
@@ -118,6 +128,8 @@ class TaskController extends Controller
      */
     public function updateStatus(Request $request, Task $task)
     {
+        \Illuminate\Support\Facades\Gate::authorize('modify', $task);
+
         $validated = $request->validate([
             'status' => 'required|in:To Do,In Progress,Review,Done',
             'order_index' => 'nullable|integer',
@@ -129,7 +141,10 @@ class TaskController extends Controller
         if ($request->has('new_order') && is_array($request->new_order)) {
             foreach($request->new_order as $item) {
                 if (isset($item['id']) && isset($item['order_index'])) {
-                    Task::where('id', $item['id'])->update(['order_index' => $item['order_index']]);
+                    $orderedTask = Task::find($item['id']);
+                    if ($orderedTask && \Illuminate\Support\Facades\Gate::allows('modify', $orderedTask)) {
+                        $orderedTask->update(['order_index' => $item['order_index']]);
+                    }
                 }
             }
         }
@@ -142,6 +157,8 @@ class TaskController extends Controller
      */
     public function destroy(Task $task)
     {
+        \Illuminate\Support\Facades\Gate::authorize('delete', $task);
+
         $task->delete();
         return redirect()->back()->with('success', 'Tugas berhasil dihapus.');
     }
@@ -159,7 +176,7 @@ class TaskController extends Controller
         }
 
         $isHead = Departemen::where('id_karyawan_kepala', $karyawan->id)->exists();
-        $isAdmin = $user->hasRole(['super-admin', 'admin']);
+        $isAdmin = $user->hasAnyRole(\App\Enums\Role::adminRoles());
 
         // Query all tasks (both active and archived)
         $query = Task::with(['creator', 'assignee', 'departemen', 'programKerja'])
@@ -202,6 +219,8 @@ class TaskController extends Controller
      */
     public function archive(Task $task)
     {
+        \Illuminate\Support\Facades\Gate::authorize('modify', $task);
+
         $task->update(['archived_at' => Carbon::now()]);
         return redirect()->back()->with('success', 'Tugas berhasil diarsipkan.');
     }

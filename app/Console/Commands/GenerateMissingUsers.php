@@ -59,13 +59,17 @@ class GenerateMissingUsers extends Command
                 // Format Email: namadepan.id@persijadevelopment.id
                 $email = "{$namaDepan}.{$karyawan->id}@persijadevelopment.id";
 
+                $tempPassword = \Illuminate\Support\Str::password(12, symbols: false);
+
                 // Buat User
                 $user = User::firstOrCreate(
                     ['email' => $email],
                     [
                         'name' => $karyawan->nama_lengkap,
-                        'password' => Hash::make('persija123'),
-                        'pin' => Hash::make('123456'), // PIN Default
+                        'password' => Hash::make($tempPassword),
+                        'pin' => null,
+                        'must_change_password' => true,
+                        'must_change_pin' => true,
                     ]
                 );
 
@@ -77,14 +81,12 @@ class GenerateMissingUsers extends Command
                 // Update Karyawan dengan user_id
                 $karyawan->update(['user_id' => $user->id]);
 
-                $this->line("✅ Akun dibuat: {$karyawan->nama_lengkap} -> {$email}");
+                $this->line("[OK] Akun dibuat: {$karyawan->nama_lengkap} -> {$email} (Password sementara: {$tempPassword})");
                 $count++;
             }
 
             DB::commit();
-            $this->info("Berhasil membuat {$count} akun user baru!");
-            $this->warn("Password Default: persija123");
-            $this->warn("PIN Default: 123456");
+            $this->info("Berhasil membuat {$count} akun user baru. Semua user wajib mengganti password dan mengatur PIN saat login pertama.");
 
         } catch (\Exception $e) {
             DB::rollBack();

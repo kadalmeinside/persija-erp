@@ -25,6 +25,8 @@ class User extends Authenticatable
         'email',
         'password',
         'pin', // Added PIN
+        'must_change_password',
+        'must_change_pin',
     ];
 
     /**
@@ -49,6 +51,8 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'pin' => 'hashed', // Defence-in-depth: selalu hash PIN di level model
+            'must_change_password' => 'boolean',
+            'must_change_pin' => 'boolean',
         ];
     }
 

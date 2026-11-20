@@ -176,6 +176,12 @@ class PengajuanController extends Controller
      */
     public function storeVendor(Request $request)
     {
+        abort_unless(
+            auth()->user()->hasAnyRole(array_merge(\App\Enums\Role::financeRoles(), \App\Enums\Role::adminRoles())),
+            403,
+            'Anda tidak memiliki akses untuk menambah vendor.'
+        );
+
         $validator = $request->validate([
             'nama_vendor' => 'required|string|max:255',
             'nama_bank' => 'required|string|max:100',
@@ -226,6 +232,11 @@ class PengajuanController extends Controller
             'atas_nama_rekening' => 'required|string|max:255',
             'cabang' => 'nullable|string|max:100',
         ]);
+
+        $authUser = auth()->user();
+        $isOwner = $authUser->karyawan && (int) $authUser->karyawan->id === (int) $validator['id_karyawan'];
+        $canManageAny = $authUser->hasAnyRole(array_merge(\App\Enums\Role::hrRoles(), \App\Enums\Role::financeRoles(), \App\Enums\Role::adminRoles()));
+        abort_unless($isOwner || $canManageAny, 403, 'Anda tidak berwenang mengubah rekening karyawan lain.');
 
         try {
             $bank = DB::transaction(function () use ($validator) {
@@ -378,6 +389,8 @@ class PengajuanController extends Controller
      */
     public function show(Request $request, PengajuanHeader $pengajuan)
     {
+        \Illuminate\Support\Facades\Gate::authorize('view', $pengajuan);
+
         // ... previous loads ...
         $pengajuan->load([
             'pengaju:id,nama_lengkap', 
@@ -515,6 +528,8 @@ class PengajuanController extends Controller
 
     public function edit(PengajuanHeader $pengajuan)
     {
+        \Illuminate\Support\Facades\Gate::authorize('update', $pengajuan);
+
         if (!in_array($pengajuan->status_global, [
             PengajuanStatus::PENDING_APPROVAL,
             PengajuanStatus::DRAFT,
@@ -539,6 +554,8 @@ class PengajuanController extends Controller
 
     public function update(UpdatePengajuanRequest $request, PengajuanHeader $pengajuan)
     {
+        \Illuminate\Support\Facades\Gate::authorize('update', $pengajuan);
+
         // Allow updating for Pending, Draft, or Revision
         if (!in_array($pengajuan->status_global, [
             PengajuanStatus::PENDING_APPROVAL, 
@@ -582,6 +599,8 @@ class PengajuanController extends Controller
 
     public function destroy(PengajuanHeader $pengajuan)
     {
+        \Illuminate\Support\Facades\Gate::authorize('delete', $pengajuan);
+
         if (!in_array($pengajuan->status_global, [
             PengajuanStatus::PENDING_APPROVAL,
             PengajuanStatus::DRAFT
@@ -604,6 +623,8 @@ class PengajuanController extends Controller
      */
     public function cancel(Request $request, PengajuanHeader $pengajuan)
     {
+        \Illuminate\Support\Facades\Gate::authorize('cancel', $pengajuan);
+
         if ($pengajuan->status_global === PengajuanStatus::PAID || $pengajuan->status_global === PengajuanStatus::SETTLED) {
             return redirect()->back()->with('error', 'Pengajuan sudah dibayar, tidak bisa dibatalkan.');
         }
@@ -673,15 +694,9 @@ class PengajuanController extends Controller
             'masterKasKecil' => KasBank::where('is_active', true)
                 ->where('nama_bank', 'like', '%Kas Kecil%')
                 ->orderBy('nama_bank')
-                ->get(['id', 'nama_bank', 'nomor_rekening', 'id_akun_gl'])
+                ->get(['id', 'nama_bank', 'nomor_rekening', 'id_akun_gl', 'saldo_awal'])
                 ->map(function ($kb) {
-                    // Hitung saldo GL real-time
-                    $saldo = 0;
-                    if ($kb->id_akun_gl) {
-                        $debit  = \App\Models\JurnalDetail::where('id_akun', $kb->id_akun_gl)->sum('debit');
-                        $kredit = \App\Models\JurnalDetail::where('id_akun', $kb->id_akun_gl)->sum('kredit');
-                        $saldo  = $debit - $kredit;
-                    }
+                    $saldo = app(\App\Services\KasBankService::class)->getSaldoGl($kb);
                     return array_merge($kb->toArray(), ['saldo_gl' => $saldo]);
                 }),
         ];

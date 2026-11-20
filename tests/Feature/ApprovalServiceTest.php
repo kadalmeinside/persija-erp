@@ -133,13 +133,13 @@ class ApprovalServiceTest extends TestCase
     }
 
     /** @test */
-    public function init_approval_does_nothing_when_no_rules_exist(): void
+    public function init_approval_throws_exception_when_no_rules_exist(): void
     {
+        $this->expectException(\DomainException::class);
+
         // Tidak ada ApprovalRule untuk departemen ini
         $pengajuan = $this->makePengajuan();
         $this->approvalService->initApproval($pengajuan);
-
-        $this->assertDatabaseCount('tbl_approval_process', 0);
     }
 
     // =========================================================================
@@ -478,6 +478,7 @@ class ApprovalServiceTest extends TestCase
     public function pinjaman_approve_sets_status_to_approved_and_triggers_payment_request(): void
     {
         $this->createPinjamanRule(1, $this->approver1->id);
+        $this->createRule(1, $this->approver2->id);
 
         // Mock Setting and AkunGl
         $akunGl = AkunGl::create(['kode_akun' => '11-10', 'nama_akun' => 'Piutang Karyawan', 'tipe_akun' => 'Aset', 'saldo_normal' => 'Debit']);

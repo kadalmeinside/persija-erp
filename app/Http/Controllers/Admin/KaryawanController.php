@@ -263,19 +263,23 @@ class KaryawanController extends Controller
 
         $email = "{$namaDepan}.{$karyawan->id}@persijadevelopment.id";
         
-        DB::transaction(function () use ($karyawan, $email) {
+        $tempPassword = \Illuminate\Support\Str::password(12, symbols: false);
+
+        DB::transaction(function () use ($karyawan, $email, $tempPassword) {
             $user = User::create([
                 'name' => $karyawan->nama_lengkap,
                 'email' => $email,
-                'password' => Hash::make('persija123'),
-                'pin' => Hash::make('123456'), // PIN Default
+                'password' => Hash::make($tempPassword),
+                'pin' => null,
+                'must_change_password' => true,
+                'must_change_pin' => true,
             ]);
             
             $user->assignRole('Karyawan');
             $karyawan->update(['user_id' => $user->id]);
         });
         
-        return redirect()->back()->with('success', "Akun login berhasil dibuat (Email: {$email}, Password: persija123).");
+        return redirect()->back()->with('success', "Akun login berhasil dibuat (Email: {$email}, Password Sementara: {$tempPassword}). User wajib mengganti password dan mengatur PIN saat login pertama.");
     }
 
     public function updateContractDetails(Request $request, Karyawan $karyawan)
@@ -399,7 +403,7 @@ class KaryawanController extends Controller
                 $folder = "karyawan_dokumen/{$karyawan->id}";
                 $fullPath = "{$folder}/{$filename}";
 
-                Storage::disk('public')->put($fullPath, $pdfResult['pdfContent']);
+                Storage::disk('local')->put($fullPath, $pdfResult['pdfContent']);
 
                 $catatan = $validated['catatan_perubahan'] ?? ($versionNumber === 1 ? 'Kontrak Awal' : "Pembaruan Versi {$versionNumber}");
 
@@ -458,7 +462,7 @@ class KaryawanController extends Controller
                     ]);
 
                     if ($activeContract->file_path) {
-                        Storage::disk('public')->put($activeContract->file_path, $pdfResult['pdfContent']);
+                        Storage::disk('local')->put($activeContract->file_path, $pdfResult['pdfContent']);
                     }
                 }
             }
@@ -482,7 +486,7 @@ class KaryawanController extends Controller
         $file = $request->file('file');
         $extension = $file->getClientOriginalExtension();
         $fileSize = $file->getSize();
-        $path = $file->store("karyawan_dokumen/{$karyawan->id}", 'public');
+        $path = $file->store("karyawan_dokumen/{$karyawan->id}", 'local');
 
         KaryawanDokumen::create([
             'id_karyawan' => $karyawan->id,
@@ -503,8 +507,13 @@ class KaryawanController extends Controller
 
     public function destroyDokumen(KaryawanDokumen $dokumen)
     {
-        if ($dokumen->file_path && Storage::disk('public')->exists($dokumen->file_path)) {
-            Storage::disk('public')->delete($dokumen->file_path);
+        if ($dokumen->file_path) {
+            if (Storage::disk('local')->exists($dokumen->file_path)) {
+                Storage::disk('local')->delete($dokumen->file_path);
+            }
+            if (Storage::disk('public')->exists($dokumen->file_path)) {
+                Storage::disk('public')->delete($dokumen->file_path);
+            }
         }
         $dokumen->forceDelete();
 
@@ -674,6 +683,9 @@ class KaryawanController extends Controller
     {
         $cleanNik = preg_replace('/[^A-Za-z0-9_\-]/', '_', $karyawan->nomor_induk_karyawan ?? 'KARYAWAN');
 
+        if ($contract->file_path && Storage::disk('local')->exists($contract->file_path)) {
+            return Storage::disk('local')->download($contract->file_path);
+        }
         if ($contract->file_path && Storage::disk('public')->exists($contract->file_path)) {
             return response()->download(storage_path('app/public/' . $contract->file_path), "Perjanjian_Kerja_v{$contract->version_number}_{$cleanNik}.pdf");
         }
@@ -706,7 +718,7 @@ class KaryawanController extends Controller
         $folder = "karyawan_dokumen/{$karyawan->id}";
         $fullPath = "{$folder}/{$filename}";
 
-        Storage::disk('public')->put($fullPath, $pdfContent);
+        Storage::disk('local')->put($fullPath, $pdfContent);
 
         $contractType = $karyawan->contract_type ?? 'PKWT';
         $nomorKontrak = $karyawan->nomor_kontrak ?? ('PKWT/HRD/' . date('Y') . '/' . $karyawan->nomor_induk_karyawan);

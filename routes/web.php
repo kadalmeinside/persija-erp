@@ -65,12 +65,14 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::middleware(['auth', 'verified'])->group(function () {
 
         // PIN Management
-        Route::post('auth/verify-pin', [PinVerificationController::class, 'verify'])->name('auth.verify-pin');
+        Route::post('auth/verify-pin', [PinVerificationController::class, 'verify'])
+            ->middleware('throttle:5,1')
+            ->name('auth.verify-pin');
         Route::prefix('pin')->name('pin.')->controller(PinController::class)->group(function () {
             Route::get('status', 'checkStatus')->name('status');
             Route::post('set', 'setPin')->name('set');
-            Route::post('change', 'changePin')->name('change');
-            Route::post('verify', 'verifyPin')->name('verify');
+            Route::post('change', 'changePin')->middleware('throttle:5,1')->name('change');
+            Route::post('verify', 'verifyPin')->middleware('throttle:5,1')->name('verify');
         });
 
         // Dashboard (semua authenticated user)
@@ -80,22 +82,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::prefix('notifications')->name('notifications.')->controller(\App\Http\Controllers\Admin\NotificationController::class)->group(function () {
             Route::post('mark-all-read', 'markAllAsRead')->name('mark-all-read');
             Route::get('{id}/read', 'markAsRead')->name('read');
-        });
-
-        // PDF Tools
-        Route::prefix('pdf-tools')->name('pdf-tools.')->controller(\App\Http\Controllers\Admin\PdfToolController::class)->group(function () {
-            Route::get('/', 'index')->name('index');
-            Route::post('merge', 'merge')->name('merge');
-            Route::post('split', 'split')->name('split');
-            Route::post('convert-image', 'convertImageToPdf')->name('convert-image');
-            Route::post('convert-word', 'convertWordToPdf')->name('convert-word');
-        });
-
-        // Image Tools
-        Route::prefix('image-tools')->name('image-tools.')->controller(\App\Http\Controllers\Admin\ImageToolController::class)->group(function () {
-            Route::get('/', 'index')->name('index');
-            Route::post('compress', 'compress')->name('compress');
-            Route::post('upscale', 'upscale')->name('upscale');
         });
 
         // Modul Routes — dipisah per domain
@@ -110,9 +96,19 @@ Route::prefix('admin')->name('admin.')->group(function () {
             })->name('api-docs');
         });
 
-        require __DIR__ . '/admin/system.php';
-        require __DIR__ . '/admin/hr.php';
-        require __DIR__ . '/admin/finance.php';
+        // Private File Downloads (Authenticated + Authorized via Policy)
+        Route::prefix('files')->name('files.')->controller(\App\Http\Controllers\PrivateFileController::class)->middleware('not_freelance')->group(function () {
+            Route::get('dokumen/{dokumen}', 'dokumen')->name('dokumen');
+            Route::get('cuti/{cuti}', 'cutiAttachment')->name('cuti');
+            Route::get('payment/{pembayaran}', 'paymentProof')->name('payment');
+            Route::get('settlement/{pengajuan}', 'settlementFile')->name('settlement');
+        });
+
+        Route::middleware('not_freelance')->group(function () {
+            require __DIR__ . '/admin/system.php';
+            require __DIR__ . '/admin/hr.php';
+            require __DIR__ . '/admin/finance.php';
+        });
         require __DIR__ . '/admin/ess.php';
     });
 });
@@ -120,9 +116,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
 require __DIR__ . '/auth.php';
 
 // -----------------------------------------------------------------------
-// ADMS / iClock Routes (Fingerspot/ZKTeco)
+// ADMS / iClock Routes (Fingerspot/ZKTeco) — gated by ICLOCK_ENABLED
 // -----------------------------------------------------------------------
-Route::any('iclock/cdata', [\App\Http\Controllers\Api\IClockController::class, 'cdata']);
-Route::any('iclock/getrequest', [\App\Http\Controllers\Api\IClockController::class, 'getrequest']);
+if (env('ICLOCK_ENABLED', false)) {
+    Route::any('iclock/cdata', [\App\Http\Controllers\Api\IClockController::class, 'cdata']);
+    Route::any('iclock/getrequest', [\App\Http\Controllers\Api\IClockController::class, 'getrequest']);
+}
 Route::any('iclock/devicecmd', [\App\Http\Controllers\Api\IClockController::class, 'devicecmd']);
 Route::any('iclock/ping', [\App\Http\Controllers\Api\IClockController::class, 'ping']);

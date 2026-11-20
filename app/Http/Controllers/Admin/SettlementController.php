@@ -150,7 +150,7 @@ class SettlementController extends Controller
 
                 $pathBuktiKembali = null;
                 if ($request->hasFile('bukti_pengembalian')) {
-                    $pathBuktiKembali = $request->file('bukti_pengembalian')->store('settlements/refund', 'public');
+                    $pathBuktiKembali = $request->file('bukti_pengembalian')->store('settlements/refund', 'local');
                 }
 
                 // 3. Simpan Header Laporan
@@ -187,7 +187,7 @@ class SettlementController extends Controller
                     // B. Upload Bukti Item
                     $pathBuktiItem = null;
                     if (isset($item['file_bukti']) && $item['file_bukti'] instanceof \Illuminate\Http\UploadedFile) {
-                        $pathBuktiItem = $item['file_bukti']->store('settlements/receipts', 'public');
+                        $pathBuktiItem = $item['file_bukti']->store('settlements/receipts', 'local');
                     }
 
                     // C. Simpan DB
@@ -499,8 +499,11 @@ class SettlementController extends Controller
 
                 $pathBuktiKembali = $laporan->bukti_pengembalian_path;
                 if ($request->hasFile('bukti_pengembalian')) {
-                    if ($pathBuktiKembali) Storage::disk('public')->delete($pathBuktiKembali);
-                    $pathBuktiKembali = $request->file('bukti_pengembalian')->store('settlements/refund', 'public');
+                    if ($pathBuktiKembali) {
+                        Storage::disk('local')->delete($pathBuktiKembali);
+                        Storage::disk('public')->delete($pathBuktiKembali);
+                    }
+                    $pathBuktiKembali = $request->file('bukti_pengembalian')->store('settlements/refund', 'local');
                 }
 
                 // 3. Update Header Laporan
@@ -531,7 +534,7 @@ class SettlementController extends Controller
                     // B. File Bukti Item
                     $pathBuktiItem = $item['existing_path'] ?? null; // Handle existing path from frontend
                     if (isset($item['file_bukti']) && $item['file_bukti'] instanceof \Illuminate\Http\UploadedFile) {
-                        $pathBuktiItem = $item['file_bukti']->store('settlements/receipts', 'public');
+                        $pathBuktiItem = $item['file_bukti']->store('settlements/receipts', 'local');
                     }
 
                     // C. Create Detail

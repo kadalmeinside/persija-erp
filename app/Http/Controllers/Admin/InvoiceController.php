@@ -224,6 +224,9 @@ class InvoiceController extends Controller
 
     public function approve(Request $request, InvoiceHeader $invoice)
     {
+        $user = Auth::user();
+        app(\App\Services\PinVerificationService::class)->assertVerified($request, $user);
+
         try {
             $karyawan = Auth::user()->karyawan;
             if (!$karyawan) {

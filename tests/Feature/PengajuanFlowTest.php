@@ -225,10 +225,11 @@ class PengajuanFlowTest extends TestCase
 
         // Approve
         $this->actingAs($this->approver);
-        $response = $this->post(route('admin.pengajuan.action', $pengajuan), [
-            'status'  => 'Approved',
-            'catatan' => 'Disetujui',
-        ]);
+        $response = $this->withSession(['approval_pin_verified_at' => now()->toIso8601String()])
+            ->post(route('admin.pengajuan.action', $pengajuan), [
+                'status'  => 'Approved',
+                'catatan' => 'Disetujui',
+            ]);
 
         $response->assertRedirect();
 
@@ -244,10 +245,11 @@ class PengajuanFlowTest extends TestCase
         $pengajuan = \App\Models\PengajuanHeader::latest()->first();
 
         $this->actingAs($this->approver);
-        $this->post(route('admin.pengajuan.action', $pengajuan), [
-            'status'  => 'Rejected',
-            'catatan' => 'Tidak sesuai budget',
-        ]);
+        $this->withSession(['approval_pin_verified_at' => now()->toIso8601String()])
+            ->post(route('admin.pengajuan.action', $pengajuan), [
+                'status'  => 'Rejected',
+                'catatan' => 'Tidak sesuai budget',
+            ]);
 
         $pengajuan->refresh();
         $this->assertEquals(PengajuanStatus::REJECTED, $pengajuan->status_global);
@@ -303,9 +305,10 @@ class PengajuanFlowTest extends TestCase
         $pengajuan = \App\Models\PengajuanHeader::latest()->first();
 
         $this->actingAs($this->approver);
-        $this->post(route('admin.pengajuan.action', $pengajuan), [
-            'status' => 'Approved', 'catatan' => 'OK',
-        ]);
+        $this->withSession(['approval_pin_verified_at' => now()->toIso8601String()])
+            ->post(route('admin.pengajuan.action', $pengajuan), [
+                'status' => 'Approved', 'catatan' => 'OK',
+            ]);
 
         // Buat kas/bank untuk pembayaran
         $kasBank = \App\Models\KasBank::create([

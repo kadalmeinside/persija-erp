@@ -46,17 +46,14 @@ class CheckPeriodLock
             return $next($request);
         }
 
-        // 4. Cek apakah tanggal jatuh dalam periode yang sudah ditutup
-        $isClosed = \App\Models\AccountingPeriod::where('is_closed', true)
-            ->whereDate('tanggal_mulai', '<=', $date)
-            ->whereDate('tanggal_selesai', '>=', $date)
-            ->exists();
-
-        if ($isClosed) {
+        // 4. Cek apakah tanggal jatuh dalam periode yang sudah ditutup (single source: PeriodeClosing)
+        try {
+            \App\Services\PeriodClosingService::checkClosed($date, 'Transaksi');
+        } catch (\Exception $e) {
             if ($request->wantsJson()) {
-                return response()->json(['message' => 'Periode akuntansi untuk tanggal ini sudah ditutup.'], 403);
+                return response()->json(['message' => $e->getMessage()], 403);
             }
-            return redirect()->back()->with('error', 'Transaksi ditolak: Periode akuntansi untuk tanggal ' . $date . ' sudah ditutup (Closed).');
+            return redirect()->back()->with('error', $e->getMessage());
         }
 
         return $next($request);

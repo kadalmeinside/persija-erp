@@ -285,7 +285,7 @@ class InvoiceService
 
     /**
      * Hitung PPN dan PPh. Return [ppnRate, ppnAmount, pphRate, pphAmount].
-     * ✅ Batch-load kedua tax type sekaligus — hanya 1 query jika keduanya ada.
+     * Batch-load kedua tax type sekaligus — hanya 1 query jika keduanya ada.
      */
     private function calculateTaxes(float $subtotal, ?int $ppnId, ?int $pphId): array
     {
@@ -338,7 +338,7 @@ class InvoiceService
 
     /**
      * Bangun GL entries untuk PPN & PPh.
-     * ✅ Memakai taxes yang sudah di-load via calculateTaxes jika dipanggil setelahnya.
+     * Memakai taxes yang sudah di-load via calculateTaxes jika dipanggil setelahnya.
      */
     private function buildTaxGLEntries(
         InvoiceHeader $invoice,
@@ -398,7 +398,7 @@ class InvoiceService
 
     /**
      * Reverse budget realisasi — dipakai saat update/cancel/delete.
-     * ✅ Batch-load PosAnggaran dan PeriodeAnggaran — tidak ada N+1.
+     * Batch-load PosAnggaran dan PeriodeAnggaran — tidak ada N+1.
      */
     public function reverseRevenueBudget(InvoiceHeader $invoice): void
     {

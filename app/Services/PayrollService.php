@@ -25,6 +25,10 @@ class PayrollService
      */
     public function generatePayroll($bulanPeriode, $tglPayroll)
     {
+        if (Payroll::where('bulan_periode', $bulanPeriode)->exists()) {
+            throw new \DomainException("Payroll untuk periode {$bulanPeriode} sudah pernah dibuat.");
+        }
+
         return DB::transaction(function () use ($bulanPeriode, $tglPayroll) {
             // 1. Create Header
             $payroll = Payroll::create([
@@ -50,6 +54,58 @@ class PayrollService
                 $rincian = [];
 
                 $rincian[] = ['nama' => 'Gaji Pokok', 'tipe' => 'pendapatan', 'nilai' => $gajiPokok];
+
+                // Load active routine salary components for this employee
+                $routineComponents = \App\Models\KaryawanKomponenGaji::with('komponenGaji')
+                    ->where('id_karyawan', $karyawan->id)
+                    ->where('is_active', true)
+                    ->get();
+
+                foreach ($routineComponents as $kComp) {
+                    $komponen = $kComp->komponenGaji;
+                    $nominal = (float) $kComp->nominal;
+                    if (!$komponen || $nominal <= 0) {
+                        continue;
+                    }
+
+                    if ($komponen->tipe === 'potongan') {
+                        $potongan += $nominal;
+                        $rincian[] = [
+                            'nama' => $komponen->nama_komponen,
+                            'tipe' => 'potongan',
+                            'nilai' => $nominal,
+                            'id_komponen_gaji' => $komponen->id,
+                        ];
+                    } else {
+                        $tunjangan += $nominal;
+                        $rincian[] = [
+                            'nama' => $komponen->nama_komponen,
+                            'tipe' => 'pendapatan',
+                            'nilai' => $nominal,
+                            'id_komponen_gaji' => $komponen->id,
+                        ];
+                    }
+                }
+
+                // Automated BPJS & PPh 21 TER Statutory Deductions
+                $grossIncome = $gajiPokok + $tunjangan + $honorarium + $lembur;
+                if ($grossIncome > 0) {
+                    $statutory = app(\App\Services\PayrollStatutoryCalculator::class)
+                        ->calculate($grossIncome, $karyawan->status_ptkp ?? 'TK/0');
+
+                    if ($statutory['bpjs_kesehatan'] > 0) {
+                        $potongan += $statutory['bpjs_kesehatan'];
+                        $rincian[] = ['nama' => 'BPJS Kesehatan (1%)', 'tipe' => 'potongan', 'nilai' => $statutory['bpjs_kesehatan']];
+                    }
+                    if ($statutory['bpjs_ketenagakerjaan'] > 0) {
+                        $potongan += $statutory['bpjs_ketenagakerjaan'];
+                        $rincian[] = ['nama' => 'BPJS Ketenagakerjaan (JHT+JP)', 'tipe' => 'potongan', 'nilai' => $statutory['bpjs_ketenagakerjaan']];
+                    }
+                    if ($statutory['pph21'] > 0) {
+                        $potongan += $statutory['pph21'];
+                        $rincian[] = ['nama' => 'PPh 21 (TER)', 'tipe' => 'potongan', 'nilai' => $statutory['pph21']];
+                    }
+                }
                 
                 // Check for Loan Installments (Pinjaman)
                 $loanInstallment = \App\Models\AngsuranPinjaman::where('bulan_periode', $bulanPeriode)
@@ -107,9 +163,14 @@ class PayrollService
      */
     public function approvePayroll(Payroll $payroll, array $allocations = [])
     {
-        // 1. Validasi Status
-        if ($payroll->status !== PayrollStatus::DRAFT->value) {
+        // 1. Validasi Status & SoD
+        $currentStatus = $payroll->status instanceof PayrollStatus ? $payroll->status->value : $payroll->status;
+        if ($currentStatus !== PayrollStatus::DRAFT->value) {
             throw new \Exception("Status Payroll harus Draft untuk bisa disetujui.");
+        }
+
+        if ($payroll->id_user_pembuat && Auth::id() && (int) $payroll->id_user_pembuat === (int) Auth::id()) {
+            throw new \DomainException('Pembuat payroll tidak dapat menyetujui payroll yang sama (Segregation of Duties).');
         }
 
         // 2. Load Relations
@@ -171,7 +232,10 @@ class PayrollService
                 }
 
                 foreach ($components as $comp) {
-                    $amount = $comp['nilai'] ?? $comp['amount'];
+                    if (($comp['tipe'] ?? 'pendapatan') === 'potongan') {
+                        continue;
+                    }
+                    $amount = $comp['nilai'] ?? $comp['amount'] ?? 0;
                     if ($amount <= 0) continue;
 
                     $idProgram = $comp['id_program'] ?? null;
@@ -234,12 +298,15 @@ class PayrollService
             }
 
             // Credit Tax/Potongan
-            if ($payroll->total_potongan > 0 && $taxAccount) {
-                 $glLines[] = [
+            if ($payroll->total_potongan > 0) {
+                if (!$taxAccount) {
+                    throw new \Exception('Konfigurasi akun GL Tax/Deduction Payable belum lengkap untuk menyeimbangkan potongan payroll.');
+                }
+                $glLines[] = [
                     'id_akun'    => $taxAccount,
                     'debit'      => 0,
                     'kredit'     => $payroll->total_potongan,
-                    'keterangan' => 'Payroll Deductions (Tax/BPJS)',
+                    'keterangan' => 'Payroll Deductions (Tax/BPJS/Pinjaman)',
                 ];
             }
 

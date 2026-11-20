@@ -40,6 +40,7 @@ class ApprovalService
                 'isCuti'     => false,
                 'isPinjaman' => false,
                 'isInvoice'  => false,
+                'isDinasLuar' => false,
             ];
         }
 
@@ -51,6 +52,7 @@ class ApprovalService
                 'isCuti'     => true,
                 'isPinjaman' => false,
                 'isInvoice'  => false,
+                'isDinasLuar' => false,
             ];
         }
 
@@ -62,6 +64,7 @@ class ApprovalService
                 'isCuti'     => false,
                 'isPinjaman' => true,
                 'isInvoice'  => false,
+                'isDinasLuar' => false,
             ];
         }
 
@@ -73,6 +76,19 @@ class ApprovalService
                 'isCuti'     => false,
                 'isPinjaman' => false,
                 'isInvoice'  => true,
+                'isDinasLuar' => false,
+            ];
+        }
+
+        if ($model instanceof \App\Models\DinasLuar) {
+            return [
+                'tipe'       => 'DinasLuar',
+                'pengajuId'  => $model->id_karyawan,
+                'amount'     => 0,
+                'isCuti'     => false,
+                'isPinjaman' => false,
+                'isInvoice'  => false,
+                'isDinasLuar' => true,
             ];
         }
 
@@ -158,14 +174,15 @@ class ApprovalService
         Log::info("Jumlah Rule Ditemukan ({$meta['tipe']}): " . $rules->count());
 
         if ($rules->isEmpty()) {
-            Log::warning("⚠️ TIDAK ADA RULE untuk dept {$departemenId} tipe {$meta['tipe']}!");
+            Log::warning("TIDAK ADA RULE untuk dept {$departemenId} tipe {$meta['tipe']}!");
 
-            // Invoice tanpa rule → tetap Draft (tidak auto-approve)
+            // Invoice tanpa rule -> tetap Draft (tidak auto-approve)
             if ($meta['isInvoice']) {
                 Log::warning('Invoice tanpa ApprovalRule — tetap berstatus Draft. Konfigurasikan ApprovalRule tipe Invoice.');
                 return;
             }
-            return;
+
+            throw new \DomainException("Konfigurasi alur persetujuan (ApprovalRule) tidak ditemukan untuk departemen {$departemenId} tipe {$meta['tipe']}.");
         }
 
         $fkData         = $this->buildFkData($model, $meta);
@@ -173,8 +190,19 @@ class ApprovalService
         $allSkipped     = true;
         $documentAmount = $meta['amount'];
 
+        $governanceService = app(\App\Services\ApprovalGovernanceService::class);
+
         foreach ($rules as $rule) {
-            $isSelfApproval    = ($meta['pengajuId'] !== null && $rule->id_karyawan_approver == $meta['pengajuId']);
+            $targetKaryawanId = $rule->id_karyawan_approver;
+            $ruleApprover = \App\Models\Karyawan::find($targetKaryawanId);
+            if ($ruleApprover && $ruleApprover->user_id) {
+                $delegateUser = $governanceService->getActiveDelegate($ruleApprover->user_id);
+                if ($delegateUser && $delegateUser->karyawan) {
+                    $targetKaryawanId = $delegateUser->karyawan->id;
+                }
+            }
+
+            $isSelfApproval    = ($meta['pengajuId'] !== null && $targetKaryawanId == $meta['pengajuId']);
             $isBelowThreshold  = ($rule->min_amount !== null && $documentAmount < (float) $rule->min_amount);
 
             if ($isSelfApproval || $isBelowThreshold) {
@@ -182,11 +210,11 @@ class ApprovalService
                     ? "Auto-skipped: Nominal (Rp " . number_format($documentAmount, 0, ',', '.') . ") di bawah threshold (Rp " . number_format($rule->min_amount, 0, ',', '.') . ")"
                     : 'Auto-skipped: Approver adalah Pengaju (Segregation of Duties)';
 
-                Log::warning("⚠️ Auto-Skip Level {$rule->level_order}: {$reason}");
+                Log::warning("Auto-Skip Level {$rule->level_order}: {$reason}");
 
                 ApprovalProcess::create(array_merge($fkData, [
                     'level_order'        => $rule->level_order,
-                    'id_karyawan_target' => $rule->id_karyawan_approver,
+                    'id_karyawan_target' => $targetKaryawanId,
                     'label_aksi'         => $rule->label_aksi,
                     'status'             => 'Skipped',
                     'catatan'            => $reason,
@@ -196,13 +224,13 @@ class ApprovalService
 
                 ApprovalProcess::create(array_merge($fkData, [
                     'level_order'        => $rule->level_order,
-                    'id_karyawan_target' => $rule->id_karyawan_approver,
+                    'id_karyawan_target' => $targetKaryawanId,
                     'label_aksi'         => $rule->label_aksi,
                     'status'             => $status,
                 ]));
 
                 if (!$firstActivated) {
-                    $approverUser = $this->getUserNotifiable($rule->id_karyawan_approver);
+                    $approverUser = $this->getUserNotifiable($targetKaryawanId);
                     if ($approverUser) {
                         $approverUser->notify(new \App\Notifications\PengajuanPendingNotification($model));
                     }
@@ -213,9 +241,9 @@ class ApprovalService
             }
         }
 
-        // Semua step di-skip → auto-approve
+        // Semua step di-skip -> auto-approve
         if ($allSkipped) {
-            Log::warning('⚠️ SEMUA step di-skip. Auto-Approved.');
+            Log::warning('SEMUA step di-skip. Auto-Approved.');
             $this->finalizeApproval($model, $meta, null);
             Log::info('--- END INIT APPROVAL (AUTO-APPROVED) ---');
             return;
@@ -247,13 +275,13 @@ class ApprovalService
                 throw new \Exception('Tidak ada persetujuan yang pending untuk dokumen ini.');
             }
 
-            // IDENTITY GUARD
-            if ($currentStep->id_karyawan_target != $karyawanIdAction) {
+            // IDENTITY GUARD (Mendukung target langsung atau delegasi aktif)
+            if (!$this->isAuthorizedApproverStep($currentStep, (int) $karyawanIdAction)) {
                 Log::warning("Identity mismatch: target={$currentStep->id_karyawan_target}, actor={$karyawanIdAction}");
                 throw new \Exception('Anda tidak berwenang menyetujui langkah ini. Silakan hubungi approver yang ditunjuk.');
             }
 
-            if ($meta['pengajuId'] !== null && $currentStep->id_karyawan_target == $meta['pengajuId']) {
+            if ($meta['pengajuId'] !== null && ($currentStep->id_karyawan_target == $meta['pengajuId'] || (int) $karyawanIdAction == (int) $meta['pengajuId'])) {
                 throw new \Exception('Pengaju tidak dapat menyetujui dokumennya sendiri.');
             }
 
@@ -315,12 +343,12 @@ class ApprovalService
                 throw new \Exception('Tidak ada persetujuan yang pending untuk dokumen ini.');
             }
 
-            // IDENTITY GUARD
-            if ($currentStep->id_karyawan_target != $karyawanIdAction) {
+            // IDENTITY GUARD (Mendukung target langsung atau delegasi aktif)
+            if (!$this->isAuthorizedApproverStep($currentStep, (int) $karyawanIdAction)) {
                 throw new \Exception('Anda tidak berwenang menolak langkah ini.');
             }
 
-            if ($meta['pengajuId'] !== null && $currentStep->id_karyawan_target == $meta['pengajuId']) {
+            if ($meta['pengajuId'] !== null && ($currentStep->id_karyawan_target == $meta['pengajuId'] || (int) $karyawanIdAction == (int) $meta['pengajuId'])) {
                 throw new \Exception('Pengaju tidak dapat menolak dokumennya sendiri sebagai approver.');
             }
 
@@ -337,6 +365,28 @@ class ApprovalService
             }
 
             $this->setRejectedStatus($model, $meta);
+
+            if ($model instanceof \App\Models\PengajuanHeader) {
+                $model->loadMissing('detail');
+                $budgetService = app(\App\Services\BudgetCheckService::class);
+                $tgl = $model->tgl_pengajuan instanceof \Carbon\CarbonInterface
+                    ? $model->tgl_pengajuan->copy()
+                    : Carbon::parse($model->tgl_pengajuan);
+
+                foreach ($model->detail as $item) {
+                    if ($item->id_program && $item->id_akun) {
+                        $budgetId = $budgetService->getBudgetId(
+                            (int) $model->id_departemen,
+                            (int) $item->id_akun,
+                            (int) $item->id_program,
+                            $tgl
+                        );
+                        if ($budgetId) {
+                            $budgetService->unCommitBudget($budgetId, (float) $item->nominal_item);
+                        }
+                    }
+                }
+            }
         });
     }
 
@@ -405,7 +455,7 @@ class ApprovalService
      */
     private function finalizeApproval($model, array $meta, ?int $karyawanIdAction): void
     {
-        if ($meta['isCuti']) {
+        if ($meta['isCuti'] || ($meta['isDinasLuar'] ?? false)) {
             $model->update(['status' => 'Approved']);
             $this->notifyApplicant($model, $meta, 'approved');
             return;
@@ -477,7 +527,7 @@ class ApprovalService
 
     private function setPendingStatus($model, array $meta): void
     {
-        if ($meta['isCuti'])     { $model->update(['status' => 'Pending']); return; }
+        if ($meta['isCuti'] || ($meta['isDinasLuar'] ?? false)) { $model->update(['status' => 'Pending']); return; }
         if ($meta['isPinjaman']) { $model->update(['status' => PengajuanStatus::PENDING_APPROVAL->value]); return; }
         if ($meta['isInvoice'])  {
             // Invoice tetap 'Draft' selama pending approval — sudah jelas di UI
@@ -488,7 +538,7 @@ class ApprovalService
 
     private function setRejectedStatus($model, array $meta): void
     {
-        if ($meta['isCuti'])     { $model->update(['status' => 'Rejected']); return; }
+        if ($meta['isCuti'] || ($meta['isDinasLuar'] ?? false)) { $model->update(['status' => 'Rejected']); return; }
         if ($meta['isPinjaman']) { $model->update(['status' => PengajuanStatus::REJECTED->value]); return; }
         if ($meta['isInvoice'])  { $model->update(['status' => InvoiceStatus::Cancelled]); return; }
         $model->update(['status_global' => PengajuanStatus::REJECTED]);
@@ -496,7 +546,7 @@ class ApprovalService
 
     private function setRevisionStatus($model, array $meta): void
     {
-        if ($meta['isCuti'])     { $model->update(['status' => 'Pending']); return; } // Cuti tidak punya REVISION
+        if ($meta['isCuti'] || ($meta['isDinasLuar'] ?? false)) { $model->update(['status' => 'Pending']); return; } // Cuti/DinasLuar tidak punya REVISION
         if ($meta['isPinjaman']) { $model->update(['status' => PengajuanStatus::REVISION->value]); return; }
         if ($meta['isInvoice'])  {
             // Invoice: kembali ke Draft agar bisa diedit
@@ -513,7 +563,7 @@ class ApprovalService
     private function resolveDepartemenId($model, array $meta): ?int
     {
         if ($meta['isInvoice'])  return $model->id_departemen;
-        if (!$meta['isCuti'] && !$meta['isPinjaman']) return $model->id_departemen;
+        if (!$meta['isCuti'] && !$meta['isPinjaman'] && !($meta['isDinasLuar'] ?? false)) return $model->id_departemen;
         return $model->karyawan?->id_departemen;
     }
 
@@ -543,12 +593,35 @@ class ApprovalService
                     ->where('tahun_periode', $currentYear)
                     ->first();
 
-        if ($saldo) {
+            if ($saldo) {
             $saldo->update([
                 'saldo_terpakai' => $saldo->saldo_terpakai + $cuti->jumlah_hari,
                 'saldo_akhir'    => $saldo->saldo_awal - ($saldo->saldo_terpakai + $cuti->jumlah_hari),
             ]);
             Log::info('Saldo Cuti dikurangi. Sisa: ' . $saldo->saldo_akhir);
         }
+    }
+
+    private function isAuthorizedApproverStep(ApprovalProcess $step, int $karyawanIdAction): bool
+    {
+        if ((int) $step->id_karyawan_target === $karyawanIdAction) {
+            return true;
+        }
+
+        $targetKaryawan = \App\Models\Karyawan::select('id', 'user_id')->find($step->id_karyawan_target);
+        $actorKaryawan = \App\Models\Karyawan::select('id', 'user_id')->find($karyawanIdAction);
+
+        if (!$targetKaryawan?->user_id || !$actorKaryawan?->user_id) {
+            return false;
+        }
+
+        $today = Carbon::today()->toDateString();
+
+        return \App\Models\ApprovalDelegation::where('delegator_user_id', $targetKaryawan->user_id)
+            ->where('delegate_user_id', $actorKaryawan->user_id)
+            ->where('is_active', true)
+            ->whereDate('start_date', '<=', $today)
+            ->whereDate('end_date', '>=', $today)
+            ->exists();
     }
 }

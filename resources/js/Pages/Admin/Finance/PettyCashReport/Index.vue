@@ -142,8 +142,8 @@ const maxAkun = computed(() => Math.max(...(props.perAkun || []).map(a => a.tota
                         <div class="text-2xl font-bold" :class="saldoAkhir < 0 ? 'text-red-600' : 'text-green-600'">
                             {{ formatCurrency(saldoAkhir) }}
                         </div>
-                        <div class="text-xs mt-1" :class="saldoAkhir < 0 ? 'text-red-400' : 'text-gray-400'">
-                            {{ saldoAkhir < 0 ? '⚠ Saldo negatif – perlu pengisian ulang' : 'Per ' + formatDate(filters.end_date) }}
+                        <div class="text-xs mt-1 tabular-nums" :class="saldoAkhir < 0 ? 'text-red-600' : 'text-gray-500'">
+                            {{ saldoAkhir < 0 ? 'Saldo negatif, perlu pengisian ulang' : 'Per ' + formatDate(filters.end_date) }}
                         </div>
                     </div>
                 </div>
@@ -185,7 +185,7 @@ const maxAkun = computed(() => Math.max(...(props.perAkun || []).map(a => a.tota
                                     <DocumentTextIcon class="w-5 h-5 text-amber-500" />
                                     Buku Harian Kas Kecil
                                 </h3>
-                                <p class="text-xs text-gray-500 mt-0.5">{{ kasKecilTerpilih?.nama_bank }} — {{ formatDate(filters.start_date) }} s.d. {{ formatDate(filters.end_date) }}</p>
+                                <p class="text-xs text-gray-500 mt-0.5">{{ kasKecilTerpilih?.nama_bank }} ({{ formatDate(filters.start_date) }} s.d. {{ formatDate(filters.end_date) }})</p>
                             </div>
                         </div>
 

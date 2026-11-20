@@ -7,13 +7,22 @@ use App\Models\PengajuanHeader;
 use App\Models\PengajuanPembayaran;
 use App\Models\KasBank;
 use App\Enums\PengajuanStatus;
+use App\Enums\Role;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
-class PaymentController extends Controller
+class PaymentController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('role:' . implode('|', Role::financeRoles())),
+        ];
+    }
     /**
      * PAGE: Payment Schedule (Rencana Pembayaran).
      */
@@ -26,7 +35,7 @@ class PaymentController extends Controller
         }
 
         $query = PengajuanHeader::with(['pengaju:id,nama_lengkap', 'vendorPenerima:id,nama_vendor', 'karyawanPenerima:id,nama_lengkap'])
-                    ->withSum('pembayaran as total_dibayar', 'nominal_bayar') // ✅ Single JOIN — tidak ada N+1
+                    ->withSum('pembayaran as total_dibayar', 'nominal_bayar') // Single JOIN — tidak ada N+1
                     ->whereIn('status_global', $statuses)
                     ->whereRaw('(total_nominal_diajukan - COALESCE((SELECT SUM(nominal_bayar) FROM tbl_pengajuan_pembayaran WHERE id_pengajuan = tbl_pengajuan_header.id), 0)) > 0');
 
@@ -42,7 +51,7 @@ class PaymentController extends Controller
             });
         }
 
-        // ✅ Hitung sisa_tagihan dari data yang sudah di-aggregate (tidak ada query tambahan)
+        // Hitung sisa_tagihan dari data yang sudah di-aggregate (tidak ada query tambahan)
         $items = $query->orderBy('tgl_pengajuan', 'asc')
                        ->get()
                        ->each(function ($item) {
@@ -72,7 +81,7 @@ class PaymentController extends Controller
 
         $ids = collect($request->items)->pluck('id');
 
-        // ✅ Batch load semua pengajuan sekaligus — tidak ada N+1
+        // Batch load semua pengajuan sekaligus — tidak ada N+1
         $pengajuanMap = PengajuanHeader::with(['pengaju:id,nama_lengkap', 'vendorPenerima:id,nama_vendor', 'karyawanPenerima:id,nama_lengkap', 'detail.akunGl:id,kode_akun,nama_akun'])
             ->withSum('pembayaran as total_dibayar', 'nominal_bayar')
             ->whereIn('id', $ids)
@@ -158,7 +167,7 @@ class PaymentController extends Controller
 
         try {
             DB::transaction(function () use ($request, $pengajuan, $sisaTagihan) {
-                $path = $request->file('bukti_bayar')->store('payments', 'public');
+                $path = $request->file('bukti_bayar')->store('payments', 'local');
 
                 PengajuanPembayaran::create([
                     'id_pengajuan' => $pengajuan->id,
@@ -196,7 +205,7 @@ class PaymentController extends Controller
         $details    = [];
         $totalDebit = 0;
 
-        // ✅ Pastikan detail sudah ter-load (hindari lazy load dalam loop)
+        // Pastikan detail sudah ter-load (hindari lazy load dalam loop)
         if (!$pengajuan->relationLoaded('detail')) {
             $pengajuan->load('detail');
         }

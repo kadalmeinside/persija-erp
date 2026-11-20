@@ -16,19 +16,11 @@ class PinVerificationController extends Controller
             'pin' => 'required|string|size:6',
         ]);
 
-        $user = Auth::user();
-
-        if (!$user->pin) {
-            return response()->json(['message' => 'PIN belum diatur. Hubungi administrator.'], 400);
-        }
-
-        // Verify PIN using Hash
-        if (!Hash::check($request->pin, $user->pin)) {
-            return response()->json(['message' => 'PIN salah.'], 422);
-        }
-
-        // Set Session (5 minutes)
-        $request->session()->put('approval_pin_verified_at', now());
+        app(\App\Services\PinVerificationService::class)->verifyAndRecord(
+            $request,
+            Auth::user(),
+            (string) $request->input('pin')
+        );
 
         return response()->json(['message' => 'PIN terverifikasi.']);
     }

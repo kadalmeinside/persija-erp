@@ -3,7 +3,6 @@
 // routes/admin/finance.php
 // Modul: Finance & Accounting — Budget, GL, Vendors, Invoices, Assets
 
-use App\Http\Controllers\Admin\AccountingPeriodController;
 use App\Http\Controllers\Admin\AccountingReportController;
 use App\Http\Controllers\Admin\AkunGlController;
 use App\Http\Controllers\Admin\AssetController;
@@ -57,15 +56,10 @@ Route::middleware(['role:Super Admin|Finance|Staf Finance|Finance Manager|Financ
     // Jurnal & Periode Akuntansi
     Route::resource('journals', JournalController::class)->middleware('check.period:tgl_jurnal');
 
-    // New Period Closing Routes
+    // Period Closing Routes (Single Source of Truth)
     Route::get('period-closings', [\App\Http\Controllers\Admin\PeriodClosingController::class, 'index'])->name('period-closings.index');
     Route::post('period-closings/close', [\App\Http\Controllers\Admin\PeriodClosingController::class, 'close'])->name('period-closings.close');
     Route::post('period-closings/reopen', [\App\Http\Controllers\Admin\PeriodClosingController::class, 'reopen'])->name('period-closings.reopen');
-
-    // Old accounting periods (deprecated, will be removed later)
-    Route::resource('accounting-periods', AccountingPeriodController::class);
-    Route::post('accounting-periods/{period}/close', [AccountingPeriodController::class, 'close'])->name('accounting-periods.close');
-    Route::post('accounting-periods/{period}/reopen', [AccountingPeriodController::class, 'reopen'])->name('accounting-periods.reopen');
     Route::get('reports', [AccountingReportController::class, 'index'])->name('reports.index');
 
     // Revenue: Pelanggan & Invoice
@@ -84,7 +78,10 @@ Route::middleware(['role:Super Admin|Finance|Staf Finance|Finance Manager|Financ
 
     // Internal Transfer — nama otomatis mengikuti prefix group: admin.internal-transfers.*
     Route::resource('internal-transfers', InternalTransferController::class)
-         ->only(['index', 'create', 'store', 'show']);
+         ->only(['index', 'create', 'show']);
+    Route::post('internal-transfers', [InternalTransferController::class, 'store'])
+         ->name('internal-transfers.store')
+         ->middleware('check.period:tgl_transfer');
     Route::post('internal-transfers/{internalTransfer}/approve', [InternalTransferController::class, 'approve'])
          ->name('internal-transfers.approve');
     Route::post('internal-transfers/{internalTransfer}/cancel', [InternalTransferController::class, 'cancel'])

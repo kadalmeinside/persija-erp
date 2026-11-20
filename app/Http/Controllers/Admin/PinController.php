@@ -36,6 +36,7 @@ class PinController extends Controller
         }
 
         $user->pin = Hash::make($request->pin);
+        $user->must_change_pin = false;
         $user->save();
 
         activity()
@@ -64,6 +65,7 @@ class PinController extends Controller
         }
 
         $user->pin = Hash::make($request->pin);
+        $user->must_change_pin = false;
         $user->save();
 
         activity()
@@ -71,6 +73,37 @@ class PinController extends Controller
             ->log('PIN Keamanan telah diubah');
 
         return response()->json(['message' => 'PIN berhasil diubah.']);
+    }
+
+    /**
+     * Reset forgotten PIN using authenticated user's account password.
+     */
+    public function resetPin(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required|string',
+            'pin' => 'required|digits:6|confirmed',
+        ]);
+
+        $user = Auth::user();
+
+        if (!Hash::check($request->current_password, $user->password)) {
+            throw ValidationException::withMessages([
+                'current_password' => ['Password akun yang Anda masukkan salah.'],
+            ]);
+        }
+
+        $user->pin = Hash::make($request->pin);
+        $user->must_change_pin = false;
+        $user->save();
+
+        \Illuminate\Support\Facades\RateLimiter::clear('pin-verify:' . $user->id);
+
+        activity()
+            ->causedBy($user)
+            ->log('PIN Keamanan direset menggunakan verifikasi password akun');
+
+        return response()->json(['message' => 'PIN keamanan berhasil direset.']);
     }
 
     /**
@@ -82,22 +115,15 @@ class PinController extends Controller
             'pin' => 'required',
         ]);
 
-        $user = Auth::user();
+        app(\App\Services\PinVerificationService::class)->verifyAndRecord(
+            $request,
+            Auth::user(),
+            (string) $request->input('pin')
+        );
 
-        if (!$user->pin) {
-            return response()->json([
-                'message' => 'Anda belum memiliki PIN.',
-                'has_pin' => false,
-            ], 400);
-        }
-
-        if (!Hash::check($request->pin, $user->pin)) {
-            return response()->json([
-                'message' => 'PIN salah.',
-                'has_pin' => true,
-            ], 403);
-        }
-
-        return response()->json(['message' => 'PIN valid.']);
+        return response()->json([
+            'message' => 'PIN terverifikasi.',
+            'has_pin' => true,
+        ]);
     }
 }

@@ -43,7 +43,17 @@ class HandleInertiaRequests extends Middleware
                     'roles'       => $request->user()->getRoleNames(),
                     'permissions' => $request->user()->getAllPermissions()->pluck('name'),
                     'has_pin'     => !is_null($request->user()->pin),
-                    'karyawan'    => $request->user()->karyawan,
+                    'must_change_password' => (bool) $request->user()->must_change_password,
+                    'must_change_pin'      => (bool) $request->user()->must_change_pin,
+                    'karyawan'    => $request->user()->karyawan ? $request->user()->karyawan->only([
+                        'id',
+                        'nama_lengkap',
+                        'jabatan',
+                        'id_departemen',
+                        'foto',
+                        'status_karyawan',
+                        'nomor_induk_karyawan',
+                    ]) : null,
                 ] : null,
             ],
             'ziggy' => fn () => [
@@ -54,11 +64,11 @@ class HandleInertiaRequests extends Middleware
                 if (!$request->user()) {
                     return ['list' => [], 'count' => 0];
                 }
-                // Satu query saja — gunakan count() dari collection yang sudah di-fetch
-                $unread = $request->user()->unreadNotifications()->take(10)->get();
+                $unreadQuery = $request->user()->unreadNotifications();
+                $unread = (clone $unreadQuery)->take(10)->get();
                 return [
                     'list'  => $unread,
-                    'count' => $unread->count(), // ← gunakan collection, bukan query kedua
+                    'count' => $unreadQuery->count(),
                 ];
             },
             'flash' => [

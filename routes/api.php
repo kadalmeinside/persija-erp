@@ -21,6 +21,7 @@ Route::prefix('v1')->group(function () {
     
     // Public Routes (Rate limited: 5 requests per minute)
     Route::middleware('throttle:5,1')->post('/login', [AuthController::class, 'login']);
+    Route::middleware('throttle:5,1')->post('/forgot-password', [AuthController::class, 'forgotPassword']);
 
     // Protected Routes
     Route::middleware('auth:sanctum')->group(function () {
@@ -35,6 +36,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/status', [\App\Http\Controllers\Admin\PinController::class, 'checkStatus']);
             Route::post('/set', [\App\Http\Controllers\Admin\PinController::class, 'setPin']);
             Route::post('/change', [\App\Http\Controllers\Admin\PinController::class, 'changePin']);
+            Route::post('/reset', [\App\Http\Controllers\Admin\PinController::class, 'resetPin'])->middleware('throttle:5,1');
             Route::post('/verify', [\App\Http\Controllers\Admin\PinController::class, 'verifyPin']);
         });
 
@@ -63,12 +65,18 @@ Route::prefix('v1')->group(function () {
             Route::get('/preferences', [\App\Http\Controllers\Api\NotificationController::class, 'getPreferences']);
             Route::post('/preferences', [\App\Http\Controllers\Api\NotificationController::class, 'updatePreferences']);
             Route::post('/device-token', [\App\Http\Controllers\Api\NotificationController::class, 'registerDeviceToken']);
-            Route::post('/simulate', [\App\Http\Controllers\Api\NotificationController::class, 'simulate']);
+            if (!app()->isProduction()) {
+                Route::post('/simulate', [\App\Http\Controllers\Api\NotificationController::class, 'simulate'])
+                    ->middleware('role:Super Admin');
+            }
         });
 
         // ── Modules Blocked for Role Freelance ─────────────────────────────────
         Route::middleware('not_freelance')->group(function () {
-            // Approvals
+            // Approvals & Out-of-Office Delegations
+            Route::get('/approvals/delegations', [ApprovalCenterController::class, 'delegations']);
+            Route::post('/approvals/delegations', [ApprovalCenterController::class, 'storeDelegation']);
+            Route::delete('/approvals/delegations/{id}', [ApprovalCenterController::class, 'revokeDelegation']);
             Route::get('/approvals', [ApprovalCenterController::class, 'index']);
             Route::get('/approvals/{approval}', [ApprovalCenterController::class, 'show']);
             Route::post('/approvals/{approval}/action', [ApprovalCenterController::class, 'action']);
@@ -106,18 +114,27 @@ Route::prefix('v1')->group(function () {
                 // Koreksi Absensi
                 Route::get('/attendance-correction', [\App\Http\Controllers\Api\EssController::class, 'getAttendanceCorrections']);
                 Route::post('/attendance-correction', [\App\Http\Controllers\Api\EssController::class, 'submitAttendanceCorrection']);
+                Route::post('/attendance-correction/{id}/action', [\App\Http\Controllers\Api\EssController::class, 'actionAttendanceCorrection']);
 
                 // Dinas Luar
                 Route::get('/business-trip', [\App\Http\Controllers\Api\EssController::class, 'getBusinessTrips']);
                 Route::post('/business-trip', [\App\Http\Controllers\Api\EssController::class, 'submitBusinessTrip']);
+                Route::post('/business-trip/{id}/action', [\App\Http\Controllers\Api\EssController::class, 'actionBusinessTrip']);
 
-                // Slip Gaji (Payslip Read-Only)
+                // Slip Gaji (Payslip Read-Only + Unduh PDF Resmi)
                 Route::get('/payslips', [\App\Http\Controllers\Api\EssController::class, 'getPayslips']);
                 Route::get('/payslips/{id}', [\App\Http\Controllers\Api\EssController::class, 'getPayslipDetail']);
+                Route::get('/payslips/{id}/pdf', [\App\Http\Controllers\Api\EssController::class, 'downloadPayslipPdf']);
 
                 // Reimbursement
                 Route::get('/reimbursements', [\App\Http\Controllers\Api\EssController::class, 'getReimbursements']);
                 Route::post('/reimbursements', [\App\Http\Controllers\Api\EssController::class, 'submitReimbursement']);
+
+                // Karyawan self-service info
+                Route::get('/kontrak-info', [\App\Http\Controllers\Api\EssController::class, 'getKontrakInfo']);
+                Route::get('/riwayat-karir', [\App\Http\Controllers\Api\EssController::class, 'getRiwayatKarir']);
+                Route::get('/dokumen', [\App\Http\Controllers\Api\EssController::class, 'getDokumen']);
+                Route::get('/dokumen/{id}/download', [\App\Http\Controllers\Api\EssController::class, 'downloadDokumen']);
             });
 
             // Karyawan Module

@@ -21,12 +21,12 @@ class FinancialReconciliationService
             $totalApproved = (float) DB::table('tbl_pengajuan_header')
                 ->where('status_global', 'Approved')
                 ->where('tgl_pengajuan', 'like', "{$period}%")
-                ->sum('total_nominal');
+                ->sum('total_nominal_diajukan');
 
             $totalPaid = (float) DB::table('tbl_pengajuan_header')
                 ->where('status_global', 'Paid')
                 ->where('tgl_pengajuan', 'like', "{$period}%")
-                ->sum('total_nominal');
+                ->sum('total_nominal_diajukan');
         }
 
         $discrepancy = round($totalApproved - $totalPaid, 2);
@@ -65,9 +65,13 @@ class FinancialReconciliationService
 
         if (\Illuminate\Support\Facades\Schema::hasTable('tbl_jurnal_detail')) {
             $ledgerTotal = (float) DB::table('tbl_jurnal_detail')
-                ->join('tbl_jurnal_header', 'tbl_jurnal_detail.id_jurnal_header', '=', 'tbl_jurnal_header.id')
+                ->join('tbl_jurnal_header', 'tbl_jurnal_detail.id_jurnal', '=', 'tbl_jurnal_header.id')
                 ->where('tbl_jurnal_header.tgl_jurnal', 'like', "{$period}%")
-                ->where('tbl_jurnal_header.deskripsi', 'like', '%Gaji%')
+                ->where(function ($q) {
+                    $q->where('tbl_jurnal_header.sumber_modul', 'PAYROLL')
+                        ->orWhere('tbl_jurnal_header.deskripsi_jurnal', 'like', '%Payroll%')
+                        ->orWhere('tbl_jurnal_header.deskripsi_jurnal', 'like', '%Gaji%');
+                })
                 ->sum('tbl_jurnal_detail.debit');
         }
 

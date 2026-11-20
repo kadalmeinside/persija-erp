@@ -8,8 +8,17 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Http;
 
-class HariLiburController extends Controller
+class HariLiburController extends Controller implements \Illuminate\Routing\Controllers\HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new \Illuminate\Routing\Controllers\Middleware(
+                'role:' . implode('|', \App\Enums\Role::hrRoles()),
+                only: ['store', 'update', 'destroy', 'fetch']
+            ),
+        ];
+    }
     public function index(Request $request)
     {
         $query = HariLibur::query();

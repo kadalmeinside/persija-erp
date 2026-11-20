@@ -1,19 +1,28 @@
 <script setup>
-import { ref } from 'vue'; // Ditambahkan untuk reaktivitas showPassword
+import { ref } from 'vue';
 import Checkbox from '@/Components/Checkbox.vue';
-import GuestLayout from '@/Layouts/GuestLayout.vue'; // Pastikan path ini benar
+import GuestLayout from '@/Layouts/GuestLayout.vue';
 import InputError from '@/Components/InputError.vue';
-import InputLabel from '@/Components/InputLabel.vue';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextInput from '@/Components/TextInput.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import {
+    EnvelopeIcon,
+    LockClosedIcon,
+    EyeIcon,
+    EyeSlashIcon,
+    ArrowRightEndOnRectangleIcon,
+    ShieldCheckIcon,
+    CheckCircleIcon
+} from '@heroicons/vue/24/outline';
+import persijaLogo from '@/Assets/img/persija-logo.png';
 
 defineProps({
     canResetPassword: {
         type: Boolean,
+        default: false,
     },
     status: {
         type: String,
+        default: null,
     },
 });
 
@@ -34,7 +43,7 @@ const submit = () => {
     form.post(route('admin.login'), {
         onFinish: () => {
             form.reset('password');
-            showPassword.value = false; // Reset showPassword ke false setelah submit
+            showPassword.value = false;
         }
     });
 };
@@ -42,113 +51,173 @@ const submit = () => {
 
 <template>
     <GuestLayout>
-        <Head title="Masuk Akun" />
+        <Head title="Masuk Akun - Persija ERP" />
 
-        <!-- Glass Form Teks -->
-        <div class="w-full max-w-md p-0 sm:p-2">
+        <div class="w-full">
+            <!-- Header Brand & Title -->
             <div class="mb-6 sm:mb-8 text-center">
-                <h2 class="mt-2 sm:mt-4 text-2xl sm:text-3xl font-extrabold tracking-tight text-white drop-shadow-md">
-                    Admin & Staff Login
-                </h2>
-                <p class="mt-2 text-sm text-slate-300 drop-shadow-sm font-medium">
-                    Selamat datang kembali! Silakan masuk ke akun Anda.
+                <!-- Logo Badge -->
+                <div class="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200/90 dark:border-slate-700/80 shadow-md shadow-red-600/10 ring-4 ring-red-500/10 dark:ring-red-500/20 p-3 mb-4 transition-transform duration-300 hover:scale-105">
+                    <img
+                        v-if="$page.props.app_settings?.app_logo"
+                        :src="`/storage/${$page.props.app_settings.app_logo}`"
+                        alt="App Logo"
+                        class="w-full h-full object-contain filter drop-shadow-sm"
+                    />
+                    <img
+                        v-else
+                        :src="persijaLogo"
+                        alt="Persija Logo"
+                        class="w-full h-full object-contain filter drop-shadow-sm"
+                    />
+                </div>
+
+                <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+                    Masuk ke Sistem
+                </h1>
+                <p class="mt-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-medium max-w-sm mx-auto leading-relaxed">
+                    Selamat datang! Masukkan email dan kata sandi Anda untuk mengakses dashboard operasional.
                 </p>
-                <p v-if="status" class="mt-3 rounded-xl bg-green-500/20 p-3 text-sm text-green-100 border border-green-500/30 backdrop-blur-sm">
-                    {{ status }}
-                </p>
+
+                <!-- Status Banner (e.g. Password Reset) -->
+                <div
+                    v-if="status"
+                    class="mt-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 p-3.5 text-xs sm:text-sm text-emerald-800 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/60 flex items-center gap-2.5 text-left"
+                >
+                    <CheckCircleIcon class="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                    <span>{{ status }}</span>
+                </div>
             </div>
 
             <!-- Form Login -->
-            <form @submit.prevent="submit" class="space-y-4 sm:space-y-6">
+            <form @submit.prevent="submit" class="space-y-4 sm:space-y-5">
                 <!-- Input Email -->
                 <div>
-                    <InputLabel for="email" value="Alamat Email" class="block text-sm font-semibold text-slate-300 drop-shadow-sm ml-1" />
-                    <input
-                        id="email"
-                        type="email"
-                        class="mt-2 block w-full appearance-none rounded-xl border border-white/20 bg-black/30 px-4 py-2.5 sm:py-3 placeholder-slate-500 text-white shadow-inner backdrop-blur-md focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/50 sm:text-sm transition-all"
-                        v-model="form.email"
-                        required
-                        autofocus
-                        autocomplete="username"
-                        placeholder="nama@contoh.com"
-                    />
-                    <InputError class="mt-2 text-xs text-red-400 font-medium" :message="form.errors.email" />
+                    <label
+                        for="email"
+                        class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2 ml-0.5"
+                    >
+                        Alamat Email <span class="text-red-500">*</span>
+                    </label>
+
+                    <div class="relative group">
+                        <!-- Icon Left -->
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500 group-focus-within:text-red-600 dark:group-focus-within:text-red-400 transition-colors">
+                            <EnvelopeIcon class="w-5 h-5" />
+                        </div>
+
+                        <input
+                            id="email"
+                            type="email"
+                            class="block w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-950/70 pl-11 pr-4 py-3 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-sm transition-all duration-200 focus:bg-white dark:focus:bg-slate-950 focus:border-red-600 dark:focus:border-red-500 focus:ring-4 focus:ring-red-500/10 dark:focus:ring-red-500/20 focus:outline-none"
+                            v-model="form.email"
+                            required
+                            autofocus
+                            autocomplete="username"
+                            placeholder="nama@persija.id"
+                        />
+                    </div>
+                    <InputError class="mt-1.5 text-xs text-red-600 dark:text-red-400 font-medium" :message="form.errors.email" />
                 </div>
 
-                <!-- Input Password dengan Tombol Show/Hide -->
+                <!-- Input Password dengan Toggle Show/Hide -->
                 <div>
-                    <InputLabel for="password" value="Kata Sandi" class="block text-sm font-semibold text-slate-300 drop-shadow-sm ml-1" />
-                    <div class="relative mt-2">
+                    <label
+                        for="password"
+                        class="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2 ml-0.5"
+                    >
+                        Kata Sandi <span class="text-red-500">*</span>
+                    </label>
+
+                    <div class="relative group">
+                        <!-- Icon Left -->
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-slate-500 group-focus-within:text-red-600 dark:group-focus-within:text-red-400 transition-colors">
+                            <LockClosedIcon class="w-5 h-5" />
+                        </div>
+
                         <input
                             id="password"
                             :type="showPassword ? 'text' : 'password'"
-                            class="block w-full appearance-none rounded-xl border border-white/20 bg-black/30 px-4 py-2.5 sm:py-3 pr-10 placeholder-slate-500 text-white shadow-inner backdrop-blur-md focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/50 sm:text-sm transition-all"
+                            class="block w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-950/70 pl-11 pr-11 py-3 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-sm transition-all duration-200 focus:bg-white dark:focus:bg-slate-950 focus:border-red-600 dark:focus:border-red-500 focus:ring-4 focus:ring-red-500/10 dark:focus:ring-red-500/20 focus:outline-none"
                             v-model="form.password"
                             required
                             autocomplete="current-password"
                             placeholder="••••••••"
                         />
+
+                        <!-- Toggle Show/Hide Button -->
                         <button
                             type="button"
                             @click="togglePasswordVisibility"
-                            class="absolute inset-y-0 right-0 flex items-center rounded-r-xl px-3 text-slate-500 hover:text-white focus:outline-none transition-colors"
-                            aria-label="Toggle password visibility"
+                            class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-200 transition-colors focus:outline-none focus:text-red-600"
+                            :title="showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'"
+                            :aria-label="showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'"
                         >
-                            <svg v-if="showPassword" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
-                            </svg>
-                            <svg v-else xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
+                            <EyeSlashIcon v-if="showPassword" class="w-5 h-5" />
+                            <EyeIcon v-else class="w-5 h-5" />
                         </button>
                     </div>
-                    <InputError class="mt-2 text-xs text-red-400 font-medium" :message="form.errors.password" />
+                    <InputError class="mt-1.5 text-xs text-red-600 dark:text-red-400 font-medium" :message="form.errors.password" />
                 </div>
 
-                <!-- Opsi "Ingat Saya" dan "Lupa Kata Sandi" -->
-                <div class="flex items-center justify-between pt-2">
-                    <div class="flex items-center">
-                        <Checkbox id="remember" name="remember" v-model:checked="form.remember" class="h-4 w-4 rounded border-white/20 bg-black/30 text-slate-500 focus:ring-slate-400" />
-                        <label for="remember" class="ml-2 block text-sm text-slate-400 hover:text-slate-200 transition-colors cursor-pointer">Ingat saya</label>
-                    </div>
+                <!-- Remember Me & Forgot Password -->
+                <div class="flex items-center justify-between pt-1">
+                    <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+                        <Checkbox
+                            id="remember"
+                            name="remember"
+                            v-model:checked="form.remember"
+                            class="h-4 w-4 rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-red-600 focus:ring-red-500 focus:ring-offset-0"
+                        />
+                        <span class="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors">
+                            Ingat saya
+                        </span>
+                    </label>
 
-                    <div class="text-sm">
+                    <div v-if="canResetPassword" class="text-xs sm:text-sm">
                         <Link
-                            v-if="canResetPassword"
                             :href="route('password.request')"
-                            class="font-semibold text-slate-400 hover:text-white hover:underline transition-colors"
+                            class="font-semibold text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 hover:underline transition-colors"
                         >
                             Lupa kata sandi?
                         </Link>
                     </div>
                 </div>
 
-                <!-- Tombol Submit -->
+                <!-- Submit Button -->
                 <div class="pt-2">
                     <button
                         type="submit"
-                        class="group relative flex w-full justify-center items-center gap-2 rounded-xl border border-white/10 bg-gradient-to-br from-slate-700 to-slate-900 hover:from-slate-600 hover:to-slate-800 py-3.5 px-4 text-sm font-bold text-white shadow-[0_4px_16px_rgba(0,0,0,0.5)] backdrop-blur-sm transition-all duration-300 ease-out hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 focus:ring-offset-slate-900"
-                        :class="{ 'opacity-70 cursor-not-allowed scale-100': form.processing }"
+                        class="group relative flex w-full justify-center items-center gap-2.5 rounded-xl bg-gradient-to-r from-red-600 via-red-600 to-rose-700 hover:from-red-700 hover:via-red-600 hover:to-rose-800 text-white font-bold text-sm py-3.5 px-5 shadow-lg shadow-red-600/25 hover:shadow-xl hover:shadow-red-600/35 focus:outline-none focus:ring-4 focus:ring-red-500/30 active:scale-[0.99] transition-all duration-200"
+                        :class="{ 'opacity-70 cursor-not-allowed transform-none': form.processing }"
                         :disabled="form.processing"
                     >
-                        <svg v-if="form.processing" class="h-5 w-5 animate-spin text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <svg
+                            v-if="form.processing"
+                            class="h-5 w-5 animate-spin text-white"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                        >
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        <span v-else>
-                            <svg class="h-5 w-5 text-slate-400 group-hover:text-white mb-0.5 transition-colors" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                <path fill-rule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clip-rule="evenodd" />
-                            </svg>
-                        </span>
-                        {{ form.processing ? 'Memproses...' : 'Masuk ke Sistem' }}
+
+                        <ArrowRightEndOnRectangleIcon
+                            v-else
+                            class="w-5 h-5 text-white/90 group-hover:translate-x-0.5 transition-transform"
+                        />
+
+                        <span>{{ form.processing ? 'Memverifikasi Akun...' : 'Masuk ke Sistem' }}</span>
                     </button>
                 </div>
             </form>
 
-            <!-- Link ke Halaman Registrasi -->
-
+            <!-- Security Footnote Badge -->
+            <div class="mt-6 pt-5 border-t border-slate-200/80 dark:border-slate-800/80 flex items-center justify-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                <ShieldCheckIcon class="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                <span>Koneksi aman terenkripsi (TLS / SHA-256)</span>
+            </div>
         </div>
     </GuestLayout>
 </template>

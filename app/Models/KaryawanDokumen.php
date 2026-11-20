@@ -37,8 +37,8 @@ class KaryawanDokumen extends Model
 
     public function getFileUrlAttribute()
     {
-        if ($this->file_path && Storage::disk('public')->exists($this->file_path)) {
-            return asset('storage/' . $this->file_path);
+        if ($this->file_path && (Storage::disk('local')->exists($this->file_path) || Storage::disk('public')->exists($this->file_path))) {
+            return route('admin.files.dokumen', $this->id);
         }
         return null;
     }

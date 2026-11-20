@@ -180,7 +180,7 @@ const formatCurrency = (v) =>
                                     <InputLabel value="Approver (Karyawan)" />
                                     <select v-model="form.id_karyawan_approver" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm" required>
                                         <option value="" disabled>Pilih Karyawan</option>
-                                        <option v-for="k in karyawans" :key="k.id" :value="k.id">{{ k.nama_lengkap }} — {{ k.jabatan }}</option>
+                                        <option v-for="k in karyawans" :key="k.id" :value="k.id">{{ k.nama_lengkap }} ({{ k.jabatan }})</option>
                                     </select>
                                 </div>
 
@@ -193,7 +193,7 @@ const formatCurrency = (v) =>
                                 <!-- Min Amount (conditional) -->
                                 <div v-if="hasMinAmount">
                                     <InputLabel value="Min. Nominal (Threshold)" />
-                                    <TextInput v-model="form.min_amount" type="number" min="0" step="1000" class="mt-1 block w-full" placeholder="Opsional — kosongkan jika selalu berlaku" />
+                                    <TextInput v-model="form.min_amount" type="number" min="0" step="1000" class="mt-1 block w-full" placeholder="Opsional, kosongkan jika selalu berlaku" />
                                     <p class="text-xs text-gray-500 mt-1">
                                         Jika diisi, level ini hanya berlaku saat nominal dokumen ≥ nilai ini.
                                         Jika nominal di bawah threshold → level ini dilewati otomatis (Auto-skip).
@@ -217,7 +217,7 @@ const formatCurrency = (v) =>
                         <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-6">
                             <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6">
                                 Alur Persetujuan Saat Ini
-                                <span class="ml-2 text-sm font-normal text-gray-400">— {{ tipeLabels[selectedTipe] || selectedTipe }}</span>
+                                <span class="ml-2 text-sm font-normal text-gray-400">({{ tipeLabels[selectedTipe] || selectedTipe }})</span>
                             </h3>
 
                             <div v-if="rules.length > 0" class="relative border-l-2 border-indigo-200 dark:border-indigo-900 ml-4 space-y-6">

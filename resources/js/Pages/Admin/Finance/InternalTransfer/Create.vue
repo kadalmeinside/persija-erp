@@ -88,7 +88,7 @@ const submit = () => {
                             <div>
                                 <InputLabel value="Rekening Asal (Dari)" class="font-semibold" />
                                 <select v-model="form.from_kas_bank_id" class="mt-1 block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
-                                    <option value="" disabled>— Pilih Rekening Asal —</option>
+                                    <option value="" disabled>Pilih Rekening Asal</option>
                                     <option v-for="kb in fromBankOptions" :key="kb.id" :value="kb.id">
                                         {{ kb.nama_bank }} ({{ kb.nomor_rekening }})
                                     </option>
@@ -117,7 +117,7 @@ const submit = () => {
                             <div>
                                 <InputLabel value="Rekening Tujuan (Ke)" class="font-semibold" />
                                 <select v-model="form.to_kas_bank_id" class="mt-1 block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
-                                    <option value="" disabled>— Pilih Rekening Tujuan —</option>
+                                    <option value="" disabled>Pilih Rekening Tujuan</option>
                                     <option v-for="kb in toBankOptions" :key="kb.id" :value="kb.id">
                                         {{ kb.nama_bank }} ({{ kb.nomor_rekening }})
                                     </option>
@@ -182,8 +182,11 @@ const submit = () => {
                         </div>
 
                         <!-- Info Box -->
-                        <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
-                            <p class="font-semibold mb-1">ℹ️ Proses Approval:</p>
+                        <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-sm text-amber-800 dark:text-amber-300">
+                            <p class="font-semibold mb-1 inline-flex items-center gap-1.5">
+                                <InformationCircleIcon class="w-4 h-4 shrink-0" aria-hidden="true" />
+                                <span>Proses Approval:</span>
+                            </p>
                             <ul class="list-disc ml-4 space-y-0.5 text-xs text-amber-700">
                                 <li>Transfer akan dibuat dengan status <strong>Draft</strong></li>
                                 <li>Finance Manager perlu menyetujui di halaman Detail Transfer</li>

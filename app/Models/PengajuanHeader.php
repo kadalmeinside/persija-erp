@@ -111,9 +111,9 @@ class PengajuanHeader extends Model
     /**
      * Total yang sudah dibayarkan.
      *
-     * ✅ Jika relasi 'pembayaran' sudah di-eager load (via with/load), gunakan collection sum
+     * Jika relasi 'pembayaran' sudah di-eager load (via with/load), gunakan collection sum
      *    untuk menghindari query tambahan. Jika belum, fallback ke aggregation query.
-     * ✅ Jika menggunakan withSum('pembayaran as total_dibayar', ...), value tersebut
+     * Jika menggunakan withSum('pembayaran as total_dibayar', ...), value tersebut
      *    akan menimpa accessor ini karena diset sebagai attribute langsung.
      */
     public function getTotalDibayarAttribute(): float

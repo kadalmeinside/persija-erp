@@ -20,6 +20,7 @@ Route::middleware(['role:Super Admin'])->group(function () {
     // Settings
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::post('settings', [SettingsController::class, 'update'])->name('settings.update');
+    Route::post('settings/test-email', [SettingsController::class, 'sendTestEmail'])->name('settings.test-email');
     Route::post('settings/test-notification', [SettingsController::class, 'sendTestNotification'])->name('settings.test-notification');
 
     // Finance Settings
@@ -28,4 +29,11 @@ Route::middleware(['role:Super Admin'])->group(function () {
 
     // Activity Logs
     Route::get('activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
+
+    // Governance: Immutable Audit, Reconciliation, Delegations
+    Route::prefix('governance')->name('governance.')->controller(\App\Http\Controllers\Admin\GovernanceController::class)->group(function () {
+        Route::get('audit-logs', 'auditLogs')->name('audit-logs');
+        Route::post('reconcile', 'reconcile')->name('reconcile');
+        Route::post('delegations', 'storeDelegation')->name('delegations.store');
+    });
 });

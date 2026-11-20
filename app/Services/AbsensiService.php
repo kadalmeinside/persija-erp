@@ -80,6 +80,22 @@ class AbsensiService
         }
 
         $today = Carbon::today()->toDateString();
+
+        if ($isDinasLuar) {
+            $hasApprovedTrip = \App\Models\DinasLuar::where('id_karyawan', $karyawan->id)
+                ->where('status', 'Approved')
+                ->whereDate('tgl_mulai', '<=', $today)
+                ->whereDate('tgl_selesai', '>=', $today)
+                ->exists();
+
+            if (!$hasApprovedTrip) {
+                return [
+                    'success' => false,
+                    'message' => 'Clock In Dinas Luar ditolak: Anda tidak memiliki Surat Tugas Dinas Luar yang disetujui untuk hari ini.',
+                ];
+            }
+        }
+
         $absensi = Absensi::where('id_karyawan', $karyawan->id)->where('tanggal', $today)->first();
 
         if ($absensi && $absensi->waktu_masuk) {
@@ -115,6 +131,22 @@ class AbsensiService
     public function processClockOut($karyawan, $latitude, $longitude, $fotoFile)
     {
         $today = Carbon::today()->toDateString();
+
+        if ($isDinasLuar) {
+            $hasApprovedTrip = \App\Models\DinasLuar::where('id_karyawan', $karyawan->id)
+                ->where('status', 'Approved')
+                ->whereDate('tgl_mulai', '<=', $today)
+                ->whereDate('tgl_selesai', '>=', $today)
+                ->exists();
+
+            if (!$hasApprovedTrip) {
+                return [
+                    'success' => false,
+                    'message' => 'Clock In Dinas Luar ditolak: Anda tidak memiliki Surat Tugas Dinas Luar yang disetujui untuk hari ini.',
+                ];
+            }
+        }
+
         $absensi = Absensi::where('id_karyawan', $karyawan->id)->where('tanggal', $today)->first();
 
         if (!$absensi || !$absensi->waktu_masuk) {

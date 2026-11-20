@@ -109,7 +109,7 @@ class CalendarController extends Controller
             ->whereYear('due_date', $year)
             ->whereMonth('due_date', $month);
 
-        $isAdmin = $user->hasRole(['super-admin', 'admin', 'hr']);
+        $isAdmin = $user->hasAnyRole(array_merge(\App\Enums\Role::adminRoles(), \App\Enums\Role::hrRoles()));
         if (!$isAdmin && $karyawan) {
             $isHead = \App\Models\Departemen::where('id_karyawan_kepala', $karyawan->id)->exists();
             if ($isHead) {
@@ -163,8 +163,8 @@ class CalendarController extends Controller
 
         $shareEnabled = Setting::where('key', 'calendar_share_enabled')->value('value');
         if ($shareEnabled === null) {
-            $shareEnabled = '1';
-            Setting::updateOrCreate(['key' => 'calendar_share_enabled'], ['value' => '1']);
+            $shareEnabled = '0';
+            Setting::updateOrCreate(['key' => 'calendar_share_enabled'], ['value' => '0']);
         }
 
         $shareShowDetails = Setting::where('key', 'calendar_share_show_details')->value('value');
@@ -199,7 +199,7 @@ class CalendarController extends Controller
             'currentMonth' => (int)$month,
             'currentYear' => (int)$year,
             'canManageEvents' => $canManageEvents,
-            'shareSettings' => $shareSettings,
+            'shareSettings' => $canManageEvents ? $shareSettings : null,
         ]);
     }
 
@@ -208,6 +208,8 @@ class CalendarController extends Controller
      */
     public function updateShareSettings(Request $request)
     {
+        abort_unless(auth()->user()->hasAnyRole(\App\Enums\Role::hrRoles()), 403);
+
         $request->validate([
             'enabled' => 'required|boolean',
             'show_details' => 'required|boolean',
@@ -224,6 +226,8 @@ class CalendarController extends Controller
      */
     public function regenerateShareToken()
     {
+        abort_unless(auth()->user()->hasAnyRole(\App\Enums\Role::hrRoles()), 403);
+
         $newToken = \Illuminate\Support\Str::random(40);
         Setting::updateOrCreate(['key' => 'calendar_share_token'], ['value' => $newToken]);
 

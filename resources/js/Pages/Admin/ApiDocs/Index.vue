@@ -449,6 +449,15 @@ const apis = [
                 response: "{\n  \"status\": \"success\",\n  \"message\": \"Pengajuan koreksi absensi berhasil dikirim.\"\n}"
             },
             {
+                id: 'ess_correction_action',
+                method: 'POST',
+                url: '/api/v1/ess/attendance-correction/{id}/action',
+                desc: 'Approve or Reject attendance correction (Role: Manager/HR/Atasan). Otomatis update tbl_absensi jika Approved.',
+                headers: "Authorization: Bearer {token}\nContent-Type: application/json",
+                body: "{\n  \"status\": \"Approved\",\n  \"catatan\": \"Disetujui sesuai konfirmasi supervisor\"\n}\n\n// status: \"Approved\" atau \"Rejected\"",
+                response: "{\n  \"status\": \"success\",\n  \"message\": \"Pengajuan koreksi absensi berhasil disetujui.\"\n}"
+            },
+            {
                 id: 'ess_trip_get',
                 method: 'GET',
                 url: '/api/v1/ess/business-trip',
@@ -497,6 +506,30 @@ const apis = [
                 headers: "Authorization: Bearer {token}\nContent-Type: application/json",
                 body: "{\n  \"judul_klaim\": \"Bensin Liputan\",\n  \"kategori\": \"Transport\",\n  \"tgl_transaksi\": \"2026-10-20\",\n  \"total_biaya\": 150000,\n  \"keterangan\": \"Operasional liputan tim\"\n}",
                 response: "{\n  \"status\": \"success\",\n  \"message\": \"Pengajuan reimbursement berhasil didaftarkan.\"\n}"
+            },
+            {
+                id: 'ess_kontrak_info',
+                method: 'GET',
+                url: '/api/v1/ess/kontrak-info',
+                desc: 'Get current employee contract info, remaining days countdown, and version.',
+                headers: "Authorization: Bearer {token}",
+                response: "{\n  \"status\": \"success\",\n  \"data\": {\n    \"nip\": \"EMP-2024-001\",\n    \"nama_lengkap\": \"Andritany Ardhiyasa\",\n    \"jabatan\": \"Goalkeeper / Captain\",\n    \"departemen\": \"Sports Division\",\n    \"status_karyawan\": \"Aktif\",\n    \"contract_type\": \"PKWT\",\n    \"nomor_kontrak\": \"CTR-2024-001\",\n    \"versi_kontrak\": \"v2\",\n    \"tanggal_mulai\": \"2024-01-01\",\n    \"tanggal_berakhir\": \"2026-12-31\",\n    \"sisa_hari\": 71,\n    \"is_expiring_soon\": false,\n    \"tgl_bergabung\": \"2020-01-01\",\n    \"no_rekening\": \"1234567890\",\n    \"nama_bank\": \"BCA\"\n  }\n}"
+            },
+            {
+                id: 'ess_riwayat_karir',
+                method: 'GET',
+                url: '/api/v1/ess/riwayat-karir',
+                desc: 'Get employee career timeline & contract history (promotions, transfers, extensions).',
+                headers: "Authorization: Bearer {token}",
+                response: "{\n  \"status\": \"success\",\n  \"data\": [\n    {\n      \"id\": 10,\n      \"jabatan\": \"Senior Manager\",\n      \"departemen\": \"Operasional\",\n      \"jenis_perubahan\": \"Perpanjangan Kontrak\",\n      \"catatan\": \"Perpanjangan kontrak periode 2026-2027\",\n      \"tanggal_mulai_kontrak\": \"2026-01-01\",\n      \"tanggal_berakhir_kontrak\": \"2026-12-31\",\n      \"created_at\": \"2025-12-20\"\n    }\n  ]\n}"
+            },
+            {
+                id: 'ess_dokumen',
+                method: 'GET',
+                url: '/api/v1/ess/dokumen',
+                desc: 'Get list of official employee uploaded documents (contracts, SK, certificates).',
+                headers: "Authorization: Bearer {token}",
+                response: "{\n  \"status\": \"success\",\n  \"data\": [\n    {\n      \"id\": 1,\n      \"nama_dokumen\": \"Surat Perjanjian Kerja Waktu Tertentu v2\",\n      \"kategori\": \"Kontrak Kerja\",\n      \"file_path\": \"https://erp.persija.id/storage/dokumen_karyawan/kontrak_v2.pdf\",\n      \"uploaded_at\": \"2026-01-01\",\n      \"keterangan\": \"Addendum perpanjangan\"\n    }\n  ]\n}"
             }
         ]
     }

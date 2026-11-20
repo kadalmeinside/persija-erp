@@ -214,7 +214,7 @@ class CutiController extends Controller
         $end   = Carbon::parse($request->tgl_selesai);
         $days  = 0;
 
-        // ✅ Pre-load semua hari libur dalam rentang tanggal sekaligus — tidak ada N+1
+        // Pre-load semua hari libur dalam rentang tanggal sekaligus — tidak ada N+1
         $holidays = \App\Models\HariLibur::whereBetween('tanggal', [$start->toDateString(), $end->toDateString()])
             ->pluck('tanggal')
             ->map(fn($d) => Carbon::parse($d)->toDateString())
@@ -258,7 +258,7 @@ class CutiController extends Controller
             // Upload attachment if any
             $lampiranPath = null;
             if ($request->hasFile('lampiran')) {
-                $lampiranPath = $request->file('lampiran')->store('cuti_lampiran', 'public');
+                $lampiranPath = $request->file('lampiran')->store('cuti_lampiran', 'local');
             }
 
             // Create Request
@@ -304,27 +304,30 @@ class CutiController extends Controller
 
         if (!$karyawan) return back()->with('error', 'Akses ditolak.');
 
+        app(\App\Services\PinVerificationService::class)->assertVerified($request, $user);
+
         try {
             if ($request->status === 'Approved') {
                 $this->approvalService->approve($cuti, $karyawan->id, $request->catatan);
                 $message = 'Pengajuan cuti berhasil disetujui.';
             } else {
-                // REFUND BALANCE IF REJECTED
-                // Since we reserved (deducted/incremented) it at Store, we must give it back now.
-                $currentYear = date('Y', strtotime($cuti->tgl_mulai)); // Use leave year
-                $saldo = SaldoCuti::where('id_karyawan', $cuti->id_karyawan)
-                    ->where('id_jenis_cuti', $cuti->id_jenis_cuti)
-                    ->where('tahun_periode', $currentYear)
-                    ->first();
+                \Illuminate\Support\Facades\DB::transaction(function () use ($cuti, $karyawan, $request) {
+                    $this->approvalService->reject($cuti, $karyawan->id, $request->catatan);
 
-                if ($saldo) {
-                    if (!$cuti->jenisCuti->is_unlimited) {
+                    // REFUND BALANCE IF REJECTED
+                    // Since we reserved (deducted/incremented) it at Store, we must give it back now.
+                    $currentYear = date('Y', strtotime($cuti->tgl_mulai));
+                    $saldo = SaldoCuti::where('id_karyawan', $cuti->id_karyawan)
+                        ->where('id_jenis_cuti', $cuti->id_jenis_cuti)
+                        ->where('tahun_periode', $currentYear)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if ($saldo && $cuti->jenisCuti && !$cuti->jenisCuti->is_unlimited) {
                         $saldo->decrement('saldo_terpakai', $cuti->jumlah_hari);
                         $saldo->increment('saldo_akhir', $cuti->jumlah_hari);
                     }
-                }
-
-                $this->approvalService->reject($cuti, $karyawan->id, $request->catatan);
+                });
                 $message = 'Pengajuan cuti berhasil ditolak dan saldo dikembalikan.';
             }
 
@@ -342,20 +345,22 @@ class CutiController extends Controller
             'id_jenis_cuti'  => 'required|exists:tbl_jenis_cuti,id'
         ]);
 
+        abort_unless(auth()->user()->hasAnyRole(\App\Enums\Role::hrRoles()), 403);
+
         $jenisCuti  = JenisCuti::findOrFail($request->id_jenis_cuti);
         $tahun      = (int) $request->tahun;
 
-        // ✅ Load semua karyawan aktif sekaligus
+        // Load semua karyawan aktif sekaligus
         $karyawans  = Karyawan::where('status_karyawan', '!=', 'Resign')
             ->get(['id', 'jenis_kelamin']);
 
-        // ✅ Load existing saldo untuk periode ini sekaligus — 1 query
+        // Load existing saldo untuk periode ini sekaligus — 1 query
         $existingIds = SaldoCuti::where('id_jenis_cuti', $request->id_jenis_cuti)
             ->where('tahun_periode', $tahun)
             ->pluck('id_karyawan')
             ->flip(); // O(1) lookup
 
-        // ✅ Siapkan bulk insert — hanya untuk yang belum ada
+        // Siapkan bulk insert — hanya untuk yang belum ada
         $toInsert = [];
         $now      = now();
 
@@ -379,7 +384,7 @@ class CutiController extends Controller
             ];
         }
 
-        // ✅ Insert sekaligus — 1 query (bukan N query)
+        // Insert sekaligus — 1 query (bukan N query)
         $count = 0;
         if (!empty($toInsert)) {
             SaldoCuti::insert($toInsert);
@@ -391,6 +396,8 @@ class CutiController extends Controller
 
     public function updateBalance(Request $request, $id)
     {
+        abort_unless(auth()->user()->hasAnyRole(\App\Enums\Role::hrRoles()), 403);
+
         $request->validate([
             'saldo_awal' => 'required|integer|min:0',
             'saldo_terpakai' => 'required|integer|min:0'
@@ -408,6 +415,8 @@ class CutiController extends Controller
 
     public function show(PengajuanCuti $cuti)
     {
+        \Illuminate\Support\Facades\Gate::authorize('view', $cuti);
+
         $cuti->load(['karyawan.departemen', 'jenisCuti', 'approvalProcess.targetKaryawan']);
         
         $qrPemohon = base64_encode(\SimpleSoftwareIO\QrCode\Facades\QrCode::format('svg')->size(100)->generate(route('public.verify', 'CUTI-' . encrypt($cuti->id))));
@@ -426,6 +435,8 @@ class CutiController extends Controller
 
     public function print(PengajuanCuti $cuti)
     {
+        \Illuminate\Support\Facades\Gate::authorize('view', $cuti);
+
         $cuti->load(['karyawan.departemen', 'jenisCuti', 'approvalProcess.targetKaryawan']);
         
         return view('admin.cuti.print', compact('cuti'));
@@ -433,11 +444,70 @@ class CutiController extends Controller
 
     public function exportPdf(PengajuanCuti $cuti)
     {
+        \Illuminate\Support\Facades\Gate::authorize('view', $cuti);
+
         $cuti->load(['karyawan.departemen', 'jenisCuti', 'approvalProcess.targetKaryawan']);
         
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('admin.cuti.print', compact('cuti'));
         $pdf->setPaper('A4', 'portrait');
         
         return $pdf->download("Cuti_{$cuti->karyawan->nama_lengkap}_{$cuti->id}.pdf");
+    }
+
+    public function cancel(Request $request, PengajuanCuti $cuti)
+    {
+        $request->validate([
+            'reason' => 'nullable|string|max:500',
+        ]);
+
+        $user = auth()->user();
+        $karyawan = $user->karyawan;
+        abort_unless($karyawan && (int) $cuti->id_karyawan === (int) $karyawan->id, 403, 'Anda hanya dapat membatalkan pengajuan cuti milik sendiri.');
+
+        try {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($cuti, $user, $request) {
+                $locked = PengajuanCuti::where('id', $cuti->id)->lockForUpdate()->firstOrFail();
+
+                if (!in_array($locked->status, ['Pending', 'Approved'], true)) {
+                    throw new \DomainException('Pengajuan cuti tidak dapat dibatalkan pada status ini.');
+                }
+
+                if (\Carbon\Carbon::parse($locked->tgl_mulai)->isPast()) {
+                    throw new \DomainException('Cuti yang sudah dimulai tidak dapat dibatalkan.');
+                }
+
+                $currentYear = (int) date('Y', strtotime($locked->tgl_mulai));
+                $saldo = SaldoCuti::where('id_karyawan', $locked->id_karyawan)
+                    ->where('id_jenis_cuti', $locked->id_jenis_cuti)
+                    ->where('tahun_periode', $currentYear)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($saldo && $locked->jenisCuti && !$locked->jenisCuti->is_unlimited) {
+                    $saldo->decrement('saldo_terpakai', $locked->jumlah_hari);
+                    $saldo->increment('saldo_akhir', $locked->jumlah_hari);
+                }
+
+                $reason = $request->input('reason', 'Dibatalkan oleh pemohon.');
+                $locked->update([
+                    'status' => 'Cancelled',
+                    'cancelled_at' => now(),
+                    'cancelled_by' => $user->id,
+                    'cancellation_reason' => $reason,
+                ]);
+
+                \App\Models\ApprovalProcess::forDocument('Cuti', $locked->id)
+                    ->whereIn('status', ['Pending', 'Waiting'])
+                    ->update([
+                        'status' => 'Cancelled',
+                        'catatan' => 'Dibatalkan oleh pemohon: ' . $reason,
+                        'tgl_aksi' => now(),
+                    ]);
+            });
+
+            return back()->with('success', 'Pengajuan cuti berhasil dibatalkan dan saldo dikembalikan.');
+        } catch (\DomainException $e) {
+            return back()->with('error', $e->getMessage());
+        }
     }
 }

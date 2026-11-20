@@ -27,7 +27,7 @@ class ResetPayrollData extends Command
      */
     public function handle(): int
     {
-        $this->warn('⚠️  PERINGATAN: Perintah ini akan menghapus SEMUA data payroll secara permanen!');
+        $this->warn('PERINGATAN: Perintah ini akan menghapus SEMUA data payroll secara permanen!');
         $this->line('  - tbl_payroll_detail');
         $this->line('  - tbl_payroll');
         $this->line('  - Jurnal dengan sumber_modul HR/PY');
@@ -35,7 +35,7 @@ class ResetPayrollData extends Command
         $this->newLine();
 
         if (app()->isProduction() && ! $this->option('force')) {
-            $this->error('❌ Perintah ini diblokir di environment PRODUCTION.');
+            $this->error('Perintah ini diblokir di environment PRODUCTION.');
             $this->line('   Gunakan --force jika benar-benar diperlukan.');
             return self::FAILURE;
         }
@@ -55,7 +55,7 @@ class ResetPayrollData extends Command
             // 1. Truncate Payroll Tables
             DB::table('tbl_payroll_detail')->truncate();
             DB::table('tbl_payroll')->truncate();
-            $this->line('✅ Truncated tbl_payroll_detail & tbl_payroll.');
+            $this->line('[OK] Truncated tbl_payroll_detail & tbl_payroll.');
 
             // 2. Delete Payroll Journals
             $journalIds = DB::table('tbl_jurnal_header')
@@ -66,9 +66,9 @@ class ResetPayrollData extends Command
             if ($journalIds->isNotEmpty()) {
                 DB::table('tbl_jurnal_detail')->whereIn('id_jurnal', $journalIds)->delete();
                 DB::table('tbl_jurnal_header')->whereIn('id', $journalIds)->delete();
-                $this->line("✅ Deleted {$journalIds->count()} Payroll Journal(s).");
+                $this->line("[OK] Deleted {$journalIds->count()} Payroll Journal(s).");
             } else {
-                $this->line('ℹ️  Tidak ada Payroll Journal yang ditemukan.');
+                $this->line('[INFO] Tidak ada Payroll Journal yang ditemukan.');
             }
 
             // 3. Delete Payroll Payment Requests
@@ -84,9 +84,9 @@ class ResetPayrollData extends Command
             if ($pengajuanIds->isNotEmpty()) {
                 DB::table('tbl_pengajuan_detail')->whereIn('id_pengajuan', $pengajuanIds)->delete();
                 DB::table('tbl_pengajuan_header')->whereIn('id', $pengajuanIds)->delete();
-                $this->line("✅ Deleted {$pengajuanIds->count()} Payroll Payment Request(s).");
+                $this->line("[OK] Deleted {$pengajuanIds->count()} Payroll Payment Request(s).");
             } else {
-                $this->line('ℹ️  Tidak ada Payroll Payment Request yang ditemukan.');
+                $this->line('[INFO] Tidak ada Payroll Payment Request yang ditemukan.');
             }
 
         } finally {
@@ -94,7 +94,7 @@ class ResetPayrollData extends Command
         }
 
         $this->newLine();
-        $this->info('✅ Payroll Reset selesai.');
+        $this->info('[OK] Payroll Reset selesai.');
 
         return self::SUCCESS;
     }

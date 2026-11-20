@@ -85,6 +85,8 @@ class ApprovalController extends Controller
             return redirect()->back()->with('error', 'Anda tidak terdaftar sebagai karyawan.');
         }
 
+        app(\App\Services\PinVerificationService::class)->assertVerified($request, $user);
+
         try {
             match ($request->status) {
                 'Approved' => [

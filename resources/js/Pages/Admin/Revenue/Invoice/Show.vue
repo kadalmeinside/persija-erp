@@ -385,13 +385,13 @@ const currentPendingStep = computed(() => {
                     </div>
                     <div>
                         <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">Sahkan Invoice</h2>
-                        <p class="text-sm text-gray-500">{{ invoice.nomor_invoice }} — {{ formatCurrency(invoice.total_tagihan) }}</p>
+                        <p class="text-sm text-gray-500">{{ invoice.nomor_invoice }}: {{ formatCurrency(invoice.total_tagihan) }}</p>
                     </div>
                 </div>
 
                 <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
                     <p class="text-sm text-amber-800">
-                        ⚠️ Setelah disahkan, jurnal GL akan diposting secara otomatis dan invoice akan berstatus
+                        <strong>Peringatan:</strong> Setelah disahkan, jurnal GL akan diposting secara otomatis dan invoice akan berstatus
                         <strong>Unpaid</strong> (aktif). Tindakan ini tidak dapat dibatalkan kecuali melalui proses Void.
                     </p>
                 </div>
