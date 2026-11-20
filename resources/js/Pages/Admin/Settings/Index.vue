@@ -1,13 +1,15 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, useForm, usePage } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { Head, useForm } from '@inertiajs/vue3';
+import { computed, onMounted, ref } from 'vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputError from '@/Components/InputError.vue';
 import {
+    BanknotesIcon,
     BellAlertIcon,
+    BuildingOffice2Icon,
     EnvelopeIcon,
     PaperAirplaneIcon,
     ShieldCheckIcon,
@@ -25,7 +27,29 @@ const props = defineProps({
     can: Object,
 });
 
-const page = usePage();
+const tabs = [
+    { id: 'general', label: 'Umum & Perusahaan', icon: BuildingOffice2Icon },
+    { id: 'finance', label: 'Finansial', icon: BanknotesIcon },
+    { id: 'mail', label: 'Email (SMTP)', icon: EnvelopeIcon },
+    { id: 'fcm', label: 'Firebase FCM', icon: BellAlertIcon },
+    { id: 'push', label: 'Push & Broadcast', icon: PaperAirplaneIcon },
+];
+
+const activeTab = ref('general');
+
+function setTab(tabId) {
+    if (tabs.some((t) => t.id === tabId)) {
+        activeTab.value = tabId;
+    }
+}
+
+onMounted(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get('tab');
+    if (tabParam && tabs.some((t) => t.id === tabParam)) {
+        activeTab.value = tabParam;
+    }
+});
 
 const presetTemplates = {
     approval: {
@@ -227,10 +251,14 @@ function onCompanyLogoChange(event) {
 function submit() {
     form.post(route('admin.settings.update'), {
         forceFormData: true,
+        preserveScroll: true,
         onSuccess: () => {
-            document.getElementById('app_logo_input').value = '';
-            if (document.getElementById('app_favicon_input')) document.getElementById('app_favicon_input').value = '';
-            document.getElementById('company_logo_input').value = '';
+            const appLogoInput = document.getElementById('app_logo_input');
+            const appFaviconInput = document.getElementById('app_favicon_input');
+            const companyLogoInput = document.getElementById('company_logo_input');
+            if (appLogoInput) appLogoInput.value = '';
+            if (appFaviconInput) appFaviconInput.value = '';
+            if (companyLogoInput) companyLogoInput.value = '';
             form.app_logo = null;
             form.app_favicon = null;
             form.company_logo = null;
@@ -251,13 +279,49 @@ function submit() {
             </h2>
         </template>
 
-        <div class="py-12 pt-4">
-            <div class="max-w-full mx-auto">
-                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                    <form @submit.prevent="submit" class="p-6 space-y-6">
-                        <!-- App Settings -->
-                        <div class="border-b border-gray-200 dark:border-gray-700 pb-6 mb-6">
-                            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Pengaturan Aplikasi</h3>
+        <div class="py-4 space-y-6">
+            <div class="max-w-full mx-auto space-y-6">
+                <!-- Tab Card Navigasi Pengaturan Global -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-2">
+                    <div
+                        role="tablist"
+                        aria-label="Kategori Pengaturan Global"
+                        class="flex flex-wrap sm:flex-nowrap overflow-x-auto gap-1.5"
+                    >
+                        <button
+                            v-for="tab in tabs"
+                            :key="tab.id"
+                            :id="'tab-' + tab.id"
+                            type="button"
+                            role="tab"
+                            :aria-selected="activeTab === tab.id"
+                            :aria-controls="'panel-' + tab.id"
+                            @click="setTab(tab.id)"
+                            :class="activeTab === tab.id
+                                ? 'bg-red-600 text-white shadow-sm'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/60'"
+                            class="inline-flex items-center gap-2 min-h-[44px] px-4 py-2.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
+                        >
+                            <component :is="tab.icon" class="w-4 h-4 shrink-0" aria-hidden="true" />
+                            <span>{{ tab.label }}</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab 1: Umum & Perusahaan -->
+                <div
+                    v-if="activeTab === 'general'"
+                    id="panel-general"
+                    role="tabpanel"
+                    aria-labelledby="tab-general"
+                    class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-xl border border-gray-200 dark:border-gray-700"
+                >
+                    <form @submit.prevent="submit" class="p-6 space-y-8">
+                        <!-- Branding & Identitas Aplikasi -->
+                        <div class="border-b border-gray-200 dark:border-gray-700 pb-6">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">Identitas & Branding Aplikasi</h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Atur nama aplikasi, logo utama, dan favicon browser yang tampil di seluruh sistem.</p>
+
                             <div class="grid grid-cols-1 gap-6">
                                 <div>
                                     <InputLabel for="app_name" value="Nama Aplikasi" />
@@ -271,52 +335,36 @@ function submit() {
                                 </div>
 
                                 <div>
-                                    <InputLabel for="app_logo" value="Logo Aplikasi" />
+                                    <InputLabel for="app_logo_input" value="Logo Aplikasi" />
                                     <div class="mt-2 flex items-center gap-x-3">
-                                        <img v-if="logoPreview" :src="logoPreview" alt="Logo Preview" class="h-16 w-16 object-contain rounded-md bg-gray-100 dark:bg-gray-700">
-                                        <div v-else class="h-16 w-16 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-md text-gray-400">
+                                        <img v-if="logoPreview" :src="logoPreview" alt="Logo Preview" class="h-16 w-16 object-contain rounded-lg bg-gray-100 dark:bg-gray-700">
+                                        <div v-else class="h-16 w-16 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-lg text-gray-500 dark:text-gray-400 text-xs">
                                             No Logo
                                         </div>
-                                        <input id="app_logo_input" type="file" @input="onLogoChange" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100"/>
+                                        <input id="app_logo_input" type="file" @input="onLogoChange" accept="image/*" class="block w-full text-sm text-gray-600 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 dark:file:bg-red-950 dark:file:text-red-300 cursor-pointer"/>
                                     </div>
                                     <InputError class="mt-2" :message="form.errors.app_logo" />
                                 </div>
 
                                 <div>
-                                    <InputLabel for="app_favicon" value="Favicon Aplikasi (PNG/ICO)" />
+                                    <InputLabel for="app_favicon_input" value="Favicon Aplikasi (PNG/ICO)" />
                                     <div class="mt-2 flex items-center gap-x-3">
-                                        <img v-if="faviconPreview" :src="faviconPreview" alt="Favicon Preview" class="h-10 w-10 object-contain rounded bg-gray-100 dark:bg-gray-700">
-                                        <div v-else class="h-10 w-10 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded text-gray-400 text-xs">
+                                        <img v-if="faviconPreview" :src="faviconPreview" alt="Favicon Preview" class="h-10 w-10 object-contain rounded-lg bg-gray-100 dark:bg-gray-700">
+                                        <div v-else class="h-10 w-10 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-lg text-gray-500 dark:text-gray-400 text-xs">
                                             N/A
                                         </div>
-                                        <input id="app_favicon_input" type="file" @input="onFaviconChange" accept=".png,.ico" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100"/>
+                                        <input id="app_favicon_input" type="file" @input="onFaviconChange" accept=".png,.ico" class="block w-full text-sm text-gray-600 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 dark:file:bg-red-950 dark:file:text-red-300 cursor-pointer"/>
                                     </div>
                                     <InputError class="mt-2" :message="form.errors.app_favicon" />
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Finance Settings -->
-                        <div class="border-b border-gray-200 dark:border-gray-700 pb-6 mb-6">
-                            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Pengaturan Finansial & Persetujuan</h3>
-                            <div class="grid grid-cols-1 gap-6">
-                                <div>
-                                    <InputLabel for="reimburse_tolerance_limit" value="Batas Toleransi Kurang Bayar (Rp) - Laporan Tanpa Re-Approval" />
-                                    <TextInput
-                                        id="reimburse_tolerance_limit"
-                                        type="number"
-                                        class="mt-1 block w-full"
-                                        v-model="form.reimburse_tolerance_limit"
-                                    />
-                                    <p class="mt-1 text-sm text-gray-500">Jika nombok laporan > dari nilai ini, maka wajib Re-Approval ke atasan.</p>
-                                    <InputError class="mt-2" :message="form.errors.reimburse_tolerance_limit" />
-                                </div>
-                            </div>
-                        </div>
+                        <!-- Identitas Perusahaan -->
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">Identitas Perusahaan (Untuk Dokumen Cetak)</h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Informasi resmi perusahaan yang dicetak pada kop invoice, slip gaji, dan laporan keuangan.</p>
 
-                        <!-- Company Settings -->
-                        <div class="border-b border-gray-200 dark:border-gray-700 pb-6 mb-6">
-                            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Identitas Perusahaan (Untuk Cetak)</h3>
                             <div class="grid grid-cols-1 gap-6">
                                 <div>
                                     <InputLabel for="company_name" value="Nama Perusahaan" />
@@ -333,7 +381,7 @@ function submit() {
                                     <InputLabel for="company_address" value="Alamat Perusahaan" />
                                     <textarea
                                         id="company_address"
-                                        class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm focus:border-red-500 focus:ring-red-500"
+                                        class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-lg shadow-sm focus:border-red-500 focus:ring-red-500"
                                         rows="3"
                                         v-model="form.company_address"
                                     ></textarea>
@@ -341,25 +389,92 @@ function submit() {
                                 </div>
 
                                 <div>
-                                    <InputLabel for="company_logo" value="Logo Perusahaan" />
+                                    <InputLabel for="company_logo_input" value="Logo Perusahaan" />
                                     <div class="mt-2 flex items-center gap-x-3">
-                                        <img v-if="companyLogoPreview" :src="companyLogoPreview" alt="Company Logo Preview" class="h-16 w-16 object-contain rounded-md bg-gray-100 dark:bg-gray-700">
-                                        <div v-else class="h-16 w-16 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-md text-gray-400">
+                                        <img v-if="companyLogoPreview" :src="companyLogoPreview" alt="Company Logo Preview" class="h-16 w-16 object-contain rounded-lg bg-gray-100 dark:bg-gray-700">
+                                        <div v-else class="h-16 w-16 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-lg text-gray-500 dark:text-gray-400 text-xs">
                                             No Logo
                                         </div>
-                                        <input id="company_logo_input" type="file" @input="onCompanyLogoChange" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 dark:file:bg-red-950 dark:file:text-red-300"/>
+                                        <input id="company_logo_input" type="file" @input="onCompanyLogoChange" accept="image/*" class="block w-full text-sm text-gray-600 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 dark:file:bg-red-950 dark:file:text-red-300 cursor-pointer"/>
                                     </div>
                                     <InputError class="mt-2" :message="form.errors.company_logo" />
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Mail (SMTP) Settings -->
-                        <div class="border-b border-gray-200 dark:border-gray-700 pb-6 mb-6">
-                            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                        <div class="flex items-center gap-4 pt-2 border-t border-gray-200 dark:border-gray-700">
+                            <PrimaryButton :disabled="form.processing">Simpan Pengaturan</PrimaryButton>
+                            <Transition
+                                enter-active-class="transition ease-in-out"
+                                enter-from-class="opacity-0"
+                                leave-active-class="transition ease-in-out"
+                                leave-to-class="opacity-0"
+                            >
+                                <p v-if="form.recentlySuccessful" class="text-sm font-medium text-emerald-700 dark:text-emerald-400">Pengaturan berhasil disimpan.</p>
+                            </Transition>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Tab 2: Finansial & Persetujuan -->
+                <div
+                    v-else-if="activeTab === 'finance'"
+                    id="panel-finance"
+                    role="tabpanel"
+                    aria-labelledby="tab-finance"
+                    class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-xl border border-gray-200 dark:border-gray-700"
+                >
+                    <form @submit.prevent="submit" class="p-6 space-y-6">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">Pengaturan Finansial & Persetujuan</h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">Atur ambang batas toleransi persetujuan untuk penyelesaian laporan pertanggungjawaban dana.</p>
+
+                            <div class="grid grid-cols-1 gap-6">
+                                <div>
+                                    <InputLabel for="reimburse_tolerance_limit" value="Batas Toleransi Kurang Bayar (Rp) - Laporan Tanpa Re-Approval" />
+                                    <TextInput
+                                        id="reimburse_tolerance_limit"
+                                        type="number"
+                                        class="mt-1 block w-full tabular-nums"
+                                        v-model="form.reimburse_tolerance_limit"
+                                    />
+                                    <p class="mt-1.5 text-sm text-gray-600 dark:text-gray-400">Jika selisih kurang bayar laporan melebihi nilai ini, maka pengajuan wajib melalui Re-Approval ke atasan.</p>
+                                    <InputError class="mt-2" :message="form.errors.reimburse_tolerance_limit" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                            <PrimaryButton :disabled="form.processing">Simpan Pengaturan</PrimaryButton>
+                            <Transition
+                                enter-active-class="transition ease-in-out"
+                                enter-from-class="opacity-0"
+                                leave-active-class="transition ease-in-out"
+                                leave-to-class="opacity-0"
+                            >
+                                <p v-if="form.recentlySuccessful" class="text-sm font-medium text-emerald-700 dark:text-emerald-400">Pengaturan berhasil disimpan.</p>
+                            </Transition>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Tab 3: Email Server (SMTP) -->
+                <div
+                    v-else-if="activeTab === 'mail'"
+                    id="panel-mail"
+                    role="tabpanel"
+                    aria-labelledby="tab-mail"
+                    class="space-y-6"
+                >
+                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-xl border border-gray-200 dark:border-gray-700">
+                        <form @submit.prevent="submit" class="p-6 space-y-6">
+                            <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-gray-200 dark:border-gray-700">
                                 <div class="flex items-center gap-2.5">
                                     <EnvelopeIcon class="w-5 h-5 text-red-600 dark:text-red-400" aria-hidden="true" />
-                                    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Konfigurasi Email Server (SMTP)</h3>
+                                    <div>
+                                        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Konfigurasi Email Server (SMTP)</h3>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400">Pengaturan SMTP tersimpan terenkripsi di database untuk Lupa Password Mobile dan notifikasi email sistem.</p>
+                                    </div>
                                 </div>
                                 <span
                                     :class="settings.has_mail_password
@@ -372,16 +487,12 @@ function submit() {
                                 </span>
                             </div>
 
-                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                                Pengaturan SMTP disimpan di database dan digunakan otomatis untuk fitur Lupa Password Mobile serta notifikasi email sistem (fallback ke .env bila nonaktif).
-                            </p>
-
-                            <div class="mb-4 flex items-center gap-3">
+                            <div class="flex items-center gap-3">
                                 <input
                                     id="mail_enabled"
                                     type="checkbox"
                                     v-model="form.mail_enabled"
-                                    class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-red-600 focus:ring-red-500"
+                                    class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-red-600 focus:ring-red-500 cursor-pointer"
                                 />
                                 <label for="mail_enabled" class="text-sm font-medium text-gray-800 dark:text-gray-200 cursor-pointer">
                                     Aktifkan Konfigurasi Email Database (Override .env)
@@ -405,7 +516,7 @@ function submit() {
                                         <select
                                             id="mail_encryption"
                                             v-model="form.mail_encryption"
-                                            class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
+                                            class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
                                         >
                                             <option value="tls">TLS (STARTTLS - 587)</option>
                                             <option value="ssl">SSL (SMTPS - 465)</option>
@@ -441,63 +552,119 @@ function submit() {
                                     <InputError class="mt-1" :message="form.errors.mail_from_name" />
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- Firebase FCM HTTP v1 Settings -->
-                        <div>
-                            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-                                <div class="flex items-center gap-2.5">
-                                    <BellAlertIcon class="w-5 h-5 text-red-600 dark:text-red-400" aria-hidden="true" />
-                                    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Push Notification Firebase (FCM HTTP v1)</h3>
-                                </div>
-                                <span
-                                    :class="settings.has_fcm_service_account
-                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800'
-                                        : 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800'"
-                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs font-semibold"
+                            <div class="flex items-center gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                <PrimaryButton :disabled="form.processing">Simpan Pengaturan</PrimaryButton>
+                                <Transition
+                                    enter-active-class="transition ease-in-out"
+                                    enter-from-class="opacity-0"
+                                    leave-active-class="transition ease-in-out"
+                                    leave-to-class="opacity-0"
                                 >
-                                    <ShieldCheckIcon class="w-4 h-4" aria-hidden="true" />
-                                    {{ settings.has_fcm_service_account ? 'Service Account JSON Terenkripsi Tersimpan' : 'Service Account JSON Belum Diatur' }}
-                                </span>
+                                    <p v-if="form.recentlySuccessful" class="text-sm font-medium text-emerald-700 dark:text-emerald-400">Pengaturan berhasil disimpan.</p>
+                                </Transition>
                             </div>
+                        </form>
+                    </div>
 
-                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                                Gunakan kredensial Service Account JSON resmi dari Firebase Console (Project Settings -> Service Accounts) agar backend dapat mengirim notifikasi push real-time ke aplikasi mobile.
-                            </p>
-
-                            <div class="mb-4 flex items-center gap-3">
-                                <input
-                                    id="fcm_enabled"
-                                    type="checkbox"
-                                    v-model="form.fcm_enabled"
-                                    class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-red-600 focus:ring-red-500"
-                                />
-                                <label for="fcm_enabled" class="text-sm font-medium text-gray-800 dark:text-gray-200 cursor-pointer">
-                                    Aktifkan Pengiriman Push Notification FCM HTTP v1
-                                </label>
-                            </div>
-
-                            <div class="grid grid-cols-1 gap-4">
-                                <div>
-                                    <InputLabel for="fcm_project_id" value="Firebase Project ID" />
-                                    <TextInput id="fcm_project_id" type="text" class="mt-1 block w-full" v-model="form.fcm_project_id" placeholder="Otomatis terisi dari JSON jika dikosongkan" />
-                                    <InputError class="mt-1" :message="form.errors.fcm_project_id" />
+                    <!-- Uji Coba Kirim Email SMTP -->
+                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-xl border border-gray-200 dark:border-gray-700">
+                        <div class="p-6">
+                            <div class="flex items-center gap-3 pb-4 border-b border-gray-200 dark:border-gray-700">
+                                <div class="p-2.5 bg-red-50 dark:bg-red-950/50 rounded-xl text-red-600 dark:text-red-400">
+                                    <PaperAirplaneIcon class="w-5 h-5" aria-hidden="true" />
                                 </div>
                                 <div>
-                                    <InputLabel for="fcm_service_account_json" value="Firebase Service Account JSON (Kosongkan jika tidak diubah)" />
-                                    <textarea
-                                        id="fcm_service_account_json"
-                                        rows="4"
-                                        v-model="form.fcm_service_account_json"
-                                        :placeholder="settings.has_fcm_service_account ? 'Service account JSON tersimpan terenkripsi. Tempel JSON baru jika ingin mengganti.' : '{ &quot;type&quot;: &quot;service_account&quot;, &quot;project_id&quot;: &quot;...&quot;, &quot;private_key&quot;: &quot;...&quot;, &quot;client_email&quot;: &quot;...&quot; }'"
-                                        class="mt-1 block w-full font-mono text-xs border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm focus:border-red-500 focus:ring-red-500"
-                                    ></textarea>
-                                    <InputError class="mt-1" :message="form.errors.fcm_service_account_json" />
+                                    <h3 class="text-base font-bold text-gray-900 dark:text-gray-100">Uji Coba Pengiriman Email SMTP</h3>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">Pastikan pengaturan SMTP di atas sudah disimpan terlebih dahulu sebelum melakukan tes kirim.</p>
                                 </div>
+                            </div>
+                            <form @submit.prevent="sendTestMail" class="mt-4 flex flex-col sm:flex-row sm:items-end gap-4">
+                                <div class="flex-1">
+                                    <InputLabel for="test_email" value="Alamat Email Penerima Uji Coba" />
+                                    <TextInput
+                                        id="test_email"
+                                        type="email"
+                                        class="mt-1 block w-full"
+                                        v-model="testMailForm.test_email"
+                                        placeholder="nama@persija.id"
+                                        required
+                                    />
+                                    <InputError class="mt-1" :message="testMailForm.errors.test_email" />
+                                </div>
+                                <button
+                                    type="submit"
+                                    :disabled="testMailForm.processing"
+                                    class="inline-flex items-center justify-center gap-2 min-h-[44px] px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold text-sm rounded-lg shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 disabled:opacity-50 cursor-pointer"
+                                >
+                                    <PaperAirplaneIcon class="w-4 h-4" aria-hidden="true" />
+                                    <span>Kirim Email Uji Coba</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 4: Firebase FCM HTTP v1 -->
+                <div
+                    v-else-if="activeTab === 'fcm'"
+                    id="panel-fcm"
+                    role="tabpanel"
+                    aria-labelledby="tab-fcm"
+                    class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-xl border border-gray-200 dark:border-gray-700"
+                >
+                    <form @submit.prevent="submit" class="p-6 space-y-6">
+                        <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-gray-200 dark:border-gray-700">
+                            <div class="flex items-center gap-2.5">
+                                <BellAlertIcon class="w-5 h-5 text-red-600 dark:text-red-400" aria-hidden="true" />
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Push Notification Firebase (FCM HTTP v1)</h3>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">Kredensial Service Account JSON resmi dari Firebase Console (Project Settings -> Service Accounts) untuk pengiriman push real-time ke aplikasi mobile.</p>
+                                </div>
+                            </div>
+                            <span
+                                :class="settings.has_fcm_service_account
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800'
+                                    : 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800'"
+                                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-xs font-semibold"
+                            >
+                                <ShieldCheckIcon class="w-4 h-4" aria-hidden="true" />
+                                {{ settings.has_fcm_service_account ? 'Service Account JSON Terenkripsi Tersimpan' : 'Service Account JSON Belum Diatur' }}
+                            </span>
+                        </div>
+
+                        <div class="flex items-center gap-3">
+                            <input
+                                id="fcm_enabled"
+                                type="checkbox"
+                                v-model="form.fcm_enabled"
+                                class="h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-red-600 focus:ring-red-500 cursor-pointer"
+                            />
+                            <label for="fcm_enabled" class="text-sm font-medium text-gray-800 dark:text-gray-200 cursor-pointer">
+                                Aktifkan Pengiriman Push Notification FCM HTTP v1
+                            </label>
+                        </div>
+
+                        <div class="grid grid-cols-1 gap-4">
+                            <div>
+                                <InputLabel for="fcm_project_id" value="Firebase Project ID" />
+                                <TextInput id="fcm_project_id" type="text" class="mt-1 block w-full" v-model="form.fcm_project_id" placeholder="Otomatis terisi dari JSON jika dikosongkan" />
+                                <InputError class="mt-1" :message="form.errors.fcm_project_id" />
+                            </div>
+                            <div>
+                                <InputLabel for="fcm_service_account_json" value="Firebase Service Account JSON (Kosongkan jika tidak diubah)" />
+                                <textarea
+                                    id="fcm_service_account_json"
+                                    rows="5"
+                                    v-model="form.fcm_service_account_json"
+                                    :placeholder="settings.has_fcm_service_account ? 'Service account JSON tersimpan terenkripsi. Tempel JSON baru jika ingin mengganti.' : '{ &quot;type&quot;: &quot;service_account&quot;, &quot;project_id&quot;: &quot;...&quot;, &quot;private_key&quot;: &quot;...&quot;, &quot;client_email&quot;: &quot;...&quot; }'"
+                                    class="mt-1 block w-full font-mono text-xs border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-lg shadow-sm focus:border-red-500 focus:ring-red-500"
+                                ></textarea>
+                                <InputError class="mt-1" :message="form.errors.fcm_service_account_json" />
                             </div>
                         </div>
 
-                        <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                             <PrimaryButton :disabled="form.processing">Simpan Pengaturan</PrimaryButton>
                             <Transition
                                 enter-active-class="transition ease-in-out"
@@ -505,51 +672,20 @@ function submit() {
                                 leave-active-class="transition ease-in-out"
                                 leave-to-class="opacity-0"
                             >
-                                <p v-if="form.recentlySuccessful" class="text-sm text-gray-600 dark:text-gray-400">Tersimpan.</p>
+                                <p v-if="form.recentlySuccessful" class="text-sm font-medium text-emerald-700 dark:text-emerald-400">Pengaturan berhasil disimpan.</p>
                             </Transition>
                         </div>
                     </form>
                 </div>
 
-                <!-- Uji Coba Kirim Email SMTP -->
-                <div class="mt-8 bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg border border-gray-200 dark:border-gray-700">
-                    <div class="p-6">
-                        <div class="flex items-center gap-3 pb-4 border-b border-gray-200 dark:border-gray-700">
-                            <div class="p-2.5 bg-red-50 dark:bg-red-950/50 rounded-xl text-red-600 dark:text-red-400">
-                                <PaperAirplaneIcon class="w-5 h-5" aria-hidden="true" />
-                            </div>
-                            <div>
-                                <h3 class="text-base font-bold text-gray-900 dark:text-gray-100">Uji Coba Pengiriman Email SMTP</h3>
-                                <p class="text-sm text-gray-600 dark:text-gray-400">Pastikan pengaturan SMTP di atas sudah disimpan terlebih dahulu sebelum melakukan tes kirim.</p>
-                            </div>
-                        </div>
-                        <form @submit.prevent="sendTestMail" class="mt-4 flex flex-col sm:flex-row sm:items-end gap-4">
-                            <div class="flex-1">
-                                <InputLabel for="test_email" value="Alamat Email Penerima Uji Coba" />
-                                <TextInput
-                                    id="test_email"
-                                    type="email"
-                                    class="mt-1 block w-full"
-                                    v-model="testMailForm.test_email"
-                                    placeholder="nama@persija.id"
-                                    required
-                                />
-                                <InputError class="mt-1" :message="testMailForm.errors.test_email" />
-                            </div>
-                            <button
-                                type="submit"
-                                :disabled="testMailForm.processing"
-                                class="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold text-sm rounded-lg shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 disabled:opacity-50 cursor-pointer"
-                            >
-                                <PaperAirplaneIcon class="w-4 h-4" aria-hidden="true" />
-                                <span>Kirim Email Uji Coba</span>
-                            </button>
-                        </form>
-                    </div>
-                </div>
-
-                <!-- Push Notification & Broadcast Center Card -->
-                <div class="mt-8 bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg border border-gray-200 dark:border-gray-700">
+                <!-- Tab 5: Push Notification & Broadcast Center -->
+                <div
+                    v-else-if="activeTab === 'push'"
+                    id="panel-push"
+                    role="tabpanel"
+                    aria-labelledby="tab-push"
+                    class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-xl border border-gray-200 dark:border-gray-700"
+                >
                     <div class="p-6">
                         <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-gray-200 dark:border-gray-700">
                             <div class="flex items-center space-x-3">
@@ -608,7 +744,7 @@ function submit() {
                                 <select
                                     id="target_user_id"
                                     v-model="notifForm.target_user_id"
-                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
+                                    class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
                                 >
                                     <option v-for="u in users" :key="u.id" :value="u.id">
                                         {{ u.name }} ({{ u.role }} - {{ u.email }}) {{ u.has_device_token ? '[Mobile: ' + (u.device_name || 'Tersambung') + ']' : '' }}
@@ -675,7 +811,7 @@ function submit() {
                                 <select
                                     id="target_role"
                                     v-model="notifForm.target_role"
-                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
+                                    class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
                                 >
                                     <option v-for="r in roles" :key="r" :value="r">{{ r }}</option>
                                 </select>
@@ -695,7 +831,7 @@ function submit() {
                                         id="notif_type"
                                         v-model="notifForm.type"
                                         @change="onNotifTypeChange"
-                                        class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
+                                        class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
                                     >
                                         <option value="announcement">Pengumuman Perusahaan</option>
                                         <option value="approval">Approval Pengajuan / Dokumen</option>
@@ -714,7 +850,7 @@ function submit() {
                                     <select
                                         id="click_action"
                                         v-model="notifForm.click_action"
-                                        class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
+                                        class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
                                     >
                                         <option value="open_page">Buka Halaman Aplikasi Spesifik (Deep Link)</option>
                                         <option value="info_only">Hanya Notifikasi (Tampilkan Popup Pesan Tanpa Pindah Halaman)</option>
@@ -749,7 +885,7 @@ function submit() {
                                         id="route_preset"
                                         v-model="selectedRoutePreset"
                                         @change="onRoutePresetChange"
-                                        class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
+                                        class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
                                     >
                                         <option v-for="r in routeCatalog" :key="r.value" :value="r.value">{{ r.label }}</option>
                                     </select>
@@ -773,7 +909,7 @@ function submit() {
                                 <textarea
                                     id="notif_message"
                                     rows="3"
-                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
+                                    class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500"
                                     v-model="notifForm.message"
                                     placeholder="Tuliskan isi pesan atau pengumuman untuk penerima..."
                                 ></textarea>
@@ -805,11 +941,11 @@ function submit() {
                                 </div>
                             </div>
 
-                            <div class="flex items-center gap-4 pt-2">
+                            <div class="flex items-center gap-4 pt-2 border-t border-gray-200 dark:border-gray-700">
                                 <button
                                     type="submit"
                                     :disabled="notifForm.processing"
-                                    class="inline-flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-semibold text-sm rounded-lg shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 transition-colors disabled:opacity-50 cursor-pointer"
+                                    class="inline-flex items-center gap-2 min-h-[44px] px-5 py-2.5 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-semibold text-sm rounded-lg shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 transition-colors disabled:opacity-50 cursor-pointer"
                                 >
                                     <PaperAirplaneIcon class="h-4 w-4" aria-hidden="true" />
                                     <span>{{ notifForm.target_mode === 'blast_all' ? 'Kirim Blast ke Semua Pengguna' : 'Kirim Push Message Sekarang' }}</span>

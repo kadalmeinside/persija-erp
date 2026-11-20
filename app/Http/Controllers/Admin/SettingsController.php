@@ -53,7 +53,7 @@ class SettingsController extends Controller
             'users' => $users,
             'roles' => $roles,
             'currentUserId' => auth()->id(),
-            'pageTitle' => 'Pengaturan Aplikasi',
+            'pageTitle' => 'Pengaturan Global',
             'can' => [
                 'update_settings' => auth()->user()->can('settings.manage'),
             ]

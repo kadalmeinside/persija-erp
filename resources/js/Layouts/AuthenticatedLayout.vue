@@ -652,7 +652,7 @@ const sidebarMenu = computed(() => {
         
         if (hasPermission('user.manage')) {
             systemChildren.push({ 
-                name: 'Pengaturan Aplikasi', 
+                name: 'Pengaturan Global', 
                 route: 'admin.settings.index', 
                 icon: Cog6ToothIcon, 
                 current: 'admin.settings.*'

@@ -470,23 +470,23 @@ const allModules = [
             },
             {
                 id: 'sys-3',
-                title: 'Pengaturan Aplikasi & Identitas Perusahaan',
+                title: 'Pengaturan Global & Identitas Perusahaan',
                 steps: [
-                    'Buka menu <strong>System Settings > Pengaturan Aplikasi</strong>.',
+                    'Buka menu <strong>System Settings > Pengaturan Global</strong>.',
                     'Ubah <strong>Nama Aplikasi</strong>, <strong>Logo Aplikasi</strong>, dan <strong>Favicon</strong> browser untuk branding sistem.',
-                    'Tentukan <strong>Batas Toleransi Kurang Bayar Reimbursement</strong> untuk menentukan apakah selisih kasbon wajib melalui approval ulang atau tidak.',
+                    'Tentukan <strong>Batas Toleransi Kurang Bayar Reimbursement</strong> pada tab <strong>Finansial</strong> untuk menentukan apakah selisih kasbon wajib melalui approval ulang atau tidak.',
                     'Lengkapi <strong>Identitas Perusahaan</strong> (Nama resmi dan Alamat lengkap perusahaan) yang otomatis digunakan sebagai kop pada invoice dan slip cetak.',
                     `Klik <strong class="inline-flex items-center px-2 py-0.5 bg-gray-100 border border-gray-300 rounded text-xs">${iconCheck} Simpan Pengaturan</strong> untuk menyimpan perubahan.`
                 ]
             },
             {
                 id: 'sys-4',
-                title: 'Uji Coba Push Notifikasi ke Mobile (Simulasi Notifikasi)',
+                title: 'Pusat Pengiriman Push Notifikasi & Broadcast',
                 steps: [
-                    'Buka menu <strong>System Settings > Pengaturan Aplikasi</strong> lalu periksa kartu <strong>Uji Coba Push Notifikasi ke Mobile</strong>.',
-                    'Pilih <strong>Karyawan / Pengguna Target</strong> yang sedang login di aplikasi mobile (HP terdeteksi jika status perangkat aktif).',
-                    'Pilih <strong>Tipe Notifikasi</strong> (Approval, Cuti, Absensi, Tugas, ESS Slip Gaji, atau Pengumuman). Template pesan dan <em>deep link</em> ke layar HP otomatis terisi.',
-                    'Klik tombol <strong class="inline-flex items-center px-2 py-0.5 bg-red-600 text-white rounded text-xs">Kirim Notifikasi ke Mobile</strong> untuk menguji keterkiriman push notifikasi secara real-time.'
+                    'Buka menu <strong>System Settings > Pengaturan Global</strong> lalu pilih tab <strong>Push & Broadcast</strong>.',
+                    'Pilih <strong>Mode Target Penerima</strong> (Per User, Multi-User, Per Role, atau Blast Semua Pengguna).',
+                    'Pilih <strong>Tujuan / Kategori Pesan</strong> dan <strong>Aksi Saat Notifikasi Di-Klik</strong> (Buka Halaman Aplikasi atau Hanya Notifikasi).',
+                    'Klik tombol <strong class="inline-flex items-center px-2 py-0.5 bg-red-600 text-white rounded text-xs">Kirim Push Message Sekarang</strong> untuk mengirim notifikasi secara real-time.'
                 ]
             },
             {
